@@ -29,4 +29,11 @@ describe('order flow theme presets', () => {
     expect(ORDER_FLOW_THEME_PRESETS.smoothLight.footprint?.ladder?.separatorMode).toBe('letter');
     expect(ORDER_FLOW_THEME_PRESETS.smoothLight.footprint?.ladder?.bidAskFillMode).toBe('by-delta');
   });
+
+  it('styles Dark Default candles with borders and neutral wicks', () => {
+    expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.label).toBe('Dark Default');
+    expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.borderVisible).toBe(true);
+    expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.wickUpColor).toBe('#c9cdd4');
+    expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.wickDownColor).toBe('#c9cdd4');
+  });
 });

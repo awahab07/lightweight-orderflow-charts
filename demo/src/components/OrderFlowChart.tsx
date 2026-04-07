@@ -477,43 +477,57 @@ export function OrderFlowChart({
       return;
     }
 
-    const panes = chart.panes();
-    const supportingPaneCount = [showVolumePane, showVolumeDeltaPivot, showDeltaSummary].filter(
-      Boolean,
-    ).length;
-    const stretchFactors: number[] = [];
+    const frame = window.requestAnimationFrame(() => {
+      const panes = chart.panes();
+      const supportingPaneCount = [showVolumePane, showVolumeDeltaPivot, showDeltaSummary].filter(
+        Boolean,
+      ).length;
+      const stretchFactors: number[] = [];
 
-    if (showReferenceCandles) {
-      if (!showOrderFlowPane) {
-        stretchFactors.push(supportingPaneCount ? 0.8 : 1);
-      } else {
-        stretchFactors.push(0.18);
+      if (showReferenceCandles) {
+        if (!showOrderFlowPane) {
+          stretchFactors.push(supportingPaneCount ? 0.8 : 1);
+        } else {
+          stretchFactors.push(0.18);
+        }
       }
-    }
 
-    if (showOrderFlowPane) {
-      stretchFactors.push(
-        showReferenceCandles ? (supportingPaneCount ? 0.5 : 0.82) : supportingPaneCount ? 0.68 : 1,
-      );
-    }
+      if (showOrderFlowPane) {
+        stretchFactors.push(
+          showReferenceCandles
+            ? supportingPaneCount
+              ? 0.5
+              : 0.82
+            : supportingPaneCount
+              ? 0.68
+              : 1,
+        );
+      }
 
-    if (showVolumePane) {
-      stretchFactors.push(0.14);
-    }
+      if (showVolumePane) {
+        stretchFactors.push(0.14);
+      }
 
-    if (showVolumeDeltaPivot) {
-      stretchFactors.push(0.2);
-    }
+      if (showVolumeDeltaPivot) {
+        stretchFactors.push(0.2);
+      }
 
-    if (showDeltaSummary) {
-      stretchFactors.push(0.2);
-    }
+      if (showDeltaSummary) {
+        stretchFactors.push(0.2);
+      }
 
-    for (let index = 0; index < stretchFactors.length; index += 1) {
-      panes[index]?.setStretchFactor(stretchFactors[index]);
-    }
+      for (let index = 0; index < stretchFactors.length; index += 1) {
+        panes[index]?.setStretchFactor(stretchFactors[index]);
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
   }, [
     chart,
+    dataSourceKey,
+    referenceCandleReady,
     series,
     showDeltaSummary,
     showOrderFlowPane,

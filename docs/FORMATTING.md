@@ -180,6 +180,22 @@ const footprintOptions = {
 };
 ```
 
+## Candle-Side Metric Layout
+
+`SeriesMetricPrimitiveItem` owns layout details for candle-side metrics while the palette owns the
+styling. Use `orientation: 'vertical'` when a dense candle range needs narrow labels below or above
+the candles without changing the shared theme colors:
+
+```ts
+const metric = {
+  id: 'cumulative-delta',
+  text: 'CD 0.8M',
+  placement: 'below',
+  orientation: 'vertical',
+  style: resolveMetricStyleToken(palette, 'metric1', 'primary'),
+};
+```
+
 ## Notes
 
 - compact formatting is intended for footprint value text, not for price-scale labels

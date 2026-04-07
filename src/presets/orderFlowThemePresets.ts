@@ -45,19 +45,29 @@ export interface OrderFlowThemePresetPack extends OrderFlowStylePresetPack {
   volumeDeltaPivotBaseline?: LineSeriesPartialOptions;
 }
 
+type CandleSeriesStyleOverrides = Pick<
+  CandlestickSeriesPartialOptions,
+  'borderDownColor' | 'borderUpColor' | 'borderVisible' | 'wickDownColor' | 'wickUpColor'
+>;
+
 function createCandleSeriesOptions(
   upColor: string,
   downColor: string,
-  borderVisible = false,
+  borderVisibleOrOverrides: boolean | CandleSeriesStyleOverrides = false,
 ): CandlestickSeriesPartialOptions {
+  const overrides =
+    typeof borderVisibleOrOverrides === 'boolean'
+      ? { borderVisible: borderVisibleOrOverrides }
+      : borderVisibleOrOverrides;
+
   return {
     upColor,
     downColor,
-    wickUpColor: upColor,
-    wickDownColor: downColor,
-    borderUpColor: upColor,
-    borderDownColor: downColor,
-    borderVisible,
+    wickUpColor: overrides.wickUpColor ?? upColor,
+    wickDownColor: overrides.wickDownColor ?? downColor,
+    borderUpColor: overrides.borderUpColor ?? upColor,
+    borderDownColor: overrides.borderDownColor ?? downColor,
+    borderVisible: overrides.borderVisible ?? false,
     lastValueVisible: false,
     priceLineVisible: false,
   };
@@ -558,7 +568,11 @@ export const ORDER_FLOW_THEME_PRESETS = {
       cellBorderColor: DARK_REFERENCE_DELTA_SUMMARY_OPTIONS.cellBorderColor,
       rowStyles: DARK_REFERENCE_DELTA_SUMMARY_OPTIONS.rowStyles,
     },
-    candleSeries: createCandleSeriesOptions('#2962ff', '#f23645'),
+    candleSeries: createCandleSeriesOptions('#2962ff', '#f23645', {
+      borderVisible: true,
+      wickUpColor: '#c9cdd4',
+      wickDownColor: '#c9cdd4',
+    }),
     volumeSeries: createVolumeSeriesOptions('rgba(8, 153, 129, 0.55)', 'rgba(242, 54, 69, 0.55)'),
     volumeDeltaPivotSeries: createCandleSeriesOptions('#089981', '#f23645', true),
     volumeDeltaPivotBaseline: {

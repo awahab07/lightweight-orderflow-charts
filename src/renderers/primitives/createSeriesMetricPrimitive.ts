@@ -17,6 +17,7 @@ export interface SeriesMetricPrimitiveItem {
   text: string;
   placement?: 'above' | 'below';
   offset?: number;
+  orientation?: 'horizontal' | 'vertical';
   style: MetricStyleToken;
 }
 
@@ -64,43 +65,19 @@ class SeriesMetricRenderer implements IPrimitivePaneRenderer {
 
         for (let index = 0; index < aboveItems.length; index += 1) {
           const item = aboveItems[index];
-          context.font = item.style.font;
-          const textWidth = context.measureText(item.text).width;
-          const paddingX = item.style.paddingX ?? 0;
-          const paddingY = item.style.paddingY ?? 0;
-          const height = Math.ceil(
-            Math.max(
-              12,
-              context.measureText('M').actualBoundingBoxAscent +
-                context.measureText('M').actualBoundingBoxDescent,
-            ) +
-              paddingY * 2,
-          );
-          const width = Math.ceil(textWidth + paddingX * 2);
-          aboveCursor = (aboveCursor - ((item.offset ?? 4) + height)) as Coordinate;
-          drawMetricBadge(context, x, aboveCursor, width, height, item);
+          const badge = measureMetricBadge(context, item);
+          aboveCursor = (aboveCursor - ((item.offset ?? 4) + badge.height)) as Coordinate;
+          drawMetricBadge(context, x, aboveCursor, badge, item);
         }
 
         let belowCursor = y as Coordinate;
 
         for (let index = 0; index < belowItems.length; index += 1) {
           const item = belowItems[index];
-          context.font = item.style.font;
-          const textWidth = context.measureText(item.text).width;
-          const paddingX = item.style.paddingX ?? 0;
-          const paddingY = item.style.paddingY ?? 0;
-          const height = Math.ceil(
-            Math.max(
-              12,
-              context.measureText('M').actualBoundingBoxAscent +
-                context.measureText('M').actualBoundingBoxDescent,
-            ) +
-              paddingY * 2,
-          );
-          const width = Math.ceil(textWidth + paddingX * 2);
+          const badge = measureMetricBadge(context, item);
           belowCursor = (belowCursor + (item.offset ?? 4)) as Coordinate;
-          drawMetricBadge(context, x, belowCursor, width, height, item);
-          belowCursor = (belowCursor + height) as Coordinate;
+          drawMetricBadge(context, x, belowCursor, badge, item);
+          belowCursor = (belowCursor + badge.height) as Coordinate;
         }
       }
 
@@ -109,30 +86,103 @@ class SeriesMetricRenderer implements IPrimitivePaneRenderer {
   }
 }
 
+interface MetricBadgeMeasurement {
+  width: number;
+  height: number;
+  innerWidth: number;
+  innerHeight: number;
+}
+
+function measureMetricBadge(
+  context: CanvasRenderingContext2D,
+  item: SeriesMetricPrimitiveItem,
+): MetricBadgeMeasurement {
+  context.font = item.style.font;
+  const textWidth = context.measureText(item.text).width;
+  const paddingX = item.style.paddingX ?? 0;
+  const paddingY = item.style.paddingY ?? 0;
+  const textHeight = Math.ceil(
+    Math.max(
+      12,
+      context.measureText('M').actualBoundingBoxAscent +
+        context.measureText('M').actualBoundingBoxDescent,
+    ),
+  );
+  const innerWidth = Math.ceil(textWidth + paddingX * 2);
+  const innerHeight = Math.ceil(textHeight + paddingY * 2);
+
+  if (item.orientation === 'vertical') {
+    return {
+      width: innerHeight,
+      height: innerWidth,
+      innerWidth,
+      innerHeight,
+    };
+  }
+
+  return {
+    width: innerWidth,
+    height: innerHeight,
+    innerWidth,
+    innerHeight,
+  };
+}
+
 function drawMetricBadge(
   context: CanvasRenderingContext2D,
   centerX: number,
   top: number,
-  width: number,
-  height: number,
+  badge: MetricBadgeMeasurement,
   item: SeriesMetricPrimitiveItem,
 ): void {
-  const left = centerX - width / 2;
+  const left = centerX - badge.width / 2;
+  const border = parseMetricBorderShorthand(item.style.border);
+
+  if (item.orientation === 'vertical') {
+    const centerY = top + badge.height / 2;
+
+    context.save();
+    context.translate(centerX, centerY);
+    context.rotate(-Math.PI / 2);
+
+    if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent') {
+      context.fillStyle = item.style.backgroundColor;
+      context.fillRect(
+        -badge.innerWidth / 2,
+        -badge.innerHeight / 2,
+        badge.innerWidth,
+        badge.innerHeight,
+      );
+    }
+
+    if (border.width > 0 && border.color) {
+      context.strokeStyle = border.color;
+      context.lineWidth = border.width;
+      context.strokeRect(
+        -badge.innerWidth / 2,
+        -badge.innerHeight / 2,
+        badge.innerWidth,
+        badge.innerHeight,
+      );
+    }
+
+    fillCenteredText(context, item.text, 0, 0, item.style.color);
+    context.restore();
+    return;
+  }
 
   if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent') {
     context.fillStyle = item.style.backgroundColor;
-    context.fillRect(left, top, width, height);
+    context.fillRect(left, top, badge.width, badge.height);
   }
-
-  const border = parseMetricBorderShorthand(item.style.border);
 
   if (border.width > 0 && border.color) {
     context.strokeStyle = border.color;
     context.lineWidth = border.width;
-    context.strokeRect(left, top, width, height);
+    context.strokeRect(left, top, badge.width, badge.height);
   }
 
-  fillCenteredText(context, item.text, centerX, top + height / 2, item.style.color);
+  fillCenteredText(context, item.text, centerX, top + badge.height / 2, item.style.color);
 }
 
 export class SeriesMetricPrimitive implements ISeriesPrimitive<TimeValue> {

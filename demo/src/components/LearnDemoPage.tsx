@@ -324,6 +324,7 @@ export function LearnDemoPage() {
             })}`,
             placement: 'below',
             offset: 6,
+            orientation: 'vertical',
             style: {
               ...styleToken,
               backgroundColor: 'transparent',
