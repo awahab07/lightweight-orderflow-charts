@@ -18,6 +18,7 @@ Intervals:
 
 - `1m`
 - `5m`
+- `15m`
 
 Tick-level content:
 
@@ -30,6 +31,7 @@ Each symbol/session partition can contain:
 
 - `bars-1m.json`
 - `bars-5m.json`
+- `bars-15m.json`
 - `trades.ndjson.gz`
 - `quotes.ndjson.gz`
 - derived order-flow or study fixtures for fast demo loading

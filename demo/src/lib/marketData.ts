@@ -5,7 +5,7 @@ import {
   type MarketBarRecord,
 } from './buildSyntheticOrderFlowFromBars';
 
-type BarInterval = '1m' | '5m';
+type BarInterval = '1m' | '5m' | '15m';
 type SymbolCode = 'NVDA' | 'TSLA';
 
 interface MarketInstrumentRecord {
@@ -57,7 +57,7 @@ for (const [pathname, moduleValue] of Object.entries(instrumentModules)) {
 }
 
 for (const [pathname, moduleValue] of Object.entries(barModules)) {
-  const match = pathname.match(/data\/market\/([^/]+)\/([^/]+)\/bars-(1m|5m)\.json$/);
+  const match = pathname.match(/data\/market\/([^/]+)\/([^/]+)\/bars-(1m|5m|15m)\.json$/);
   if (!match) {
     continue;
   }
@@ -79,7 +79,7 @@ for (const [pathname, moduleValue] of Object.entries(barModules)) {
 export type { BarInterval, SymbolCode, MarketBarRecord, MarketInstrumentRecord };
 
 export const AVAILABLE_SYMBOLS = Array.from(instruments.keys()).sort() as SymbolCode[];
-export const AVAILABLE_INTERVALS: BarInterval[] = ['1m', '5m'];
+export const AVAILABLE_INTERVALS: BarInterval[] = ['1m', '5m', '15m'];
 
 export function availableDatesForSymbol(symbol: SymbolCode): string[] {
   return Array.from(datesBySymbol.get(symbol) ?? []).sort();

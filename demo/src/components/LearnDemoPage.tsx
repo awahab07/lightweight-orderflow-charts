@@ -167,7 +167,12 @@ export function LearnDemoPage() {
     [interval, sessionDate, symbol],
   );
   const rawLowerOrderFlowBars = useMemo(
-    () => loadOrderFlowBars(symbol, sessionDate, interval === '5m' ? '1m' : interval),
+    () =>
+      loadOrderFlowBars(
+        symbol,
+        sessionDate,
+        interval === '15m' ? '5m' : interval === '5m' ? '1m' : interval,
+      ),
     [interval, sessionDate, symbol],
   );
   const bars = useMemo(
@@ -234,7 +239,7 @@ export function LearnDemoPage() {
     }
 
     return buildVolumeDeltaPivotSeriesData(deltaSourceBars, lowerDeltaSourceBars, {
-      intervalSeconds: interval === '5m' ? 300 : 60,
+      intervalSeconds: interval === '15m' ? 900 : interval === '5m' ? 300 : 60,
     });
   }, [deltaSourceBars, interval, lowerDeltaSourceBars, preset.showVolumeDeltaPivot]);
   const visibleLessons = useMemo(
