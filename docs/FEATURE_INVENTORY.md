@@ -47,9 +47,8 @@ presets.
 
 - `Chart View Snapshot And Restore`
   Captures logical time range and pane price ranges for URL sync or other persistence.
-- `Smart Focus`
-  Rescues off-screen or undersized bars by adjusting only the vertical range while preserving the
-  current horizontal zoom.
+- `Price-Scale Auto Fit`
+  Toggles TradingView-style vertical autoscaling with configurable top and bottom insets.
 - `Mintick Clustering`
   Re-buckets order-flow and OHLC data to a visualization tick size such as `0.10` or `0.005`.
 - `Uniform Price Grid`

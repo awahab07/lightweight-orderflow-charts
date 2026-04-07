@@ -85,8 +85,10 @@ Practical guidance:
   fed back into the chart on every interaction
 - debounce URL writes so wheel zooming and drag panning stay responsive
 
-If the restored viewport can legitimately point outside a replacement data source, pair restore with
-`focusOrderFlowChart()` after the restore settles. That keeps the persistence layer reusable while
-still giving the host a way to rescue symbol/date/interval changes.
+If a host wants TradingView-style vertical refitting after restore, pair restore with
+`setPriceScaleAutoFit(chart, true, { paneIndex: 0, topInsetRatio: 0.05, bottomInsetRatio: 0.05 })`
+after the restore settles. That keeps the persistence layer reusable while leaving auto-fit policy
+under the host application's control.
 
-The learn-mode demo in this repository implements exactly that pattern for shareable deep links.
+The learn-mode demo in this repository keeps chart-state persistence separate from the auto-fit mode
+for exactly that reason.

@@ -159,12 +159,8 @@ export {
   isChartViewStateSnapshot,
   restoreChartViewState,
 } from './utils/chartState';
-export type {
-  FocusableOrderFlowBar,
-  FocusOrderFlowChartOptions,
-  FocusOrderFlowChartResult,
-} from './utils/chartFocus';
-export { focusOrderFlowChart } from './utils/chartFocus';
+export type { AutoFitPriceScaleOptions, AutoFitPriceScaleResult } from './utils/autoFitPriceScale';
+export { setPriceScaleAutoFit } from './utils/autoFitPriceScale';
 export {
   buildPriceGrid,
   inferPricePrecision,

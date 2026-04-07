@@ -61,7 +61,7 @@ export function FixtureDemoPage() {
   const [candlePosition, setCandlePosition] = useState<FootprintCandlePosition>('middle');
   const [mintick, setMintick] = useState<number | null>(0.1);
   const [showValueUnit, setShowValueUnit] = useState(true);
-  const [focusRequestKey, setFocusRequestKey] = useState(0);
+  const [autoFitRequestKey, setAutoFitRequestKey] = useState(0);
 
   useEffect(() => {
     setSeriesMode(preset.seriesMode);
@@ -331,7 +331,7 @@ export function FixtureDemoPage() {
         </label>
 
         <button
-          onClick={() => setFocusRequestKey((current) => current + 1)}
+          onClick={() => setAutoFitRequestKey((current) => current + 1)}
           style={{
             background: 'rgba(59, 130, 246, 0.16)',
             color: '#dbeafe',
@@ -395,7 +395,7 @@ export function FixtureDemoPage() {
         deltaSummaryOptions={deltaSummaryOptions}
         candleSeriesOptions={preset.candleSeriesOptions}
         volumeSeriesOptions={preset.volumeSeriesOptions}
-        focusRequestKey={focusRequestKey}
+        autoFitRequestKey={autoFitRequestKey}
       />
     </>
   );

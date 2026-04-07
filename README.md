@@ -70,8 +70,8 @@ See `CONTRIBUTING.md` for the short contributor workflow.
   Price clustering, bucketing semantics, and public `mintick` helpers
 - `docs/FORMATTING.md`
   Price, compact value, and metric-style palette controls for footprint text
-- `docs/FOCUS.md`
-  Vertical-only chart focus helper for rescuing off-screen or tiny order-flow views
+- `docs/AUTO_FIT.md`
+  Price-scale auto-fit helper for TradingView-style `Auto (fits data to screen)` behavior
 - `docs/FEATURE_INVENTORY.md`
   Concise label-and-description inventory of the public charting features and presets
 - `docs/THEORY.md`
@@ -258,19 +258,22 @@ restoreChartViewState(chart, snapshot);
 The returned snapshot is JSON-safe, so a consuming application can store it in a URL, local
 storage, or another persistence layer without the library directly owning those policies.
 
-For data-source changes, the package also exposes a focus helper that can rescue the viewport after a
-restore or feed switch:
+For hosts that want TradingView-style vertical autoscaling after restore or a data swap, the package
+also exposes an auto-fit helper:
 
 ```ts
-import { focusOrderFlowChart } from 'lightweight-orderflow-charts';
+import { setPriceScaleAutoFit } from 'lightweight-orderflow-charts';
 
-focusOrderFlowChart(chart, orderFlowBars, {
+setPriceScaleAutoFit(chart, true, {
   paneIndex: 0,
+  topInsetRatio: 0.05,
+  bottomInsetRatio: 0.05,
 });
 ```
 
-The helper recenters the current visible middle bar when it is off-screen and zooms in when that bar
-would otherwise occupy too little vertical space.
+The helper turns on the chart library's built-in price autoscaling with explicit top and bottom
+insets, so the visible data stays fitted while the user pans until they switch back to manual
+scaling.
 
 ## Vanilla Quick Start
 

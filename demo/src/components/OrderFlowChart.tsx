@@ -38,8 +38,8 @@ import {
 import {
   captureChartViewState,
   createSeriesMetricPrimitive,
-  focusOrderFlowChart,
   restoreChartViewState,
+  setPriceScaleAutoFit,
   type SeriesMetricPrimitive,
 } from 'lightweight-orderflow-charts';
 import { safeRemoveSeries } from '../../../src/utils/lightweightCharts';
@@ -93,9 +93,14 @@ interface OrderFlowChartProps {
   volumeSeriesOptions?: HistogramSeriesPartialOptions;
   initialViewState?: ChartViewStateSnapshot | null;
   onViewStateChange?: (snapshot: ChartViewStateSnapshot) => void;
-  autoFocusOnDataChange?: boolean;
+  defaultAutoFitEnabled?: boolean;
   dataSourceKey?: string;
-  focusRequestKey?: number;
+  autoFitRequestKey?: number;
+}
+
+interface PriceScaleContextMenuState {
+  x: number;
+  y: number;
 }
 
 export function OrderFlowChart({
@@ -125,9 +130,9 @@ export function OrderFlowChart({
   volumeSeriesOptions,
   initialViewState,
   onViewStateChange,
-  autoFocusOnDataChange = false,
+  defaultAutoFitEnabled = false,
   dataSourceKey,
-  focusRequestKey,
+  autoFitRequestKey,
 }: OrderFlowChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick', TimeValue> | null>(null);
@@ -136,16 +141,18 @@ export function OrderFlowChart({
   const volumeDeltaPivotSeriesRef = useRef<ISeriesApi<'Candlestick', TimeValue> | null>(null);
   const volumeDeltaPivotBaselineRef = useRef<ISeriesApi<'Line', TimeValue> | null>(null);
   const restoredViewSignatureRef = useRef<string | null>(null);
-  const focusedDataSourceKeyRef = useRef<string | null>(null);
-  const handledFocusRequestRef = useRef<number | null>(null);
+  const handledAutoFitRequestRef = useRef<number | null>(null);
   const emitFrameRef = useRef<number | null>(null);
   const emitTimeoutRef = useRef<number | null>(null);
-  const focusFrameRef = useRef<number | null>(null);
-  const focusTimeoutRef = useRef<number | null>(null);
+  const autoFitFrameRef = useRef<number | null>(null);
+  const autoFitTimeoutRef = useRef<number | null>(null);
   const restoreRedrawFrameRef = useRef<number | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
   const [series, setSeries] = useState<ISeriesApi<'Custom', TimeValue> | null>(null);
   const [referenceCandleReady, setReferenceCandleReady] = useState(false);
+  const [autoFitEnabled, setAutoFitEnabled] = useState(defaultAutoFitEnabled);
+  const [priceScaleContextMenu, setPriceScaleContextMenu] =
+    useState<PriceScaleContextMenuState | null>(null);
   const resolvedTheme = useMemo(
     () => ({
       ...DEFAULT_THEME,
@@ -163,6 +170,21 @@ export function OrderFlowChart({
   const deltaSummaryPaneIndex = showDeltaSummary ? nextStudyPaneIndex++ : null;
   const mainPricePaneIndex = 0;
   const primaryPaneReady = showOrderFlowPane ? Boolean(series) : referenceCandleReady;
+
+  const setAutoFitMode = (enabled: boolean) => {
+    setAutoFitEnabled(enabled);
+    setPriceScaleContextMenu(null);
+
+    if (!chart) {
+      return;
+    }
+
+    setPriceScaleAutoFit(chart, enabled, {
+      paneIndex: mainPricePaneIndex,
+      topInsetRatio: 0.05,
+      bottomInsetRatio: 0.05,
+    });
+  };
 
   const candleData = useMemo(
     () =>
@@ -580,73 +602,148 @@ export function OrderFlowChart({
   ]);
 
   useEffect(() => {
-    if (!chart || !bars.length || !primaryPaneReady) {
+    if (autoFitRequestKey === undefined || autoFitRequestKey === handledAutoFitRequestRef.current) {
       return;
     }
 
-    const scheduleFocus = (afterFocus?: () => void) => {
-      if (focusTimeoutRef.current !== null) {
-        window.clearTimeout(focusTimeoutRef.current);
-      }
+    handledAutoFitRequestRef.current = autoFitRequestKey;
+    setAutoFitEnabled(true);
+  }, [autoFitRequestKey]);
 
-      if (focusFrameRef.current !== null) {
-        window.cancelAnimationFrame(focusFrameRef.current);
-      }
+  useEffect(() => {
+    if (!chart || !primaryPaneReady || !autoFitEnabled) {
+      return;
+    }
 
-      focusTimeoutRef.current = window.setTimeout(
-        () => {
-          focusTimeoutRef.current = null;
-          focusFrameRef.current = window.requestAnimationFrame(() => {
-            focusFrameRef.current = null;
-            focusOrderFlowChart(chart, bars, { paneIndex: orderFlowPaneIndex ?? 0 });
-            afterFocus?.();
-            const width = containerRef.current?.clientWidth;
+    if (autoFitTimeoutRef.current !== null) {
+      window.clearTimeout(autoFitTimeoutRef.current);
+    }
 
-            if (width) {
-              chart.applyOptions({ width });
-            }
+    if (autoFitFrameRef.current !== null) {
+      window.cancelAnimationFrame(autoFitFrameRef.current);
+    }
+
+    autoFitTimeoutRef.current = window.setTimeout(
+      () => {
+        autoFitTimeoutRef.current = null;
+        autoFitFrameRef.current = window.requestAnimationFrame(() => {
+          autoFitFrameRef.current = null;
+          setPriceScaleAutoFit(chart, true, {
+            paneIndex: mainPricePaneIndex,
+            topInsetRatio: 0.05,
+            bottomInsetRatio: 0.05,
           });
-        },
-        initialViewState ? 240 : 140,
-      );
-    };
 
-    if (
-      autoFocusOnDataChange &&
-      dataSourceKey &&
-      focusedDataSourceKeyRef.current !== dataSourceKey
-    ) {
-      scheduleFocus(() => {
-        focusedDataSourceKeyRef.current = dataSourceKey;
-      });
-    }
+          const width = containerRef.current?.clientWidth;
 
-    if (focusRequestKey !== undefined && focusRequestKey !== handledFocusRequestRef.current) {
-      scheduleFocus(() => {
-        handledFocusRequestRef.current = focusRequestKey;
-      });
-    }
+          if (width) {
+            chart.applyOptions({ width });
+          }
+        });
+      },
+      initialViewState ? 240 : 120,
+    );
 
     return () => {
-      if (focusTimeoutRef.current !== null) {
-        window.clearTimeout(focusTimeoutRef.current);
-        focusTimeoutRef.current = null;
+      if (autoFitTimeoutRef.current !== null) {
+        window.clearTimeout(autoFitTimeoutRef.current);
+        autoFitTimeoutRef.current = null;
       }
-      if (focusFrameRef.current !== null) {
-        window.cancelAnimationFrame(focusFrameRef.current);
-        focusFrameRef.current = null;
+      if (autoFitFrameRef.current !== null) {
+        window.cancelAnimationFrame(autoFitFrameRef.current);
+        autoFitFrameRef.current = null;
       }
     };
   }, [
-    autoFocusOnDataChange,
-    bars,
+    autoFitEnabled,
     chart,
     dataSourceKey,
-    focusRequestKey,
-    orderFlowPaneIndex,
     initialViewState,
+    mainPricePaneIndex,
     primaryPaneReady,
   ]);
+
+  useEffect(() => {
+    if (!chart || !containerRef.current) {
+      return;
+    }
+
+    const container = containerRef.current;
+    const isRightPriceScaleTarget = (event: MouseEvent | PointerEvent): boolean => {
+      const rect = container.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const priceScaleWidth = chart.priceScale('right', mainPricePaneIndex).width();
+      const timeScaleHeight = chart.timeScale().height();
+
+      return (
+        priceScaleWidth > 0 &&
+        x >= rect.width - priceScaleWidth &&
+        x <= rect.width &&
+        y >= 0 &&
+        y <= rect.height - timeScaleHeight
+      );
+    };
+
+    const handleContextMenu = (event: MouseEvent) => {
+      if (!isRightPriceScaleTarget(event)) {
+        return;
+      }
+
+      event.preventDefault();
+      setPriceScaleContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+      });
+    };
+
+    const handlePointerDownCapture = (event: PointerEvent) => {
+      setPriceScaleContextMenu(null);
+
+      if (!autoFitEnabled || event.button !== 0 || !isRightPriceScaleTarget(event)) {
+        return;
+      }
+
+      setAutoFitMode(false);
+    };
+
+    const handlePointerDown = () => {
+      setPriceScaleContextMenu(null);
+    };
+
+    container.addEventListener('contextmenu', handleContextMenu);
+    container.addEventListener('pointerdown', handlePointerDownCapture, true);
+    container.addEventListener('pointerdown', handlePointerDown);
+
+    return () => {
+      container.removeEventListener('contextmenu', handleContextMenu);
+      container.removeEventListener('pointerdown', handlePointerDownCapture, true);
+      container.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [autoFitEnabled, chart, mainPricePaneIndex]);
+
+  useEffect(() => {
+    if (!priceScaleContextMenu) {
+      return;
+    }
+
+    const handlePointerDown = () => {
+      setPriceScaleContextMenu(null);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setPriceScaleContextMenu(null);
+      }
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [priceScaleContextMenu]);
 
   useEffect(() => {
     if (!chart || !containerRef.current || !onViewStateChange) {
@@ -721,6 +818,46 @@ export function OrderFlowChart({
       >
         <div ref={containerRef} />
       </section>
+
+      {priceScaleContextMenu ? (
+        <div
+          onContextMenu={(event) => event.preventDefault()}
+          onPointerDown={(event) => event.stopPropagation()}
+          style={{
+            position: 'fixed',
+            top: Math.min(priceScaleContextMenu.y, window.innerHeight - 56),
+            left: Math.min(priceScaleContextMenu.x, window.innerWidth - 260),
+            zIndex: 30,
+            minWidth: 240,
+            borderRadius: 12,
+            background: '#1f1f1f',
+            border: '1px solid rgba(148, 163, 184, 0.18)',
+            boxShadow: '0 18px 50px rgba(2, 6, 23, 0.45)',
+            padding: 6,
+          }}
+        >
+          <button
+            onClick={() => setAutoFitMode(!autoFitEnabled)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 12px',
+              border: 0,
+              borderRadius: 8,
+              background: 'transparent',
+              color: '#f8fafc',
+              cursor: 'pointer',
+              textAlign: 'left',
+              font: '500 14px Inter, Arial, sans-serif',
+            }}
+          >
+            <span style={{ width: 16, textAlign: 'center' }}>{autoFitEnabled ? '✓' : ''}</span>
+            <span>Auto (fits data to screen)</span>
+          </button>
+        </div>
+      ) : null}
 
       {footerText ? (
         <footer style={{ marginTop: 12, color: '#94a3b8', fontSize: 14 }}>{footerText}</footer>

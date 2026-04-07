@@ -652,7 +652,6 @@ export function LearnDemoPage() {
           volumeDeltaPivotBaselineOptions={themePreset.volumeDeltaPivotBaseline}
           initialViewState={effectiveRestoredViewState}
           onViewStateChange={setViewState}
-          autoFocusOnDataChange
           dataSourceKey={`${symbol}:${sessionDate}:${interval}:${effectiveMintick}`}
         />
       ) : (

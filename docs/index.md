@@ -17,8 +17,8 @@ This `docs/` tree is intentionally plain Markdown so it can be:
   Price and compact value formatting options for the footprint text surface
 - `CHART_STATE.md`
   Viewport capture and restore helpers for deep linking and persistence
-- `FOCUS.md`
-  Post-restore and data-change focus helper for rescuing off-screen or tiny order-flow views
+- `AUTO_FIT.md`
+  Price-scale auto-fit helper for TradingView-style `Auto (fits data to screen)` behavior
 - `FEATURE_INVENTORY.md`
   Review list of the currently shipped public features and demo presets
 - `ARCHITECTURE.md`
