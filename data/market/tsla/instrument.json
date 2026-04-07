@@ -1,0 +1,11 @@
+{
+  "symbol": "TSLA",
+  "conId": 76792991,
+  "exchange": "SMART",
+  "primaryExch": "NASDAQ",
+  "localSymbol": "TSLA",
+  "timezone": "US/Eastern",
+  "minTick": 0.01,
+  "marketName": "NMS",
+  "longName": "TESLA INC"
+}

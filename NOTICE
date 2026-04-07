@@ -1,0 +1,11 @@
+Lightweight Order Flow Charts depends on TradingView Lightweight Charts(TM).
+
+TradingView Lightweight Charts(TM)
+Copyright (c) 2025 TradingView, Inc. https://www.tradingview.com/
+
+Deployment note:
+The upstream lightweight-charts package is licensed under Apache-2.0 and requires user-facing
+applications to preserve the TradingView attribution notice and include a link to
+https://www.tradingview.com/ on a page available to end users. Keeping the chart
+`layout.attributionLogo` enabled is one way to satisfy the link requirement. See
+`docs/ATTRIBUTION.md` for integration guidance.

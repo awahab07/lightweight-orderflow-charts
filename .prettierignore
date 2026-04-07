@@ -1,0 +1,9 @@
+node_modules
+dist
+demo-dist
+coverage
+.vite
+.cache
+.agent
+data/market
+package-lock.json
