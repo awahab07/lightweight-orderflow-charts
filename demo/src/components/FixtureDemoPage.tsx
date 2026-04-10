@@ -7,15 +7,26 @@ import {
   type FootprintCandlePosition,
   type FootprintSeriesPartialOptions,
   inferPricePrecision,
-  inferPriceStep,
   normalizeMintick,
   type OrderFlowBar,
   type VolumeFootprintPartialOptions,
 } from 'lightweight-orderflow-charts';
 
-import { demoPatches } from '../fixtures/mockStream';
 import { FIXTURE_PRESETS, type FixturePresetId } from '../fixtures/fixturePresets';
-import { demoBars } from '../fixtures/orderFlow';
+import {
+  AVAILABLE_INTERVALS,
+  AVAILABLE_SYMBOLS,
+  availableDatesForSymbol,
+  loadInstrument,
+  loadOrderFlowBars,
+  type BarInterval,
+  type SymbolCode,
+} from '../lib/marketData';
+import {
+  buildReplayPatch,
+  STREAM_STEP_INTERVAL_MS,
+  STREAM_STEPS_PER_BAR,
+} from '../lib/orderFlowReplay';
 
 import { OrderFlowChart, type SeriesMode } from './OrderFlowChart';
 
@@ -46,9 +57,10 @@ function formatMintick(value: number): string {
 
 export function FixtureDemoPage() {
   const [presetId, setPresetId] = useState<FixturePresetId>('fp-candle-001');
-  const [bars, setBars] = useState<OrderFlowBar[]>(demoBars);
-  const [patchIndex, setPatchIndex] = useState(0);
   const preset = FIXTURE_PRESETS[presetId];
+  const [symbol, setSymbol] = useState<SymbolCode>('TSLA');
+  const [interval, setInterval] = useState<BarInterval>('5m');
+  const [sessionDate, setSessionDate] = useState(() => availableDatesForSymbol('TSLA').at(-1) ?? '');
   const [seriesMode, setSeriesMode] = useState<SeriesMode>(preset.seriesMode);
   const [showVisibleProfile, setShowVisibleProfile] = useState(true);
   const [showSessionProfiles, setShowSessionProfiles] = useState(true);
@@ -62,6 +74,8 @@ export function FixtureDemoPage() {
   const [mintick, setMintick] = useState<number | null>(0.1);
   const [showValueUnit, setShowValueUnit] = useState(true);
   const [autoFitRequestKey, setAutoFitRequestKey] = useState(0);
+  const [streamEnabled, setStreamEnabled] = useState(false);
+  const [streamBars, setStreamBars] = useState<OrderFlowBar[]>([]);
 
   useEffect(() => {
     setSeriesMode(preset.seriesMode);
@@ -76,18 +90,74 @@ export function FixtureDemoPage() {
     setCandlePosition(preset.candlePosition);
     setShowValueUnit(preset.footprintOptions?.style?.valueUnitVisible ?? true);
     setMintick(0.1);
-
-    if (preset.allowsPatches) {
-      setBars(demoBars);
-      setPatchIndex(0);
-    }
   }, [preset]);
 
-  const displayBars = preset.allowsPatches ? bars : preset.bars;
-  const basePriceStep = useMemo(
-    () => inferPriceStep(displayBars.flatMap((bar) => bar.levels)) ?? 0.01,
-    [displayBars],
+  const instrument = useMemo(() => loadInstrument(symbol), [symbol]);
+  const availableDates = useMemo(() => availableDatesForSymbol(symbol), [symbol]);
+  const sourceBars = useMemo(
+    () => loadOrderFlowBars(symbol, sessionDate, interval),
+    [interval, sessionDate, symbol],
   );
+  const basePriceStep = instrument.tickSize > 0 ? instrument.tickSize : 0.01;
+
+  useEffect(() => {
+    if (availableDates.length && !availableDates.includes(sessionDate)) {
+      setSessionDate(availableDates[availableDates.length - 1]);
+    }
+  }, [availableDates, sessionDate]);
+
+  useEffect(() => {
+    if (!streamEnabled) {
+      setStreamBars(sourceBars);
+      return;
+    }
+
+    if (!sourceBars.length) {
+      setStreamBars([]);
+      return;
+    }
+
+    let barIndex = 0;
+    let stageIndex = 0;
+    let intervalId = 0;
+
+    const advance = () => {
+      const sourceBar = sourceBars[barIndex];
+
+      if (!sourceBar) {
+        if (intervalId) {
+          window.clearInterval(intervalId);
+        }
+        return;
+      }
+
+      const patch = buildReplayPatch(sourceBar, stageIndex, STREAM_STEPS_PER_BAR);
+      setStreamBars((current) => applyOrderFlowPatch(current, patch));
+
+      stageIndex += 1;
+      if (stageIndex >= STREAM_STEPS_PER_BAR) {
+        stageIndex = 0;
+        barIndex += 1;
+      }
+
+      if (barIndex >= sourceBars.length && intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+
+    setStreamBars([]);
+    advance();
+    intervalId = window.setInterval(advance, STREAM_STEP_INTERVAL_MS);
+
+    return () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [sourceBars, streamEnabled]);
+
+  const displayBars = streamEnabled ? streamBars : sourceBars;
+
   const mintickOptions = useMemo(() => buildSupportedMinticks(basePriceStep), [basePriceStep]);
   const effectiveMintick = useMemo(
     () => normalizeMintick(mintick ?? basePriceStep, basePriceStep) ?? basePriceStep,
@@ -102,17 +172,18 @@ export function FixtureDemoPage() {
 
   const footerText = useMemo(
     () =>
-      preset.allowsPatches
-        ? `Preset: ${preset.label} | Bars: ${displayBars.length} | Active Patch: ${patchIndex}/${demoPatches.length} | Mintick: ${formatMintick(effectiveMintick)} | Mode: ${seriesMode}`
-        : `Preset: ${preset.label} | Bars: ${displayBars.length} | Candle position: ${candlePosition} | Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode}`,
+      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Candle position: ${candlePosition} | Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode} | Stream: ${streamEnabled ? 'on' : 'off'}`,
     [
       candlePosition,
       displayBars.length,
       effectiveMintick,
-      patchIndex,
+      interval,
       preset,
       seriesMode,
+      sessionDate,
       showDeltaSummary,
+      streamEnabled,
+      symbol,
     ],
   );
 
@@ -169,30 +240,6 @@ export function FixtureDemoPage() {
   const sessionVolumeProfileOptions = preset.sessionVolumeProfileOptions;
   const deltaSummaryOptions = preset.deltaSummaryOptions;
 
-  const applyNextPatch = () => {
-    if (!preset.allowsPatches) {
-      return;
-    }
-
-    const patch = demoPatches[patchIndex];
-
-    if (!patch) {
-      return;
-    }
-
-    setBars((current) => applyOrderFlowPatch(current, patch));
-    setPatchIndex((current) => Math.min(current + 1, demoPatches.length));
-  };
-
-  const resetDemo = () => {
-    if (!preset.allowsPatches) {
-      return;
-    }
-
-    setBars(demoBars);
-    setPatchIndex(0);
-  };
-
   return (
     <>
       <header style={{ marginBottom: 20 }}>
@@ -245,6 +292,69 @@ export function FixtureDemoPage() {
             {Object.values(FIXTURE_PRESETS).map((entry) => (
               <option key={entry.id} value={entry.id}>
                 {entry.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+          Symbol
+          <select
+            value={symbol}
+            onChange={(event) => setSymbol(event.target.value as SymbolCode)}
+            style={{
+              background: '#0f172a',
+              color: '#e2e8f0',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: 8,
+              padding: '6px 10px',
+            }}
+          >
+            {AVAILABLE_SYMBOLS.map((entry) => (
+              <option key={entry} value={entry}>
+                {entry}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+          Date
+          <select
+            value={sessionDate}
+            onChange={(event) => setSessionDate(event.target.value)}
+            style={{
+              background: '#0f172a',
+              color: '#e2e8f0',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: 8,
+              padding: '6px 10px',
+            }}
+          >
+            {availableDates.map((entry) => (
+              <option key={entry} value={entry}>
+                {entry}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+          Interval
+          <select
+            value={interval}
+            onChange={(event) => setInterval(event.target.value as BarInterval)}
+            style={{
+              background: '#0f172a',
+              color: '#e2e8f0',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: 8,
+              padding: '6px 10px',
+            }}
+          >
+            {AVAILABLE_INTERVALS.map((entry) => (
+              <option key={entry} value={entry}>
+                {entry}
               </option>
             ))}
           </select>
@@ -344,59 +454,59 @@ export function FixtureDemoPage() {
           Focus chart
         </button>
 
-        {preset.allowsPatches ? (
-          <>
-            <button
-              onClick={applyNextPatch}
-              style={{
-                background: '#2563eb',
-                color: 'white',
-                border: 0,
-                borderRadius: 8,
-                padding: '8px 14px',
-                cursor: 'pointer',
-              }}
-            >
-              Apply Next Patch
-            </button>
-            <button
-              onClick={resetDemo}
-              style={{
-                background: 'rgba(148, 163, 184, 0.16)',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '8px 14px',
-                cursor: 'pointer',
-              }}
-            >
-              Reset
-            </button>
-          </>
-        ) : null}
+        <button
+          onClick={() => setStreamEnabled((current) => !current)}
+          style={{
+            background: streamEnabled ? 'rgba(34, 197, 94, 0.2)' : 'rgba(148, 163, 184, 0.16)',
+            color: streamEnabled ? '#bbf7d0' : '#e2e8f0',
+            border: streamEnabled
+              ? '1px solid rgba(34, 197, 94, 0.28)'
+              : '1px solid rgba(148, 163, 184, 0.2)',
+            borderRadius: 8,
+            padding: '8px 14px',
+            cursor: 'pointer',
+          }}
+        >
+          Stream
+        </button>
       </section>
 
-      <OrderFlowChart
-        bars={clusteredBars}
-        seriesMode={seriesMode}
-        showVisibleProfile={showVisibleProfile}
-        showSessionProfiles={showSessionProfiles}
-        showVwap={showVwap}
-        showReferenceCandles={showReferenceCandles}
-        showVolumePane={showVolumePane}
-        showDeltaSummary={showDeltaSummary}
-        chartHeight={chartHeight}
-        footerText={footerText}
-        theme={theme}
-        footprintOptions={footprintOptions}
-        volumeFootprintOptions={volumeFootprintOptions}
-        volumeProfileOptions={volumeProfileOptions}
-        sessionVolumeProfileOptions={sessionVolumeProfileOptions}
-        deltaSummaryOptions={deltaSummaryOptions}
-        candleSeriesOptions={preset.candleSeriesOptions}
-        volumeSeriesOptions={preset.volumeSeriesOptions}
-        autoFitRequestKey={autoFitRequestKey}
-      />
+      {clusteredBars.length ? (
+        <OrderFlowChart
+          bars={clusteredBars}
+          seriesMode={seriesMode}
+          showVisibleProfile={showVisibleProfile}
+          showSessionProfiles={showSessionProfiles}
+          showVwap={showVwap}
+          showReferenceCandles={showReferenceCandles}
+          showVolumePane={showVolumePane}
+          showDeltaSummary={showDeltaSummary}
+          chartHeight={chartHeight}
+          footerText={footerText}
+          theme={theme}
+          footprintOptions={footprintOptions}
+          volumeFootprintOptions={volumeFootprintOptions}
+          volumeProfileOptions={volumeProfileOptions}
+          sessionVolumeProfileOptions={sessionVolumeProfileOptions}
+          deltaSummaryOptions={deltaSummaryOptions}
+          candleSeriesOptions={preset.candleSeriesOptions}
+          volumeSeriesOptions={preset.volumeSeriesOptions}
+          autoFitRequestKey={autoFitRequestKey}
+          dataSourceKey={`${preset.id}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
+        />
+      ) : (
+        <section
+          style={{
+            padding: 24,
+            borderRadius: 16,
+            background: 'rgba(15, 23, 42, 0.75)',
+            border: '1px solid rgba(148, 163, 184, 0.12)',
+            color: '#cbd5e1',
+          }}
+        >
+          No stored market data is available for this selection yet.
+        </section>
+      )}
     </>
   );
 }

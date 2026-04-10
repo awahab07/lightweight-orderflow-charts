@@ -66,6 +66,8 @@ See `CONTRIBUTING.md` for the short contributor workflow.
   Publishable docs entry point for GitHub Pages or a static docs generator
 - `docs/DATA_REQUIREMENTS.md`
   What each chart or study needs from the host data pipeline
+- `docs/TICK_DATA.md`
+  Tick storage contracts, replay guidance, and partial-coverage behavior
 - `docs/MINTICK.md`
   Price clustering, bucketing semantics, and public `mintick` helpers
 - `docs/FORMATTING.md`
@@ -117,6 +119,10 @@ Useful helpers when your upstream feed is not already normalized:
 - `normalizeOrderFlowPatch()`
 - `applyOrderFlowPatch()`
 - `resolveSessions()`
+
+The current demo app ships real market bars and reconstructs order-flow ladders synthetically until
+tick fixtures are available for a session. See `docs/TICK_DATA.md` for the recommended tick-storage
+layout and the replay/live update contract.
 
 ## Choose The Right Study
 

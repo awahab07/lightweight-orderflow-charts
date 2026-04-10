@@ -103,6 +103,67 @@ interface PriceScaleContextMenuState {
   y: number;
 }
 
+function hasAutoScaleRestorePanes(snapshot: ChartViewStateSnapshot | null | undefined): boolean {
+  return Boolean(snapshot?.panes.some((pane) => pane.priceRange === null));
+}
+
+function hasExplicitPanePriceRange(snapshot: ChartViewStateSnapshot | null | undefined): boolean {
+  return Boolean(snapshot?.panes.some((pane) => pane.priceRange !== null));
+}
+
+function freezeAutoScaleRestorePanes(
+  chart: IChartApi,
+  snapshot: ChartViewStateSnapshot | null | undefined,
+): void {
+  if (!snapshot) {
+    return;
+  }
+
+  const panes = chart.panes();
+
+  for (const pane of snapshot.panes) {
+    if (pane.priceRange !== null || !panes[pane.paneIndex]) {
+      continue;
+    }
+
+    const priceScale = chart.priceScale(pane.priceScaleId, pane.paneIndex);
+    const visibleRange = priceScale.getVisibleRange();
+
+    if (!visibleRange) {
+      continue;
+    }
+
+    priceScale.setAutoScale(false);
+    priceScale.setVisibleRange(visibleRange);
+  }
+}
+
+function restorePanePriceRanges(
+  chart: IChartApi,
+  snapshot: ChartViewStateSnapshot | null | undefined,
+): void {
+  if (!snapshot) {
+    return;
+  }
+
+  const panes = chart.panes();
+
+  for (const pane of snapshot.panes) {
+    if (!panes[pane.paneIndex]) {
+      continue;
+    }
+
+    const priceScale = chart.priceScale(pane.priceScaleId, pane.paneIndex);
+
+    if (pane.priceRange) {
+      priceScale.setAutoScale(false);
+      priceScale.setVisibleRange(pane.priceRange);
+    } else {
+      priceScale.setAutoScale(true);
+    }
+  }
+}
+
 export function OrderFlowChart({
   bars,
   seriesMode,
@@ -141,14 +202,20 @@ export function OrderFlowChart({
   const volumeDeltaPivotSeriesRef = useRef<ISeriesApi<'Candlestick', TimeValue> | null>(null);
   const volumeDeltaPivotBaselineRef = useRef<ISeriesApi<'Line', TimeValue> | null>(null);
   const restoredViewSignatureRef = useRef<string | null>(null);
+  const seriesRemountSignatureRef = useRef<string | null>(null);
+  const pendingPaneRestoreSignatureRef = useRef<string | null>(null);
   const handledAutoFitRequestRef = useRef<number | null>(null);
   const emitFrameRef = useRef<number | null>(null);
   const emitTimeoutRef = useRef<number | null>(null);
+  const emitResumeTimeoutRef = useRef<number | null>(null);
+  const blockViewStateEmitRef = useRef(false);
   const autoFitFrameRef = useRef<number | null>(null);
   const autoFitTimeoutRef = useRef<number | null>(null);
   const restoreRedrawFrameRef = useRef<number | null>(null);
+  const restoreFreezeFrameRef = useRef<number | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
   const [series, setSeries] = useState<ISeriesApi<'Custom', TimeValue> | null>(null);
+  const [seriesRenderKey, setSeriesRenderKey] = useState(0);
   const [referenceCandleReady, setReferenceCandleReady] = useState(false);
   const [autoFitEnabled, setAutoFitEnabled] = useState(defaultAutoFitEnabled);
   const [priceScaleContextMenu, setPriceScaleContextMenu] =
@@ -564,6 +631,7 @@ export function OrderFlowChart({
     }
 
     const signature = JSON.stringify(initialViewState);
+    const shouldFreezeAutoScale = !autoFitEnabled && hasAutoScaleRestorePanes(initialViewState);
 
     if (restoredViewSignatureRef.current === signature) {
       return;
@@ -579,6 +647,25 @@ export function OrderFlowChart({
         if (width) {
           chart.applyOptions({ width });
         }
+
+        series?.setData(bars);
+
+        if (
+          showOrderFlowPane &&
+          hasExplicitPanePriceRange(initialViewState) &&
+          seriesRemountSignatureRef.current !== signature
+        ) {
+          seriesRemountSignatureRef.current = signature;
+          pendingPaneRestoreSignatureRef.current = signature;
+          setSeriesRenderKey((value) => value + 1);
+        }
+
+        if (shouldFreezeAutoScale) {
+          restoreFreezeFrameRef.current = window.requestAnimationFrame(() => {
+            restoreFreezeFrameRef.current = null;
+            freezeAutoScaleRestorePanes(chart, initialViewState);
+          });
+        }
       });
     });
 
@@ -588,18 +675,86 @@ export function OrderFlowChart({
         window.cancelAnimationFrame(restoreRedrawFrameRef.current);
         restoreRedrawFrameRef.current = null;
       }
+      if (restoreFreezeFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFreezeFrameRef.current);
+        restoreFreezeFrameRef.current = null;
+      }
     };
   }, [
     bars.length,
+    autoFitEnabled,
     chart,
     initialViewState,
     primaryPaneReady,
+    series,
     showDeltaSummary,
     showOrderFlowPane,
     showReferenceCandles,
     showVolumeDeltaPivot,
     showVolumePane,
   ]);
+
+  useEffect(() => {
+    if (!chart || !series || !showOrderFlowPane || !initialViewState) {
+      return;
+    }
+
+    const signature = JSON.stringify(initialViewState);
+
+    if (pendingPaneRestoreSignatureRef.current !== signature) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      pendingPaneRestoreSignatureRef.current = null;
+      restorePanePriceRanges(chart, initialViewState);
+      series.setData(bars);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [bars, chart, initialViewState, series, seriesRenderKey, showOrderFlowPane]);
+
+  useEffect(() => {
+    restoredViewSignatureRef.current = null;
+    seriesRemountSignatureRef.current = null;
+    pendingPaneRestoreSignatureRef.current = null;
+    blockViewStateEmitRef.current = true;
+
+    if (emitTimeoutRef.current !== null) {
+      window.clearTimeout(emitTimeoutRef.current);
+      emitTimeoutRef.current = null;
+    }
+
+    if (emitFrameRef.current !== null) {
+      window.cancelAnimationFrame(emitFrameRef.current);
+      emitFrameRef.current = null;
+    }
+
+    if (emitResumeTimeoutRef.current !== null) {
+      window.clearTimeout(emitResumeTimeoutRef.current);
+    }
+
+    emitResumeTimeoutRef.current = window.setTimeout(() => {
+      emitResumeTimeoutRef.current = null;
+      blockViewStateEmitRef.current = false;
+
+      if (!chart || !onViewStateChange) {
+        return;
+      }
+
+      const paneIndices = chart.panes().map((_, index) => index);
+      onViewStateChange(captureChartViewState(chart, { paneIndices }));
+    }, 260);
+
+    return () => {
+      if (emitResumeTimeoutRef.current !== null) {
+        window.clearTimeout(emitResumeTimeoutRef.current);
+        emitResumeTimeoutRef.current = null;
+      }
+    };
+  }, [chart, dataSourceKey, onViewStateChange]);
 
   useEffect(() => {
     if (autoFitRequestKey === undefined || autoFitRequestKey === handledAutoFitRequestRef.current) {
@@ -751,6 +906,10 @@ export function OrderFlowChart({
     }
 
     const scheduleEmit = () => {
+      if (blockViewStateEmitRef.current) {
+        return;
+      }
+
       if (emitTimeoutRef.current !== null) {
         window.clearTimeout(emitTimeoutRef.current);
       }
@@ -867,6 +1026,7 @@ export function OrderFlowChart({
         {showOrderFlowPane ? (
           seriesMode === 'footprint' ? (
             <FootprintSeries
+              key={`footprint-${seriesRenderKey}-${dataSourceKey ?? 'default'}`}
               chart={chart}
               data={bars}
               options={footprintOptions}
@@ -875,6 +1035,7 @@ export function OrderFlowChart({
             />
           ) : (
             <VolumeFootprint
+              key={`volume-footprint-${seriesRenderKey}-${dataSourceKey ?? 'default'}`}
               chart={chart}
               data={bars}
               options={volumeFootprintOptions}

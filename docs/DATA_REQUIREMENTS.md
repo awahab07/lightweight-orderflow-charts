@@ -4,6 +4,11 @@ This package is intentionally broker-neutral. It does not assume a specific mark
 gateway, or transport. The host application is responsible for translating upstream payloads into
 the public contracts exported by `lightweight-orderflow-charts`.
 
+The current demo fixtures still reconstruct footprint ladders from stored bars when tick data is not
+available. Treat that path as `sourceMode: 'ohlc-synthetic'` rather than trading-grade footprint
+history. See `TICK_DATA.md` for the recommended storage and replay contract when true trade or quote
+ticks are available.
+
 ## Canonical Inputs
 
 The library expects a normalized `OrderFlowBar[]` as the primary input for most studies:
@@ -56,6 +61,12 @@ Supporting contracts:
 Use real price-level aggregation whenever possible. If the host only has OHLCV bars, you can still
 build an educational or placeholder rendering by synthesizing ladder levels, but it should be
 treated as an approximation instead of a trading-grade feed.
+
+When tick coverage is partial, keep the chart visible and degrade gracefully:
+
+- use completed tick-derived bars where available
+- keep the active bar partial with `OrderFlowPatch` upserts
+- fall back to `ohlc-synthetic` bars when ticks are missing for a session
 
 When the provided ladder levels are sparse, aggregated, or synthesized, pass the instrument tick
 size through `footprintOptions.ladder.priceStep` so the renderer can preserve a constant price grid

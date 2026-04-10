@@ -1,6 +1,7 @@
 export type {
   InstrumentContext,
   NormalizationOptions,
+  OrderFlowAggregationMode,
   OrderFlowBar,
   OrderFlowBatch,
   OrderFlowPatch,
@@ -8,7 +9,11 @@ export type {
   PriceLevelVolume,
   SessionDefinition,
   SessionSegment,
+  TickSessionChunk,
+  TickSessionManifest,
   TimeValue,
+  TradeTick,
+  QuoteTick,
   VwapPoint,
 } from './models/contracts';
 export type {

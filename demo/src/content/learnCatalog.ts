@@ -67,18 +67,7 @@ const ORDER_FLOW_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
     {
       paneIndex: 0,
       priceScaleId: 'right',
-      priceRange: {
-        from: 400.50911854099513,
-        to: 403.72815706271814,
-      },
-    },
-    {
-      paneIndex: 1,
-      priceScaleId: 'right',
-      priceRange: {
-        from: 0,
-        to: 6,
-      },
+      priceRange: null,
     },
   ],
 };

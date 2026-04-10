@@ -11,6 +11,8 @@ This `docs/` tree is intentionally plain Markdown so it can be:
 
 - `DATA_REQUIREMENTS.md`
   Input contracts, study expectations, and feed-preparation guidance
+- `TICK_DATA.md`
+  Tick storage contract, source-mode guidance, and patch-driven replay patterns
 - `MINTICK.md`
   Price bucketing, clustering rules, and when to use `mintick`
 - `FORMATTING.md`

@@ -51,6 +51,24 @@ const selectStyle: CSSProperties = {
   padding: '6px 10px',
 };
 
+function prepareDataSourceViewState(
+  snapshot: ChartViewStateSnapshot | null | undefined,
+): ChartViewStateSnapshot | null {
+  if (!snapshot) {
+    return null;
+  }
+
+  return {
+    version: 1,
+    timeRange: snapshot.timeRange ? { ...snapshot.timeRange } : null,
+    panes: snapshot.panes.map((pane) => ({
+      paneIndex: pane.paneIndex,
+      priceScaleId: pane.priceScaleId,
+      priceRange: null,
+    })),
+  };
+}
+
 function formatMintick(value: number): string {
   return value.toFixed(Math.max(2, inferPricePrecision(value)));
 }
@@ -365,11 +383,12 @@ export function LearnDemoPage() {
 
   useEffect(() => {
     if (availableDates.length && !availableDates.includes(sessionDate)) {
+      const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
       setSessionDate(availableDates[availableDates.length - 1]);
-      setRestoredViewState(null);
-      setViewState(null);
+      setRestoredViewState(nextViewState);
+      setViewState(nextViewState);
     }
-  }, [availableDates, sessionDate]);
+  }, [availableDates, restoredViewState, sessionDate, viewState]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -463,9 +482,10 @@ export function LearnDemoPage() {
           <select
             value={sessionDate}
             onChange={(event) => {
+              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
               setSessionDate(event.target.value);
-              setRestoredViewState(null);
-              setViewState(null);
+              setRestoredViewState(nextViewState);
+              setViewState(nextViewState);
             }}
             style={selectStyle}
           >
@@ -482,9 +502,10 @@ export function LearnDemoPage() {
           <select
             value={symbol}
             onChange={(event) => {
+              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
               setSymbol(event.target.value as SymbolCode);
-              setRestoredViewState(null);
-              setViewState(null);
+              setRestoredViewState(nextViewState);
+              setViewState(nextViewState);
             }}
             style={selectStyle}
           >
@@ -501,9 +522,10 @@ export function LearnDemoPage() {
           <select
             value={interval}
             onChange={(event) => {
+              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
               setInterval(event.target.value as BarInterval);
-              setRestoredViewState(null);
-              setViewState(null);
+              setRestoredViewState(nextViewState);
+              setViewState(nextViewState);
             }}
             style={selectStyle}
           >
@@ -520,9 +542,10 @@ export function LearnDemoPage() {
           <select
             value={String(effectiveMintick)}
             onChange={(event) => {
+              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
               setMintick(Number(event.target.value));
-              setRestoredViewState(null);
-              setViewState(null);
+              setRestoredViewState(nextViewState);
+              setViewState(nextViewState);
             }}
             style={selectStyle}
           >
