@@ -72,6 +72,7 @@ export async function disconnectConnector(): Promise<{
 }
 
 export async function startConnectorGrab(input: {
+  vendorId?: string;
   symbol: string;
   sessionDate: string;
   intervalSeconds: number;

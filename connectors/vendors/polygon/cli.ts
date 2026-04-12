@@ -2,58 +2,50 @@ import path from 'node:path';
 
 import type { AggregatedMarketBar } from 'lightweight-orderflow-charts';
 
-import { IBKR_TWS_CONNECTOR } from './ibkrConnector';
 import {
   captureHistoricalSession,
   type CaptureHistoricalSessionSnapshot,
-  validateDerivedFiveMinuteBars,
   validateDerivedFiveMinuteBarsFromMarketBars,
-} from './captureHistoricalSession';
-import { CaptureProgressReporter } from './progressReporter';
+} from '../ibkr/captureHistoricalSession';
+import { CaptureProgressReporter } from '../ibkr/progressReporter';
 import { resolveVendorCacheRoot } from '../../storage/aggregatedMarketDataStore';
+import { POLYGON_REST_CONNECTOR } from './polygonConnector';
 
 interface CliOptions {
-  host: string;
-  port: number;
-  clientId?: number;
   symbols: string[];
   dates: string[];
-  includeTicks: boolean;
-  includeQuotes: boolean;
   dataRoot: string;
-  maxRequests?: number;
+  apiKeyEnv: string;
+  baseUrl: string;
   validate5m: boolean;
 }
 
 function printHelp(): void {
   // eslint-disable-next-line no-console
-  console.log(`IBKR historical market-data capture
+  console.log(`Polygon.io / Massive REST historical capture
 
 Usage:
-  npm run connector:ibkr:capture -- --symbol TSLA --date 2026-03-10
-  npm run connector:ibkr:capture -- --symbols TSLA,NVDA --from-date 2026-03-02 --to-date 2026-03-10
+  MASSIVE_API_KEY=*** npm run connector:polygon:capture -- --symbol TSLA --date 2026-03-10
+  MASSIVE_API_KEY=*** npm run connector:polygon:capture -- --symbols TSLA,NVDA --from-date 2026-03-02 --to-date 2026-03-10
 
 Options:
-  --host <value>           IBKR TWS or Gateway host. Default: 127.0.0.1
-  --port <value>           IBKR TWS or Gateway API port. Default: 7497
-  --client-id <value>      Optional fixed IBKR API client id. Default: auto-allocate
   --symbol <value>         Single symbol to capture.
   --symbols <list>         Comma-separated symbol list.
   --date <value>           Single session date in YYYY-MM-DD.
   --dates <list>           Comma-separated session dates.
   --from-date <value>      Inclusive session start date in YYYY-MM-DD.
   --to-date <value>        Inclusive session end date in YYYY-MM-DD.
-  --data-root <path>       Output root. Default: connectors/vendors/ibkr/data
-  --no-ticks               Store only 1m candle summaries.
-  --no-quotes              Skip BID_ASK requests while capturing ticks.
-  --max-requests <value>   Stop each session after the provided request count.
-  --validate-5m            Compare derived 5m bars against IBKR 5m TRADES bars after capture.
+  --data-root <path>       Output root. Default: connectors/vendors/polygon/data
+  --api-key-env <name>     Environment variable containing the API key. Default: MASSIVE_API_KEY
+  --base-url <value>       REST API base URL. Default: https://api.massive.com
+  --validate-5m            Compare derived 5m bars against vendor 5m aggregate bars after capture.
   --help                   Show this help text.
 
 Behavior:
-  - Capture writes broker-neutral 1m files and a session manifest.
-  - Resume rewrites the trailing stored minute before continuing.
-  - If an older session was captured without footprint levels, a later tick-enabled run re-grabs it.
+  - Capture writes broker-neutral 1m candle-summary files and a session manifest.
+  - The current Massive Basic plan does not expose historical stock trades or quotes, so this CLI stores
+    market bars only and marks footprint coverage as unavailable.
+  - Completed cached sessions are reused without re-fetching.
 `);
 }
 
@@ -141,16 +133,6 @@ function buildFinalStatsBlock(params: {
   const coverage = params.snapshot?.coverage ?? EMPTY_COVERAGE;
   const progress = params.snapshot?.progress;
   const timezone = params.snapshot?.instrument.timezone || 'America/New_York';
-  const footprintEnabled = progress?.includeTicks !== false;
-  const stableCompletedMinutes =
-    params.snapshot == null || progress == null
-      ? 0
-      : progress.complete
-        ? coverage.contiguousCoveredMinuteCount
-        : Math.max(
-            coverage.contiguousCoveredMinuteCount - (params.snapshot.orderFlowBars.length > 0 ? 1 : 0),
-            0,
-          );
   const resultLabel =
     params.result === 'complete'
       ? 'complete'
@@ -165,26 +147,21 @@ function buildFinalStatsBlock(params: {
     `Run result: ${resultLabel}`,
     `Note: ${params.note}`,
     `Elapsed: ${formatElapsed(Date.now() - params.startedAt)} | Requests issued: ${progress?.requestCount ?? 0} | Trade ticks fetched: ${formatCount(progress?.rawTradeTicksFetchedCurrentRun ?? 0)} | Quote ticks fetched: ${formatCount(progress?.rawQuoteTicksFetchedCurrentRun ?? 0)}`,
-    footprintEnabled
-      ? `Validated footprint minutes: ${coverage.coveredMinuteCount}/${coverage.requiredMinuteCount} | Contiguous from open: ${coverage.contiguousCoveredMinuteCount}/${coverage.requiredMinuteCount} | Stable completed minutes: ${stableCompletedMinutes}`
-      : `Market bars loaded: ${progress?.loadedMarketBars ?? 0} | Footprint capture: unavailable or disabled for this run`,
-    footprintEnabled
-      ? `Last observed time: ${formatSessionTime(progress?.lastObservedTime ?? null, timezone)} | Next trade cursor: ${formatSessionTime(progress?.cursor.tradeNextTime ?? null, timezone)} | Next quote cursor: ${formatSessionTime(progress?.cursor.quoteNextTime ?? null, timezone)}`
-      : `Last observed time: ${formatSessionTime(progress?.lastObservedTime ?? null, timezone)} | Next trade cursor: --:--:-- | Next quote cursor: --:--:--`,
+    `Market bars loaded: ${progress?.loadedMarketBars ?? 0} | Footprint capture: unavailable on the current Polygon Basic plan`,
+    `Last observed time: ${formatSessionTime(progress?.lastObservedTime ?? null, timezone)} | Session clock progress: ${
+      progress?.progressPct == null ? 'n/a' : `${progress.progressPct.toFixed(2)}%`
+    } | Footprint coverage ratio: ${(coverage.coverageRatio * 100).toFixed(2)}%`,
     `Cache directory: ${params.outputDirectory}`,
   ].join('\n');
 }
 
 function parseArgs(argv: string[]): CliOptions | null {
   const defaults: CliOptions = {
-    host: '127.0.0.1',
-    port: 7497,
-    clientId: undefined,
     symbols: [],
     dates: [],
-    includeTicks: true,
-    includeQuotes: true,
-    dataRoot: resolveVendorCacheRoot('ibkr'),
+    dataRoot: resolveVendorCacheRoot('polygon'),
+    apiKeyEnv: 'MASSIVE_API_KEY',
+    baseUrl: 'https://api.massive.com',
     validate5m: false,
   };
 
@@ -199,20 +176,8 @@ function parseArgs(argv: string[]): CliOptions | null {
       case '--help':
         printHelp();
         return null;
-      case '--host':
-        defaults.host = String(next || '').trim();
-        index += 1;
-        break;
-      case '--port':
-        defaults.port = Number(next);
-        index += 1;
-        break;
       case '--symbol':
         defaults.symbols.push(String(next || '').trim().toUpperCase());
-        index += 1;
-        break;
-      case '--client-id':
-        defaults.clientId = Number(next);
         index += 1;
         break;
       case '--symbols':
@@ -247,14 +212,12 @@ function parseArgs(argv: string[]): CliOptions | null {
         defaults.dataRoot = path.resolve(String(next || '').trim());
         index += 1;
         break;
-      case '--no-ticks':
-        defaults.includeTicks = false;
+      case '--api-key-env':
+        defaults.apiKeyEnv = String(next || '').trim();
+        index += 1;
         break;
-      case '--no-quotes':
-        defaults.includeQuotes = false;
-        break;
-      case '--max-requests':
-        defaults.maxRequests = Number(next);
+      case '--base-url':
+        defaults.baseUrl = String(next || '').trim();
         index += 1;
         break;
       case '--validate-5m':
@@ -283,18 +246,34 @@ function parseArgs(argv: string[]): CliOptions | null {
     throw new Error('At least one session date is required. Use --date, --dates, or a date range.');
   }
 
-  if (!Number.isFinite(defaults.port) || defaults.port <= 0) {
-    throw new Error('A valid --port value is required.');
+  if (!defaults.apiKeyEnv) {
+    throw new Error('A valid --api-key-env value is required.');
   }
 
-  if (
-    defaults.clientId != null &&
-    (!Number.isFinite(defaults.clientId) || defaults.clientId < 0 || !Number.isInteger(defaults.clientId))
-  ) {
-    throw new Error('A valid non-negative integer --client-id value is required.');
+  if (!defaults.baseUrl) {
+    throw new Error('A valid --base-url value is required.');
   }
 
   return defaults;
+}
+
+function resolveApiKey(envName: string): string {
+  const direct = process.env[envName];
+  if (direct && direct.trim().length > 0) {
+    return direct.trim();
+  }
+
+  const fallbacks = ['MASSIVE_API_KEY', 'POLYGON_API_KEY'];
+  for (const candidate of fallbacks) {
+    const value = process.env[candidate];
+    if (value && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  throw new Error(
+    `No Massive API key was found in ${envName}, MASSIVE_API_KEY, or POLYGON_API_KEY.`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -303,12 +282,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  const config = IBKR_TWS_CONNECTOR.sanitizeConfig({
-    host: options.host,
-    port: options.port,
-    ...(options.clientId != null ? { clientId: options.clientId } : {}),
+  const config = POLYGON_REST_CONNECTOR.sanitizeConfig({
+    apiKey: resolveApiKey(options.apiKeyEnv),
+    baseUrl: options.baseUrl,
   });
-  const session = await IBKR_TWS_CONNECTOR.connect(config);
+  const session = await POLYGON_REST_CONNECTOR.connect(config);
   const abortController = new AbortController();
   let activeReporter: CaptureProgressReporter | null = null;
   let activeTarget: { symbol: string; sessionDate: string } | null = null;
@@ -324,7 +302,7 @@ async function main(): Promise<void> {
       symbol: activeTarget?.symbol ?? 'capture',
       sessionDate: activeTarget?.sessionDate ?? 'pending',
       phase: 'interrupted',
-      label: `${signalName} received. Closing the IBKR connection and preserving the partial cache.`,
+      label: `${signalName} received. Stopping Polygon REST capture and preserving the cache state.`,
     });
     abortController.abort(`${signalName} received. Capture interrupted by user.`);
     void session.disconnect().catch(() => {
@@ -348,7 +326,6 @@ async function main(): Promise<void> {
         const outputDirectory = path.join(options.dataRoot, symbol.toLowerCase(), sessionDate);
         const startedAt = Date.now();
         let latestSnapshot: CaptureHistoricalSessionSnapshot | null = null;
-        let lastOrderFlowBars = [] as Parameters<typeof validateDerivedFiveMinuteBars>[3];
         let lastMarketBars: AggregatedMarketBar[] = [];
         activeReporter = reporter;
         activeTarget = { symbol, sessionDate };
@@ -359,17 +336,15 @@ async function main(): Promise<void> {
             symbol,
             sessionDate,
             dataRoot: options.dataRoot,
-            includeTicks: options.includeTicks,
-            includeQuotes: options.includeQuotes,
-            maxRequests: options.maxRequests,
-            vendorId: 'ibkr-tws',
+            includeTicks: false,
+            includeQuotes: false,
+            vendorId: 'polygon-rest',
             abortSignal: abortController.signal,
             onRuntimeStatus: (status) => {
               reporter.updateRuntime(status);
             },
           })) {
             latestSnapshot = snapshot;
-            lastOrderFlowBars = snapshot.orderFlowBars;
             lastMarketBars = snapshot.marketBars;
             reporter.update(snapshot);
           }
@@ -425,30 +400,7 @@ async function main(): Promise<void> {
           break outer;
         }
 
-        if (options.validate5m && lastOrderFlowBars.length > 0) {
-          const validation = await validateDerivedFiveMinuteBars(
-            session,
-            symbol,
-            sessionDate,
-            lastOrderFlowBars,
-          );
-
-          if (validation.mismatches.length === 0) {
-            // eslint-disable-next-line no-console
-            console.log(`${symbol} ${sessionDate} derived 5m bars match IBKR 5m TRADES bars.`);
-          } else {
-            // eslint-disable-next-line no-console
-            console.warn(
-              `${symbol} ${sessionDate} 5m validation found ${validation.mismatches.length} mismatch(es).`,
-            );
-            for (const mismatch of validation.mismatches.slice(0, 10)) {
-              // eslint-disable-next-line no-console
-              console.warn(
-                `  ${mismatch.time} ${mismatch.field}: expected=${mismatch.expected} actual=${mismatch.actual}`,
-              );
-            }
-          }
-        } else if (options.validate5m && lastMarketBars.length > 0) {
+        if (options.validate5m && lastMarketBars.length > 0) {
           const validation = await validateDerivedFiveMinuteBarsFromMarketBars(
             session,
             symbol,
@@ -458,7 +410,7 @@ async function main(): Promise<void> {
 
           if (validation.mismatches.length === 0) {
             // eslint-disable-next-line no-console
-            console.log(`${symbol} ${sessionDate} derived 5m bars match IBKR 5m TRADES bars.`);
+            console.log(`${symbol} ${sessionDate} derived 5m bars match Polygon 5m aggregate bars.`);
           } else {
             // eslint-disable-next-line no-console
             console.warn(

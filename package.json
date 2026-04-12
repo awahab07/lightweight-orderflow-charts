@@ -30,6 +30,7 @@
   "scripts": {
     "build": "tsup",
     "connector:ibkr:capture": "tsx connectors/vendors/ibkr/cli.ts",
+    "connector:polygon:capture": "tsx connectors/vendors/polygon/cli.ts",
     "demo:connect-bridge": "tsx connectors/server/index.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -24,6 +24,9 @@ Local vendor cache:
 Legacy raw tick files may still exist during migration, but they are no longer the preferred
 canonical contract.
 
+For candle-summary-only vendors, `orderflow-1m.json` is intentionally absent and the manifest records
+`orderFlowAvailable: false`.
+
 ## Minute Candle Contract
 
 `bars-1m.json` stores broker-neutral candle summaries:
@@ -61,6 +64,10 @@ Optional fields should be populated when the upstream feed or tick-derived aggre
 them. For IBKR `TRADES` bars, `vwap` and `tradeCount` are available directly from the vendor. When
 tick-derived price levels are present, `bidVolume`, `askVolume`, `delta`, `pocPrice`, and
 `pocVolume` can also be written.
+
+Polygon.io / Massive REST on the current Basic plan is an example of a candle-summary-only source:
+it can supply `OHLCV`, `VWAP`, and trade counts through minute aggregates, but not the historical
+trades or quotes needed to derive true bid-side and ask-side participation.
 
 ## Footprint-Capable Minute Contract
 

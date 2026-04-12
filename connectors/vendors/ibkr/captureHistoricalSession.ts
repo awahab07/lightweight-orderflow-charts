@@ -14,6 +14,7 @@ import type {
   ConnectorGrabProgress,
   ConnectorHistoricalBarsRequest,
   ConnectorRuntimeStatus,
+  ConnectorVendorId,
   ConnectorStoredSessionSummary,
   MarketDataConnectorSession,
 } from '../../core/contracts';
@@ -37,7 +38,7 @@ export interface CaptureHistoricalSessionOptions {
   includeTicks: boolean;
   includeQuotes?: boolean;
   maxRequests?: number;
-  vendorId?: string;
+  vendorId?: ConnectorVendorId;
   persistEachChunk?: boolean;
   abortSignal?: AbortSignal;
   onRuntimeStatus?: (status: ConnectorRuntimeStatus) => void;
@@ -277,20 +278,82 @@ export async function* captureHistoricalSession(
   const cacheHit = stored.marketBars.length > 0 || stored.orderFlowBars.length > 0;
   const instrument = await options.session.getInstrumentContext(options.symbol);
   const coverageOptions = resolveCoverageOptions(instrument);
-  emitRuntimeStatus(options, {
-    phase: 'fetching-bars',
-    requestKind: 'bars',
-    label: 'Fetching vendor 1m TRADES bars.',
-  });
-  const marketBars = await options.session.fetchHistoricalBars({
-    symbol: options.symbol,
-    sessionDate: options.sessionDate,
-    intervalSeconds: 60,
-    abortSignal: options.abortSignal,
-    onRuntimeStatus: options.onRuntimeStatus,
-  } satisfies ConnectorHistoricalBarsRequest);
-  const storedCoverage = assessMinuteCoverage(marketBars, stored.orderFlowBars, coverageOptions);
-  const rewriteStart = resolveRewriteStart(storedCoverage, options.includeTicks);
+  const storedCoverage = assessMinuteCoverage(stored.marketBars, stored.orderFlowBars, coverageOptions);
+  const completeForRequestedMode = options.includeTicks
+    ? stored.summary.complete && stored.summary.footprintAvailable && storedCoverage.isComplete
+    : stored.summary.complete && stored.marketBars.length > 0;
+
+  if (cacheHit) {
+    const cachedProgress = buildProgress({
+      symbol: options.symbol,
+      sessionDate: options.sessionDate,
+      intervalSeconds: 60,
+      includeTicks: options.includeTicks,
+      includeQuotes,
+      status: completeForRequestedMode ? 'completed' : 'loading-cache',
+      cacheHit: true,
+      cachedOrderFlowBars: stored.orderFlowBars.length,
+      orderFlowBars: stored.orderFlowBars,
+      marketBars: stored.marketBars,
+      requestCount: 0,
+      lastObservedTime: stored.summary.lastBarTime,
+      tradeNextTime: completeForRequestedMode ? null : storedCoverage.resumeRewriteTime,
+      quoteNextTime:
+        completeForRequestedMode || storedCoverage.resumeRewriteTime == null
+          ? null
+          : Math.max(storedCoverage.resumeRewriteTime - 1, 0),
+      complete: completeForRequestedMode,
+      dirty: false,
+      rawTicksFetchedCurrentRun: 0,
+      rawTradeTicksFetchedCurrentRun: 0,
+      rawQuoteTicksFetchedCurrentRun: 0,
+      message: completeForRequestedMode
+        ? 'Loaded a complete vendor cache session.'
+        : options.includeTicks
+          ? stored.summary.complete && stored.summary.footprintAvailable && !storedCoverage.isComplete
+            ? 'Stored cache claims completion, but validated minute coverage is incomplete. Rebuilding from the earliest invalid minute.'
+            : stored.summary.complete
+              ? 'Loaded candle summaries. Refreshing from the vendor because footprint levels are missing.'
+              : 'Loaded cached progress and preparing to resume from the trailing minute.'
+          : 'Loaded cached candle summaries and preparing to refresh them from the vendor if needed.',
+      coverage: storedCoverage,
+    });
+
+    yield {
+      instrument,
+      marketBars: stored.marketBars,
+      orderFlowBars: stored.orderFlowBars,
+      patches: [],
+      coverage: storedCoverage,
+      progress: cachedProgress,
+      storedSummary: summaryFromStored(stored),
+      source: 'cache',
+    };
+
+    if (completeForRequestedMode) {
+      return;
+    }
+  }
+
+  const needsVendorBars = options.includeTicks ? stored.marketBars.length === 0 : true;
+  const marketBars = needsVendorBars
+    ? await (async () => {
+        emitRuntimeStatus(options, {
+          phase: 'fetching-bars',
+          requestKind: 'bars',
+          label: 'Fetching vendor 1m bars.',
+        });
+        return options.session.fetchHistoricalBars({
+          symbol: options.symbol,
+          sessionDate: options.sessionDate,
+          intervalSeconds: 60,
+          abortSignal: options.abortSignal,
+          onRuntimeStatus: options.onRuntimeStatus,
+        } satisfies ConnectorHistoricalBarsRequest);
+      })()
+    : stored.marketBars;
+  const marketCoverage = assessMinuteCoverage(marketBars, stored.orderFlowBars, coverageOptions);
+  const rewriteStart = resolveRewriteStart(marketCoverage, options.includeTicks);
   const prefixOrderFlowBars =
     rewriteStart == null
       ? options.includeTicks && stored.summary.footprintAvailable
@@ -305,7 +368,7 @@ export async function* captureHistoricalSession(
   let lastObservedTime = mergedOrderFlowBars.length
     ? Number(mergedOrderFlowBars[mergedOrderFlowBars.length - 1].time)
     : options.includeTicks
-      ? storedCoverage.lastCoveredTime
+      ? marketCoverage.lastCoveredTime
       : stored.summary.lastBarTime;
 
   if (!options.includeTicks) {
@@ -359,55 +422,6 @@ export async function* captureHistoricalSession(
       source: cacheHit ? 'cache+vendor' : 'vendor',
     };
     return;
-  }
-
-  if (cacheHit) {
-    const completeForRequestedMode =
-      stored.summary.complete && stored.summary.footprintAvailable && storedCoverage.isComplete;
-    const cachedProgress = buildProgress({
-      symbol: options.symbol,
-      sessionDate: options.sessionDate,
-      intervalSeconds: 60,
-      includeTicks: true,
-      includeQuotes,
-      status: completeForRequestedMode ? 'completed' : 'loading-cache',
-      cacheHit: true,
-      cachedOrderFlowBars: stored.orderFlowBars.length,
-      orderFlowBars: mergedOrderFlowBars,
-      marketBars,
-      requestCount: 0,
-      lastObservedTime,
-      tradeNextTime: rewriteStart,
-      quoteNextTime: rewriteStart == null ? null : Math.max(rewriteStart - 1, 0),
-      complete: completeForRequestedMode,
-      dirty: false,
-      rawTicksFetchedCurrentRun: 0,
-      rawTradeTicksFetchedCurrentRun: 0,
-      rawQuoteTicksFetchedCurrentRun: 0,
-      message: completeForRequestedMode
-        ? 'Loaded a complete vendor cache session.'
-        : stored.summary.complete && stored.summary.footprintAvailable && !storedCoverage.isComplete
-          ? 'Stored cache claims completion, but validated minute coverage is incomplete. Rebuilding from the earliest invalid minute.'
-          : stored.summary.complete
-            ? 'Loaded candle summaries. Refreshing from the vendor because footprint levels are missing.'
-            : 'Loaded cached progress and preparing to resume from the trailing minute.',
-      coverage: storedCoverage,
-    });
-
-    yield {
-      instrument,
-      marketBars,
-      orderFlowBars: mergedOrderFlowBars,
-      patches: [],
-      coverage: storedCoverage,
-      progress: cachedProgress,
-      storedSummary: summaryFromStored(stored),
-      source: 'cache',
-    };
-
-    if (completeForRequestedMode) {
-      return;
-    }
   }
 
   const controller = createOrderFlowTickStreamController({

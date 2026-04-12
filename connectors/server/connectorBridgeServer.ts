@@ -31,6 +31,8 @@ interface BridgeCommandResponse<TPayload = unknown> {
 }
 
 interface ActiveGrabState {
+  vendorId: string;
+  vendorLabel: string;
   symbol: string;
   sessionDate: string;
   intervalSeconds: number;
@@ -94,7 +96,6 @@ function writeSse(response: ServerResponse, event: ConnectorBridgeEvent): void {
 export function createConnectorBridgeServer(options: ConnectorBridgeServerOptions = {}) {
   const host = options.host || process.env.CONNECTOR_BRIDGE_HOST || '127.0.0.1';
   const port = options.port ?? Number(process.env.CONNECTOR_BRIDGE_PORT || 8791);
-  const dataRoot = options.dataRoot || resolveVendorCacheRoot('ibkr');
   const bridgeLabel = options.bridgeLabel || 'Local Market Connector Bridge';
   const eventClients = new Set<ServerResponse>();
 
@@ -105,6 +106,9 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
   let storedSummary: ConnectorStoredSessionSummary | null = null;
   let lastSave: ConnectorSaveResult | null = null;
 
+  const resolveConnectorDataRoot = (connector: MarketDataConnectorDefinition | null): string =>
+    options.dataRoot || resolveVendorCacheRoot(connector?.cacheDirectory || 'ibkr');
+
   const buildState = (): ConnectorBridgeState => ({
     bridgeAvailable: true,
     bridgeLabel,
@@ -113,7 +117,11 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
     activeGrab: activeGrab?.progress ?? null,
     storedSummary,
     lastSave,
-    dataRoot,
+    dataRoot: resolveConnectorDataRoot(
+      (activeGrab?.vendorId ? getConnectorDefinition(activeGrab.vendorId) : null) ||
+        activeConnector ||
+        (connectionState.vendorId ? getConnectorDefinition(connectionState.vendorId) : null),
+    ),
   });
 
   const emitEvent = (event: ConnectorBridgeEvent): void => {
@@ -151,8 +159,8 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
     emitState();
   };
 
-  const runGrabLoop = async (control: ActiveGrabState): Promise<void> => {
-    if (!activeSession) {
+  const runGrabLoop = async (control: ActiveGrabState, dataRoot: string): Promise<void> => {
+    if (!activeSession || !activeConnector) {
       return;
     }
 
@@ -172,7 +180,7 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         includeTicks: control.includeTicks,
         includeQuotes: control.includeQuotes,
         maxRequests: control.maxRequests,
-        vendorId: 'ibkr',
+        vendorId: activeConnector.descriptor.id,
       })) {
         control.orderFlowBars = snapshot.orderFlowBars;
         control.marketBars = snapshot.marketBars;
@@ -213,6 +221,9 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         message,
       };
       emitLog('error', message);
+      emitState();
+    } finally {
+      control.runPromise = null;
       emitState();
     }
   };
@@ -390,6 +401,7 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
 
     if (method === 'POST' && url.pathname === '/api/connectors/grab/start') {
       const body = await readJsonBody<{
+        vendorId?: string;
         symbol: string;
         sessionDate: string;
         intervalSeconds: number;
@@ -398,6 +410,10 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         maxRequests?: number;
       }>(request);
 
+      const requestedConnector =
+        (body.vendorId ? getConnectorDefinition(body.vendorId) : null) ??
+        activeConnector ??
+        (connectionState.vendorId ? getConnectorDefinition(connectionState.vendorId) : null);
       const symbol = String(body.symbol || '').trim().toUpperCase();
       const sessionDate = String(body.sessionDate || '').trim();
       if (!symbol || !sessionDate || !Number.isFinite(body.intervalSeconds)) {
@@ -408,17 +424,43 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         return;
       }
 
+      if (body.vendorId && !requestedConnector) {
+        writeJson(response, 404, {
+          ok: false,
+          message: `Unknown connector vendor '${body.vendorId}'.`,
+        } satisfies BridgeCommandResponse);
+        return;
+      }
+
+      if (!requestedConnector) {
+        writeJson(response, 409, {
+          ok: false,
+          message: 'No connector vendor is selected. Connect or choose a vendor before loading.',
+        } satisfies BridgeCommandResponse);
+        return;
+      }
+
+      const dataRoot = resolveConnectorDataRoot(requestedConnector);
+      const includeTicks =
+        Boolean(body.includeTicks ?? requestedConnector.descriptor.supportsHistoricalTicks) &&
+        requestedConnector.descriptor.supportsHistoricalTicks;
+      const includeQuotes =
+        Boolean(body.includeQuotes ?? requestedConnector.descriptor.supportsQuotes) &&
+        requestedConnector.descriptor.supportsQuotes;
+      const vendorReadyForFetch =
+        Boolean(activeSession && activeConnector) &&
+        activeConnector?.descriptor.id === requestedConnector.descriptor.id;
       const stored = loadAggregatedSession(symbol, sessionDate, dataRoot);
       storedSummary = stored.summary;
 
-      if (!activeSession || !activeConnector) {
+      if (!vendorReadyForFetch) {
         if (stored.marketBars.length || stored.orderFlowBars.length) {
           const progress: ConnectorGrabProgress = {
             symbol,
             sessionDate,
             intervalSeconds: Number(body.intervalSeconds),
-            includeTicks: Boolean(body.includeTicks ?? true),
-            includeQuotes: Boolean(body.includeQuotes),
+            includeTicks,
+            includeQuotes,
             status: stored.summary.complete ? 'completed' : 'paused',
             cacheHit: true,
             cachedOrderFlowBars: stored.orderFlowBars.length,
@@ -443,15 +485,17 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
                 : 0,
             message: stored.summary.complete
               ? 'Loaded a complete cached session without opening a vendor connection.'
-              : 'Loaded cached progress. Connect the vendor to refresh or complete the session.',
+              : `Loaded cached progress. Connect ${requestedConnector.descriptor.label} to refresh or complete the session.`,
           };
 
           activeGrab = {
+            vendorId: requestedConnector.descriptor.id,
+            vendorLabel: requestedConnector.descriptor.label,
             symbol,
             sessionDate,
             intervalSeconds: Number(body.intervalSeconds),
-            includeTicks: Boolean(body.includeTicks ?? true),
-            includeQuotes: Boolean(body.includeQuotes),
+            includeTicks,
+            includeQuotes,
             maxRequests: body.maxRequests,
             orderFlowBars: stored.orderFlowBars,
             marketBars: stored.marketBars,
@@ -481,7 +525,7 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
 
         writeJson(response, 409, {
           ok: false,
-          message: 'Connect a vendor session before loading uncached market data.',
+          message: `Connect ${requestedConnector.descriptor.label} before loading uncached market data.`,
         } satisfies BridgeCommandResponse);
         return;
       }
@@ -495,11 +539,13 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
       }
 
       activeGrab = {
+        vendorId: requestedConnector.descriptor.id,
+        vendorLabel: requestedConnector.descriptor.label,
         symbol,
         sessionDate,
         intervalSeconds: Number(body.intervalSeconds),
-        includeTicks: Boolean(body.includeTicks ?? true),
-        includeQuotes: Boolean(body.includeQuotes),
+        includeTicks,
+        includeQuotes,
         maxRequests: body.maxRequests,
         orderFlowBars: stored.orderFlowBars,
         marketBars: stored.marketBars,
@@ -507,8 +553,8 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
           symbol,
           sessionDate,
           intervalSeconds: Number(body.intervalSeconds),
-          includeTicks: Boolean(body.includeTicks ?? true),
-          includeQuotes: Boolean(body.includeQuotes),
+          includeTicks,
+          includeQuotes,
           status: 'loading-cache',
           cacheHit: stored.orderFlowBars.length > 0 || stored.marketBars.length > 0,
           cachedOrderFlowBars: stored.orderFlowBars.length,
@@ -533,12 +579,12 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
               : 0,
           message:
             stored.orderFlowBars.length > 0 || stored.marketBars.length > 0
-              ? 'Loaded cached data and refreshing from the vendor.'
-              : 'No vendor cache was found. Starting a fresh vendor load.',
+              ? `Loaded cached data and refreshing it from ${requestedConnector.descriptor.label}.`
+              : `No vendor cache was found. Starting a fresh ${requestedConnector.descriptor.label} load.`,
         },
         runPromise: null,
       };
-      activeGrab.runPromise = runGrabLoop(activeGrab);
+      activeGrab.runPromise = runGrabLoop(activeGrab, dataRoot);
       emitState();
 
       writeJson(response, 200, {

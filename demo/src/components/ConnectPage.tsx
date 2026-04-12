@@ -56,6 +56,7 @@ import {
   type BarInterval,
   type SymbolCode,
 } from '../lib/marketData';
+import { buildSyntheticOrderFlowFromBars } from '../lib/buildSyntheticOrderFlowFromBars';
 import { readLearnDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
@@ -336,6 +337,21 @@ function ConnectDialog({
             {selectedVendor ? (
               <div
                 style={{
+                  borderRadius: 12,
+                  padding: 12,
+                  background: 'rgba(15, 23, 42, 0.78)',
+                  border: '1px solid rgba(148, 163, 184, 0.12)',
+                  color: '#cbd5e1',
+                  lineHeight: 1.6,
+                }}
+              >
+                {selectedVendor.summary}
+              </div>
+            ) : null}
+
+            {selectedVendor ? (
+              <div
+                style={{
                   display: 'grid',
                   gap: 12,
                   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -352,7 +368,13 @@ function ConnectDialog({
                           field.kind === 'number' ? Number(event.target.value) : event.target.value,
                         )
                       }
-                      type={field.kind === 'number' ? 'number' : 'text'}
+                      type={
+                        field.kind === 'number'
+                          ? 'number'
+                          : field.kind === 'password'
+                            ? 'password'
+                            : 'text'
+                      }
                       min={field.min}
                       step={field.step}
                       placeholder={field.placeholder}
@@ -478,6 +500,7 @@ export function ConnectPage() {
   const [testingConnector, setTestingConnector] = useState(false);
   const [connectingConnector, setConnectingConnector] = useState(false);
   const [liveBars, setLiveBars] = useState<OrderFlowBar[] | null>(null);
+  const [liveDataMode, setLiveDataMode] = useState<'footprint' | 'bar-backed' | null>(null);
 
   const preset = useMemo(() => getConceptPreset(presetId), [presetId]);
   const themePreset = useMemo(() => getThemePreset(themeId), [themeId]);
@@ -659,7 +682,9 @@ export function ConnectPage() {
 
   const footerText = useMemo(() => {
     const sourceLabel = directModeActive
-      ? `cache-first ${bridgeState?.connection.vendorLabel ?? 'vendor'} load`
+      ? liveDataMode === 'bar-backed'
+        ? `cache-first ${bridgeState?.connection.vendorLabel ?? 'vendor'} bar-backed load`
+        : `cache-first ${bridgeState?.connection.vendorLabel ?? 'vendor'} footprint load`
       : 'canonical aggregated data';
     return `${symbol} | ${sessionDate} | ${interval} | Mintick: ${formatMintick(
       effectiveMintick,
@@ -669,6 +694,7 @@ export function ConnectPage() {
     directModeActive,
     effectiveMintick,
     interval,
+    liveDataMode,
     sessionDate,
     symbol,
     themePreset.label,
@@ -759,9 +785,33 @@ export function ConnectPage() {
             return;
           }
 
-          setLiveBars(payload.orderFlowBars.length ? payload.orderFlowBars : null);
+          const resolvedBars = payload.orderFlowBars.length
+            ? payload.orderFlowBars
+            : payload.marketBars.length
+              ? buildSyntheticOrderFlowFromBars({
+                  bars: payload.marketBars.map((bar) => ({
+                    time: Number(bar.time),
+                    open: bar.open,
+                    high: bar.high,
+                    low: bar.low,
+                    close: bar.close,
+                    volume: bar.volume,
+                    count: bar.tradeCount,
+                    vwap: bar.vwap,
+                  })),
+                  instrument: payload.instrument ?? instrument,
+                })
+              : null;
+          setLiveBars(resolvedBars);
+          setLiveDataMode(
+            payload.orderFlowBars.length ? 'footprint' : payload.marketBars.length ? 'bar-backed' : null,
+          );
           if (payload.progress.message) {
-            setConnectorResultMessage(payload.progress.message);
+            setConnectorResultMessage(
+              payload.orderFlowBars.length || !payload.marketBars.length
+                ? payload.progress.message
+                : `${payload.progress.message} Rendering a synthetic bar-backed ladder because this vendor session does not include true order-flow levels.`,
+            );
           }
           return;
         }
@@ -781,7 +831,7 @@ export function ConnectPage() {
       disposed = true;
       unsubscribe();
     };
-  }, [selectedVendorId, sessionDate, symbol]);
+  }, [instrument, selectedVendorId, sessionDate, symbol]);
 
   useEffect(() => {
     if (!selectedVendor) {
@@ -801,7 +851,8 @@ export function ConnectPage() {
 
   useEffect(() => {
     setLiveBars(null);
-  }, [sessionDate, symbol]);
+    setLiveDataMode(null);
+  }, [selectedVendorId, sessionDate, symbol]);
 
   const applyPresetDefaults = (nextPresetId: string) => {
     const nextPreset = getConceptPreset(nextPresetId);
@@ -862,13 +913,19 @@ export function ConnectPage() {
       return;
     }
 
+    if (!selectedVendor) {
+      setConnectorResultMessage('Select a vendor before starting a cache-first load.');
+      return;
+    }
+
     try {
       await startConnectorGrab({
+        vendorId: selectedVendor.id,
         symbol,
         sessionDate,
         intervalSeconds: 60,
-        includeTicks: true,
-        includeQuotes: true,
+        includeTicks: selectedVendor.supportsHistoricalTicks,
+        includeQuotes: selectedVendor.supportsQuotes,
       });
     } catch (error) {
       setConnectorResultMessage(error instanceof Error ? error.message : String(error));
@@ -876,6 +933,7 @@ export function ConnectPage() {
   };
   const loadEnabled = Boolean(
     bridgeState &&
+      selectedVendor &&
       !connectingConnector &&
       !['loading-cache', 'loading-vendor'].includes(bridgeState.activeGrab?.status ?? ''),
   );

@@ -77,6 +77,11 @@ When footprint coverage is partial, keep the chart visible and degrade gracefull
 - keep the active bar partial with `OrderFlowPatch` upserts
 - fall back to `ohlc-synthetic` bars when footprint levels are missing for a session
 
+This degraded path is also the correct behavior for vendors that only expose minute aggregates. For
+example, Polygon.io / Massive REST on the current Basic plan can provide `OHLCV`, `VWAP`, and
+transaction counts, but it cannot provide historical stock trades or quotes needed for true
+aggressor-side footprint reconstruction.
+
 When the provided ladder levels are sparse, aggregated, or synthesized, pass the instrument tick
 size through `footprintOptions.ladder.priceStep` so the renderer can preserve a constant price grid
 while zooming.

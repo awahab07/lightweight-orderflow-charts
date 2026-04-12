@@ -55,6 +55,8 @@ Common local commands:
   Starts the local connector bridge used by the repo-side `Connect` demo page
 - `npm run connector:ibkr:capture -- --help`
   Runs the resumable IBKR historical capture CLI that writes aggregated minute data into the local vendor cache
+- `npm run connector:polygon:capture -- --help`
+  Runs the Polygon.io / Massive REST capture CLI for minute aggregates using an environment-provided API key
 - `npm run format`
   Applies the shared Prettier formatting rules
 - `npm run format:check`
@@ -148,6 +150,10 @@ The preferred canonical demo layout is now `1m`-based:
 The demo derives higher intervals such as `5m` from those `1m` files instead of storing separate
 canonical interval files. Local vendor capture now writes into `connectors/vendors/<vendor>/data/`
 as a cache-first source, while checked-in demo fixtures stay under `data/market/`.
+
+Not every vendor cache is footprint-capable. IBKR can produce `orderflow-1m.json` when historical
+ticks are requested, while Polygon.io / Massive REST on the current Basic plan only provides
+`bars-1m.json` plus a manifest with `orderFlowAvailable: false`.
 
 ## Choose The Right Study
 

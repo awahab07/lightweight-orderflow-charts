@@ -895,6 +895,7 @@ function inferPricePrecision(tickSize: number): number {
 }
 
 export const IBKR_TWS_CONNECTOR: MarketDataConnectorDefinition<IbkrConnectorConfig> = {
+  cacheDirectory: 'ibkr',
   descriptor: {
     id: 'ibkr-tws',
     label: 'IBKR TWS',

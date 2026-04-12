@@ -9,6 +9,7 @@ import type {
 
 import type {
   AggregatedSessionManifest,
+  ConnectorVendorId,
   ConnectorStoredSessionSummary,
 } from '../core/contracts';
 
@@ -28,7 +29,7 @@ export interface PersistAggregatedSessionInput {
   includeTicks: boolean;
   dataRoot: string;
   instrument?: InstrumentContext | null;
-  vendorId?: string;
+  vendorId?: ConnectorVendorId;
   timezone?: string;
   lastCompleteBarTime?: number | null;
 }
@@ -183,7 +184,7 @@ export function persistAggregatedSession(
     complete: input.complete,
     rawTicksStored: false,
     capture: {
-      vendorId: input.vendorId === 'ibkr' ? 'ibkr-tws' : undefined,
+      vendorId: input.vendorId,
       includeTicks: input.includeTicks,
       lastCompleteBarTime:
         input.lastCompleteBarTime !== undefined ? input.lastCompleteBarTime : lastBarTime,

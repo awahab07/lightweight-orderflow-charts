@@ -7,7 +7,7 @@ import type {
   OrderFlowBar,
 } from 'lightweight-orderflow-charts';
 
-export type ConnectorVendorId = 'ibkr-tws';
+export type ConnectorVendorId = 'ibkr-tws' | 'polygon-rest';
 export type ConnectorConfigValue = string | number | boolean;
 export type ConnectorConnectionStatus =
   | 'disconnected'
@@ -26,7 +26,7 @@ export interface ConnectorConfigFieldDefinition {
   id: string;
   label: string;
   description?: string;
-  kind: 'text' | 'number';
+  kind: 'text' | 'number' | 'password';
   required: boolean;
   placeholder?: string;
   defaultValue?: ConnectorConfigValue;
@@ -254,6 +254,7 @@ export interface MarketDataConnectorSession {
 export interface MarketDataConnectorDefinition<
   TConfig extends Record<string, ConnectorConfigValue> = Record<string, ConnectorConfigValue>,
 > {
+  cacheDirectory: string;
   descriptor: MarketDataConnectorDescriptor;
   sanitizeConfig(config: Record<string, ConnectorConfigValue>): TConfig;
   testConnection(config: TConfig): Promise<ConnectorTestResult>;

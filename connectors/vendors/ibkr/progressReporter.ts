@@ -87,11 +87,11 @@ function formatHeadline(
   runtimeStatus: ConnectorRuntimeStatus | null,
 ): string {
   if (runtimeStatus?.phase === 'waiting-pacing') {
-    return 'Waiting for IBKR pacing window';
+    return 'Waiting for vendor rate-limit window';
   }
 
   if (runtimeStatus?.phase === 'awaiting-response') {
-    return 'Waiting for IBKR response';
+    return 'Waiting for vendor response';
   }
 
   if (runtimeStatus?.phase === 'fetching-trades') {
@@ -131,14 +131,6 @@ function formatCurrentStep(
 ): string {
   if (runtimeStatus?.phase === 'waiting-pacing') {
     const countdown = formatRemaining(runtimeStatus.waitRemainingMs);
-    if (runtimeStatus.waitReason === 'historical-window') {
-      return `Waiting ${countdown} before the next request because the IBKR 10-minute historical window is full. BID_ASK requests count twice.`;
-    }
-
-    if (runtimeStatus.waitReason === 'identical-request') {
-      return `Waiting ${countdown} before reissuing an identical historical request to respect the IBKR cooldown.`;
-    }
-
     return `${runtimeStatus.label} Next request in ${countdown}.`;
   }
 
@@ -165,6 +157,7 @@ function renderSnapshot(
   const timezone = snapshot?.instrument.timezone || 'America/New_York';
   const coverage = snapshot?.coverage ?? EMPTY_COVERAGE;
   const progress = snapshot?.progress;
+  const footprintEnabled = progress?.includeTicks !== false;
   const completedMinutes =
     snapshot == null || progress == null
       ? 0
@@ -179,10 +172,14 @@ function renderSnapshot(
     `${frame} ${symbol} ${sessionDate} | ${formatHeadline(snapshot, runtimeStatus)}`,
     `Current step: ${formatCurrentStep(snapshot, runtimeStatus)}`,
     `Source: ${formatSource(snapshot?.source ?? null)} | Requests issued: ${progress?.requestCount ?? 0} | Trade ticks fetched: ${formatCount(progress?.rawTradeTicksFetchedCurrentRun ?? 0)} | Quote ticks fetched: ${formatCount(progress?.rawQuoteTicksFetchedCurrentRun ?? 0)} | Elapsed: ${formatElapsed(Date.now() - startedAt)}`,
-    `Footprint minutes covered: ${coverage.coveredMinuteCount}/${coverage.requiredMinuteCount} | Contiguous from open: ${coverage.contiguousCoveredMinuteCount}/${coverage.requiredMinuteCount} | Stable completed minutes: ${completedMinutes} | Price levels in active minute: ${
-      progress?.complete ? 0 : (progress?.currentMinutePriceLevels ?? 0)
-    }`,
-    `Coverage: ${formatPercent(coverage.coverageRatio * 100)} | Session clock progress: ${formatPercent(progress?.progressPct ?? null)} | Last observed time: ${formatSessionTime(progress?.lastObservedTime ?? null, timezone)} | Next trade cursor: ${formatSessionTime(progress?.cursor.tradeNextTime ?? null, timezone)} | Next quote cursor: ${formatSessionTime(progress?.cursor.quoteNextTime ?? null, timezone)}`,
+    footprintEnabled
+      ? `Footprint minutes covered: ${coverage.coveredMinuteCount}/${coverage.requiredMinuteCount} | Contiguous from open: ${coverage.contiguousCoveredMinuteCount}/${coverage.requiredMinuteCount} | Stable completed minutes: ${completedMinutes} | Price levels in active minute: ${
+          progress?.complete ? 0 : (progress?.currentMinutePriceLevels ?? 0)
+        }`
+      : `Market bars loaded: ${progress?.loadedMarketBars ?? 0} | Footprint capture: unavailable or disabled for this run | Cached order-flow bars: ${progress?.loadedOrderFlowBars ?? 0}`,
+    footprintEnabled
+      ? `Coverage: ${formatPercent(coverage.coverageRatio * 100)} | Session clock progress: ${formatPercent(progress?.progressPct ?? null)} | Last observed time: ${formatSessionTime(progress?.lastObservedTime ?? null, timezone)} | Next trade cursor: ${formatSessionTime(progress?.cursor.tradeNextTime ?? null, timezone)} | Next quote cursor: ${formatSessionTime(progress?.cursor.quoteNextTime ?? null, timezone)}`
+      : `Session clock progress: ${formatPercent(progress?.progressPct ?? null)} | Last observed time: ${formatSessionTime(progress?.lastObservedTime ?? null, timezone)} | Next trade cursor: --:--:-- | Next quote cursor: --:--:--`,
   ].join('\n');
 }
 
