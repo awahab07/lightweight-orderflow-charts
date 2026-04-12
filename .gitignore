@@ -16,3 +16,4 @@ playwright-report/
 test-results/
 data/**/*.partial
 data/**/trades-meta.json
+connectors/vendors/**/data/

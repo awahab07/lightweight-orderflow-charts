@@ -4,10 +4,15 @@ This package is intentionally broker-neutral. It does not assume a specific mark
 gateway, or transport. The host application is responsible for translating upstream payloads into
 the public contracts exported by `lightweight-orderflow-charts`.
 
-The current demo fixtures still reconstruct footprint ladders from stored bars when tick data is not
-available. Treat that path as `sourceMode: 'ohlc-synthetic'` rather than trading-grade footprint
-history. See `TICK_DATA.md` for the recommended storage and replay contract when true trade or quote
-ticks are available.
+The preferred fixture and ingestion model is now `1m`-based:
+
+- `OrderFlowBar[]`
+  Footprint-capable minute bars with per-price bid/ask participation
+- `AggregatedMarketBar[]`
+  Minute candle summaries with required OHLCV and optional order-flow extras
+
+Higher intervals such as `5m` should be derived from stored `1m` data instead of stored as
+independent canonical files. See `TICK_DATA.md` for the minute-storage and cache layout.
 
 ## Canonical Inputs
 
@@ -37,6 +42,10 @@ Supporting contracts:
 
 - `InstrumentContext`
   Symbol, tick size, precision, and timezone metadata
+- `AggregatedMarketBar`
+  Broker-neutral candle summaries with required `time`, `open`, `high`, `low`, `close`, and
+  `volume`, plus optional `vwap`, `tradeCount`, `bidVolume`, `askVolume`, `delta`, `deltaMin`,
+  `deltaMax`, `pocPrice`, and `pocVolume`
 - `SessionDefinition`
   Session templates for study resets and per-session overlays
 - `OrderFlowPatch`
@@ -62,11 +71,11 @@ Use real price-level aggregation whenever possible. If the host only has OHLCV b
 build an educational or placeholder rendering by synthesizing ladder levels, but it should be
 treated as an approximation instead of a trading-grade feed.
 
-When tick coverage is partial, keep the chart visible and degrade gracefully:
+When footprint coverage is partial, keep the chart visible and degrade gracefully:
 
-- use completed tick-derived bars where available
+- use completed price-level minute bars where available
 - keep the active bar partial with `OrderFlowPatch` upserts
-- fall back to `ohlc-synthetic` bars when ticks are missing for a session
+- fall back to `ohlc-synthetic` bars when footprint levels are missing for a session
 
 When the provided ladder levels are sparse, aggregated, or synthesized, pass the instrument tick
 size through `footprintOptions.ladder.priceStep` so the renderer can preserve a constant price grid
@@ -104,10 +113,10 @@ If the host application needs execution-grade VWAP semantics, prefer:
   Bars inside each displayed bar, used to trace the intrabar delta path. Explicit per-bar `delta`
   is preferred over classifying total volume by candle direction.
 
-For a 5-minute chart, 1-minute or 1-second intrabars are better than reusing the 5-minute bars. If
-no lower-timeframe bars are available, the function falls back to the displayed bars and still
-returns a zero-anchored series, but the candle path becomes less informative. If no explicit delta
-is present, the builder falls back to classifying signed volume from OHLC direction.
+For a 5-minute chart, 1-minute intrabars are the recommended baseline. If no lower-timeframe bars
+are available, the function falls back to the displayed bars and still returns a zero-anchored
+series, but the candle path becomes less informative. If no explicit delta is present, the builder
+falls back to classifying signed volume from OHLC direction.
 
 ## Normalization Helpers
 
@@ -119,6 +128,16 @@ Use these helpers to move feed-specific payloads into the public contracts:
   Normalizes an incremental update
 - `applyOrderFlowPatch()`
   Applies a patch to an existing bar set
+- `aggregateOrderFlowBarsByInterval()`
+  Derives higher-interval footprint bars from lower-interval normalized bars
+- `aggregateMarketBarsByInterval()`
+  Derives higher-interval candle summaries from lower-interval summaries
+- `buildAggregatedMarketBarsFromOrderFlowBars()`
+  Converts footprint-capable bars into candle summaries when a separate OHLCV file is not available
+- `buildOrderFlowBarsFromTicks()`
+  Materializes tick-derived bars from a batch of trades and optional quotes
+- `createOrderFlowTickStreamController()`
+  Accepts live or replay tick pushes and emits append or upsert bar patches
 - `resolveSessions()`
   Maps timestamps into session identifiers
 

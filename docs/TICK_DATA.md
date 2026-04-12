@@ -1,173 +1,209 @@
-# Tick Data And Replay
+# Tick-Derived Minute Aggregation
 
 This package remains broker-neutral, but real order-flow systems still need an opinionated answer for
-how to store, describe, and consume tick data. This document defines that contract without making the
-core renderer own gateway or broker logic.
+how to store, describe, and consume tick-derived market data. The preferred answer is no longer raw
+tick archives in source-managed fixtures. Instead, capture tooling should aggregate vendor ticks into
+broker-neutral `1m` artifacts that can drive both footprint charts and bar-based studies.
 
-## Current Demo Status
+## Preferred Storage Layout
 
-Today, the committed demo fixtures in `data/market/` contain:
-
-- `instrument.json`
-- `bars-1m.json`
-- `bars-5m.json`
-- `bars-15m.json`
-
-The learn page and playground therefore reconstruct `OrderFlowBar[]` from stored OHLC bars via the
-demo-only synthetic builder in `demo/src/lib/buildSyntheticOrderFlowFromBars.ts`.
-
-That means the current shipped demo mode is:
-
-- `sourceMode: 'ohlc-synthetic'`
-
-The public charts and studies are already compatible with tick-derived bars. The missing piece is the
-fixture layer, not the renderers.
-
-## Recommended Storage Layout
-
-Per symbol:
+Canonical checked-in fixtures:
 
 - `data/market/<symbol>/instrument.json`
-
-Per session:
-
 - `data/market/<symbol>/<session-date>/bars-1m.json`
-- `data/market/<symbol>/<session-date>/bars-5m.json`
-- `data/market/<symbol>/<session-date>/bars-15m.json`
-- `data/market/<symbol>/<session-date>/ticks-manifest.json`
-- `data/market/<symbol>/<session-date>/trades.ndjson.gz`
-- `data/market/<symbol>/<session-date>/quotes.ndjson.gz`
+- `data/market/<symbol>/<session-date>/orderflow-1m.json`
+- `data/market/<symbol>/<session-date>/session-manifest.json`
 
-If a session is too large for one compressed file, shard it:
+Local vendor cache:
 
-- `trades-0001.ndjson.gz`
-- `trades-0002.ndjson.gz`
-- `quotes-0001.ndjson.gz`
+- `connectors/vendors/<vendor>/data/<symbol>/instrument.json`
+- `connectors/vendors/<vendor>/data/<symbol>/<session-date>/bars-1m.json`
+- `connectors/vendors/<vendor>/data/<symbol>/<session-date>/orderflow-1m.json`
+- `connectors/vendors/<vendor>/data/<symbol>/<session-date>/session-manifest.json`
 
-The manifest remains the stable entry point even when the payload is sharded.
+Legacy raw tick files may still exist during migration, but they are no longer the preferred
+canonical contract.
 
-## Manifest Contract
+## Minute Candle Contract
 
-The package now exports `TickSessionManifest` and `TickSessionChunk` to document the expected shape:
+`bars-1m.json` stores broker-neutral candle summaries:
 
 ```ts
-type TickSessionManifest = {
+type AggregatedMarketBar = {
+  time: Time;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  vwap?: number;
+  tradeCount?: number;
+  bidVolume?: number;
+  askVolume?: number;
+  delta?: number;
+  deltaMin?: number;
+  deltaMax?: number;
+  pocPrice?: number;
+  pocVolume?: number;
+};
+```
+
+Required fields:
+
+- `time`
+- `open`
+- `high`
+- `low`
+- `close`
+- `volume`
+
+Optional fields should be populated when the upstream feed or tick-derived aggregation can support
+them. For IBKR `TRADES` bars, `vwap` and `tradeCount` are available directly from the vendor. When
+tick-derived price levels are present, `bidVolume`, `askVolume`, `delta`, `pocPrice`, and
+`pocVolume` can also be written.
+
+## Footprint-Capable Minute Contract
+
+`orderflow-1m.json` stores the primary footprint input:
+
+```ts
+type OrderFlowBar = {
+  time: Time;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  totalVolume?: number;
+  delta?: number;
+  bidVolume?: number;
+  askVolume?: number;
+  tradeCount?: number;
+  vwap?: number;
+  pocPrice?: number;
+  pocVolume?: number;
+  deltaMin?: number;
+  deltaMax?: number;
+  levels: Array<{
+    price: number;
+    bidVolume: number;
+    askVolume: number;
+    totalVolume?: number;
+    delta?: number;
+    tradeCount?: number;
+  }>;
+};
+```
+
+The essential information is minute + price + bid-volume + ask-volume. The nested level array is the
+compact representation used by the library and is sufficient to derive accurate `5m` footprint bars
+from stored `1m` data.
+
+## Session Manifest Contract
+
+`session-manifest.json` is the stable entry point for repo-managed or vendor-cached sessions:
+
+```ts
+type AggregatedSessionManifest = {
   symbol: string;
   sessionDate: string;
   timezone: string;
   sourceMode: 'tick-derived' | 'price-level-bars' | 'ohlc-synthetic';
-  tradesAvailable: boolean;
-  quotesAvailable?: boolean;
+  baseIntervalSeconds: 60;
+  candlesAvailable: boolean;
+  orderFlowAvailable: boolean;
   complete: boolean;
-  chunks?: Array<{
+  rawTicksStored: false;
+  capture?: {
+    includeTicks: boolean;
+    lastCompleteBarTime: number | null;
+    updatedAt: string;
+  };
+  files: Array<{
     file: string;
-    kind: 'trades' | 'quotes';
-    compression?: 'gzip' | 'none';
-    timeFrom: number;
-    timeTo: number;
-    tickCount: number;
-    complete?: boolean;
+    kind: 'market-bars' | 'order-flow-bars';
+    intervalSeconds: 60;
+    barCount: number;
+    complete: boolean;
   }>;
-  notes?: string[];
 };
 ```
 
 Recommended semantics:
 
 - `complete: true`
-  The session is closed and all intended chunks are present
+  The stored minute session covers the intended historical range for that session
 - `complete: false`
-  The host may still request more history or continue a live stream
-- `sourceMode: 'tick-derived'`
-  `OrderFlowBar[]` can be reconstructed from trade and optional quote ticks
-- `sourceMode: 'price-level-bars'`
-  The host has already aggregated ladder detail per bar
-- `sourceMode: 'ohlc-synthetic'`
-  The host only has bars and the ladder is approximate
+  The cache can be resumed and the trailing minute should be rewritten on the next run
+- `orderFlowAvailable: false`
+  Only candle summaries are available, so footprint rendering should degrade to `ohlc-synthetic`
+- `rawTicksStored: false`
+  Raw vendor ticks are transient capture inputs, not the canonical stored fixture
 
-## Tick Payload Contract
+## Higher Interval Derivation
 
-The package exports these additive contracts:
+Higher intervals such as `5m` should be derived from `1m` files:
 
-```ts
-type TradeTick = {
-  time: number;
-  price: number;
-  size: number;
-  exchange?: string;
-  side?: 'buy' | 'sell' | 'unknown';
-  attributes?: Record<string, unknown>;
-};
+- `aggregateOrderFlowBarsByInterval()`
+  Use when footprint-capable `1m` levels are available
+- `aggregateMarketBarsByInterval()`
+  Use when only candle summaries are available
+- `buildAggregatedMarketBarsFromOrderFlowBars()`
+  Use when you need candle summaries but only `OrderFlowBar[]` is present
 
-type QuoteTick = {
-  time: number;
-  bidPrice: number;
-  askPrice: number;
-  bidSize: number;
-  askSize: number;
-  attributes?: Record<string, unknown>;
-};
-```
-
-Hosts can enrich those payloads, but these fields are enough to:
-
-- classify aggressor side when the feed supports it
-- aggregate price-level bid/ask participation
-- derive partial bars during historical replay or live streaming
-
-## Partial And Missing Tick Coverage
-
-Consumer apps should not block the entire chart when ticks are missing or incomplete.
-
-Recommended behavior:
-
-- If `ticks-manifest.json` is missing, fall back to `bars-*.json` and mark the result as
-  `sourceMode: 'ohlc-synthetic'`
-- If tick files exist but `complete: false`, render completed bars plus the best partial bar available
-- If only trades exist, derive footprint and delta from trades and treat quote-based aggressor
-  classification as optional
-- If a study needs more fidelity than the available source supports, keep the chart visible and reduce
-  confidence rather than going blank
+This keeps the canonical storage surface small while preserving accurate footprint reconstruction.
 
 ## Replay And Live Updates
 
-The public streaming surface is already `OrderFlowPatch` plus `applyOrderFlowPatch()`.
+The public replay or live streaming surface remains controller-based:
 
 Typical host flow:
 
 ```ts
-import { applyOrderFlowPatch, type OrderFlowBar, type OrderFlowPatch } from 'lightweight-orderflow-charts';
+import {
+  applyOrderFlowPatch,
+  createOrderFlowTickStreamController,
+  type OrderFlowBar,
+} from 'lightweight-orderflow-charts';
 
 let bars: OrderFlowBar[] = [];
+const controller = createOrderFlowTickStreamController({
+  instrument,
+  intervalSeconds: 300,
+});
 
-function onReplayPatch(patch: OrderFlowPatch) {
-  bars = applyOrderFlowPatch(bars, patch);
+function onTickUpdate(update) {
+  const result = controller.push(update);
+
+  for (const patch of result.patches) {
+    bars = applyOrderFlowPatch(bars, patch);
+  }
+
   render(bars);
 }
 ```
 
-Recommended patch semantics:
+The controller owns:
 
-- `append`
-  First appearance of a newly opened bar
-- `upsert`
-  Partial updates while the active bar is still forming
-- `replace`
-  Full reload after a jump, gap-fill, or historical refresh
-- `remove`
-  Correction or rollback for one or more times
+- interval bucketing
+- active-bar rollover
+- quote-aware or tick-rule trade classification
+- `append` versus `upsert` patch emission
 
-The playground `Stream` toggle demonstrates this pattern by replaying progressive bar updates every
-10 seconds against real selected TSLA/NVDA fixture data.
+Consumers only need to push normalized `TradeTick` or `QuoteTick` updates in timestamp order.
+
+The playground `Stream` toggle still demonstrates this pattern when legacy raw tick fixtures are
+available. The preferred storage contract, however, is the aggregated `1m` output rather than the raw
+tick archive.
 
 ## Capture Guidance
 
-Historical tick feeds are commonly rate-limited and chunk-limited. For example, the local IBKR capture
-tool in the outer workspace already uses:
+Historical tick feeds are commonly rate-limited and chunk-limited. Capture tooling should therefore:
 
-- 1000 ticks per historical request
-- pacing-aware delays between requests
-- resumable session state
-- gzip compression after a session completes
+- request vendor bars and historical ticks with pacing-aware delays
+- rewrite the trailing stored minute before resuming
+- treat raw ticks as transient inputs used to build `orderflow-1m.json`
+- keep vendor-specific caches under `connectors/vendors/<vendor>/data`
+- promote only curated sessions into checked-in `data/market/`
 
-That capture logic stays local-only. The library contract is the normalized output, not the broker SDK.
+That capture logic stays local-only. The library contract is the normalized minute output, not the
+broker SDK.

@@ -1,0 +1,21 @@
+{
+  "symbol": "TSLA",
+  "sessionDate": "2026-03-02",
+  "kind": "quotes",
+  "complete": true,
+  "startedAt": "2026-04-11T03:20:31.775Z",
+  "completedAt": "2026-04-11T05:10:36.438Z",
+  "updatedAt": "2026-04-11T05:10:36.438Z",
+  "nextStart": "20260302 16:00:00 US/Eastern",
+  "chunks": 319,
+  "ticks": 321893,
+  "retries": 0,
+  "chunkSize": 1000,
+  "firstTickTime": 1772461799,
+  "firstTickEasternTime": "09:29:59",
+  "lastTickTime": 1772485199,
+  "lastTickEasternTime": "15:59:59",
+  "file": "quotes.ndjson.gz",
+  "compression": "gzip",
+  "errors": []
+}

@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 
+import { ConnectPage } from './components/ConnectPage';
 import { LearnDemoPage } from './components/LearnDemoPage';
 import { PlaygroundPage } from './components/PlaygroundPage';
 
-type DemoRoute = 'learn' | 'playground';
+type DemoRoute = 'learn' | 'playground' | 'connect';
 
 function parseRoute(hash: string): DemoRoute {
   const normalized = hash.replace(/^#\/?/, '').split('?')[0].trim().toLowerCase();
-  return normalized === 'playground' ? 'playground' : 'learn';
+  if (normalized === 'playground') {
+    return 'playground';
+  }
+
+  if (normalized === 'connect') {
+    return 'connect';
+  }
+
+  return 'learn';
 }
 
 export function App() {
@@ -51,9 +60,35 @@ export function App() {
           <p style={{ margin: '8px 0 0', color: '#94a3b8' }}>
             Reusable order-flow charts and studies for React and lightweight-charts.
           </p>
+          <nav style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+            <a href="#/" style={{ color: route === 'learn' ? '#f8fafc' : '#93c5fd', textDecoration: 'none' }}>
+              Learn
+            </a>
+            <a
+              href="#/connect"
+              style={{ color: route === 'connect' ? '#f8fafc' : '#93c5fd', textDecoration: 'none' }}
+            >
+              Connect
+            </a>
+            <a
+              href="#/playground"
+              style={{
+                color: route === 'playground' ? '#f8fafc' : '#93c5fd',
+                textDecoration: 'none',
+              }}
+            >
+              Playground
+            </a>
+          </nav>
         </header>
 
-        {route === 'playground' ? <PlaygroundPage /> : <LearnDemoPage />}
+        {route === 'playground' ? (
+          <PlaygroundPage />
+        ) : route === 'connect' ? (
+          <ConnectPage />
+        ) : (
+          <LearnDemoPage />
+        )}
       </div>
     </div>
   );

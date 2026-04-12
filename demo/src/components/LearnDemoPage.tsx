@@ -41,15 +41,8 @@ import {
   mergeVolumeProfileStudyOptions,
 } from '../lib/mergeStudyOptions';
 
+import { ConceptToolbar } from './ConceptToolbar';
 import { OrderFlowChart } from './OrderFlowChart';
-
-const selectStyle: CSSProperties = {
-  background: '#0f172a',
-  color: '#e2e8f0',
-  border: '1px solid rgba(148, 163, 184, 0.2)',
-  borderRadius: 8,
-  padding: '6px 10px',
-};
 
 function prepareDataSourceViewState(
   snapshot: ChartViewStateSnapshot | null | undefined,
@@ -189,7 +182,7 @@ export function LearnDemoPage() {
       loadOrderFlowBars(
         symbol,
         sessionDate,
-        interval === '15m' ? '5m' : interval === '5m' ? '1m' : interval,
+        interval === '5m' ? '1m' : interval,
       ),
     [interval, sessionDate, symbol],
   );
@@ -257,7 +250,7 @@ export function LearnDemoPage() {
     }
 
     return buildVolumeDeltaPivotSeriesData(deltaSourceBars, lowerDeltaSourceBars, {
-      intervalSeconds: interval === '15m' ? 900 : interval === '5m' ? 300 : 60,
+      intervalSeconds: interval === '5m' ? 300 : 60,
     });
   }, [deltaSourceBars, interval, lowerDeltaSourceBars, preset.showVolumeDeltaPivot]);
   const visibleLessons = useMemo(
@@ -432,132 +425,65 @@ export function LearnDemoPage() {
         </div>
       </header>
 
-      <section
-        style={{
-          position: 'relative',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 16,
-          marginBottom: 16,
-          padding: 16,
-          borderRadius: 12,
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(148, 163, 184, 0.12)',
+      <ConceptToolbar
+        presetId={presetId}
+        presetOptions={CONCEPT_PRESETS.map((entry) => ({
+          value: entry.id,
+          label: entry.label,
+        }))}
+        onPresetChange={applyPresetDefaults}
+        themeId={themeId}
+        themeOptions={THEME_PRESETS.map((entry) => ({
+          value: entry.id,
+          label: entry.label,
+        }))}
+        onThemeChange={setThemeId}
+        sessionDate={sessionDate}
+        dateOptions={availableDates.map((entry) => ({
+          value: entry,
+          label: entry,
+        }))}
+        onDateChange={(value) => {
+          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+          setSessionDate(value);
+          setRestoredViewState(nextViewState);
+          setViewState(nextViewState);
         }}
-      >
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Preset
-          <select
-            value={presetId}
-            onChange={(event) => applyPresetDefaults(event.target.value)}
-            style={selectStyle}
-          >
-            {CONCEPT_PRESETS.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Theme
-          <select
-            value={themeId}
-            onChange={(event) => {
-              setThemeId(event.target.value);
-            }}
-            style={selectStyle}
-          >
-            {THEME_PRESETS.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Date
-          <select
-            value={sessionDate}
-            onChange={(event) => {
-              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-              setSessionDate(event.target.value);
-              setRestoredViewState(nextViewState);
-              setViewState(nextViewState);
-            }}
-            style={selectStyle}
-          >
-            {availableDates.map((dateValue) => (
-              <option key={dateValue} value={dateValue}>
-                {dateValue}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Symbol
-          <select
-            value={symbol}
-            onChange={(event) => {
-              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-              setSymbol(event.target.value as SymbolCode);
-              setRestoredViewState(nextViewState);
-              setViewState(nextViewState);
-            }}
-            style={selectStyle}
-          >
-            {AVAILABLE_SYMBOLS.map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Interval
-          <select
-            value={interval}
-            onChange={(event) => {
-              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-              setInterval(event.target.value as BarInterval);
-              setRestoredViewState(nextViewState);
-              setViewState(nextViewState);
-            }}
-            style={selectStyle}
-          >
-            {AVAILABLE_INTERVALS.map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Mintick
-          <select
-            value={String(effectiveMintick)}
-            onChange={(event) => {
-              const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-              setMintick(Number(event.target.value));
-              setRestoredViewState(nextViewState);
-              setViewState(nextViewState);
-            }}
-            style={selectStyle}
-          >
-            {mintickOptions.map((entry) => (
-              <option key={entry} value={entry}>
-                {formatMintick(entry)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div style={{ marginLeft: 'auto', position: 'relative' }}>
+        symbol={symbol}
+        symbolOptions={AVAILABLE_SYMBOLS.map((entry) => ({
+          value: entry,
+          label: entry,
+        }))}
+        onSymbolChange={(value) => {
+          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+          setSymbol(value as SymbolCode);
+          setRestoredViewState(nextViewState);
+          setViewState(nextViewState);
+        }}
+        interval={interval}
+        intervalOptions={AVAILABLE_INTERVALS.map((entry) => ({
+          value: entry,
+          label: entry,
+        }))}
+        onIntervalChange={(value) => {
+          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+          setInterval(value as BarInterval);
+          setRestoredViewState(nextViewState);
+          setViewState(nextViewState);
+        }}
+        mintick={effectiveMintick}
+        mintickOptions={mintickOptions.map((entry) => ({
+          value: entry,
+          label: formatMintick(entry),
+        }))}
+        onMintickChange={(value) => {
+          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+          setMintick(value);
+          setRestoredViewState(nextViewState);
+          setViewState(nextViewState);
+        }}
+        rightActions={
+          <div style={{ position: 'relative' }}>
           <button
             onClick={() => setLessonsOpen((open) => !open)}
             style={{
@@ -642,8 +568,9 @@ export function LearnDemoPage() {
               ))}
             </div>
           ) : null}
-        </div>
-      </section>
+          </div>
+        }
+      />
 
       {bars.length ? (
         <OrderFlowChart

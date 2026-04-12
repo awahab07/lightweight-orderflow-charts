@@ -1,10 +1,12 @@
 export type {
+  AggregatedMarketBar,
   InstrumentContext,
   NormalizationOptions,
   OrderFlowAggregationMode,
   OrderFlowBar,
   OrderFlowBatch,
   OrderFlowPatch,
+  OrderFlowTickStreamUpdate,
   PatchOperation,
   PriceLevelVolume,
   SessionDefinition,
@@ -151,6 +153,16 @@ export {
   createSeriesMetricPrimitive,
 } from './renderers/primitives/createSeriesMetricPrimitive';
 export { createVwapController } from './renderers/primitives/createVwapController';
+export type {
+  BuildOrderFlowBarsFromTicksInput,
+  CreateOrderFlowTickStreamControllerConfig,
+  OrderFlowTickStreamController,
+  OrderFlowTickStreamResult,
+} from './controllers/createOrderFlowTickStreamController';
+export {
+  buildOrderFlowBarsFromTicks,
+  createOrderFlowTickStreamController,
+} from './controllers/createOrderFlowTickStreamController';
 
 export { createAlphaColorScale, resolveColorScale, withAlpha } from './utils/color';
 export type {
@@ -166,6 +178,12 @@ export {
 } from './utils/chartState';
 export type { AutoFitPriceScaleOptions, AutoFitPriceScaleResult } from './utils/autoFitPriceScale';
 export { setPriceScaleAutoFit } from './utils/autoFitPriceScale';
+export {
+  aggregateMarketBarsByInterval,
+  aggregateOrderFlowBarsByInterval,
+  buildAggregatedMarketBarFromOrderFlowBar,
+  buildAggregatedMarketBarsFromOrderFlowBars,
+} from './utils/aggregateBars';
 export {
   buildPriceGrid,
   inferPricePrecision,

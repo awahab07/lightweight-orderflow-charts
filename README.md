@@ -51,6 +51,10 @@ Common local commands:
 
 - `npm run demo`
   Starts the demo application from `demo/`
+- `npm run demo:connect-bridge`
+  Starts the local connector bridge used by the repo-side `Connect` demo page
+- `npm run connector:ibkr:capture -- --help`
+  Runs the resumable IBKR historical capture CLI that writes aggregated minute data into the local vendor cache
 - `npm run format`
   Applies the shared Prettier formatting rules
 - `npm run format:check`
@@ -67,7 +71,7 @@ See `CONTRIBUTING.md` for the short contributor workflow.
 - `docs/DATA_REQUIREMENTS.md`
   What each chart or study needs from the host data pipeline
 - `docs/TICK_DATA.md`
-  Tick storage contracts, replay guidance, and partial-coverage behavior
+  Aggregated minute storage, local vendor cache layout, and replay guidance
 - `docs/MINTICK.md`
   Price clustering, bucketing semantics, and public `mintick` helpers
 - `docs/FORMATTING.md`
@@ -100,6 +104,14 @@ type OrderFlowBar = {
   sessionId?: string;
   totalVolume?: number;
   delta?: number;
+  bidVolume?: number;
+  askVolume?: number;
+  tradeCount?: number;
+  vwap?: number;
+  pocPrice?: number;
+  pocVolume?: number;
+  deltaMin?: number;
+  deltaMax?: number;
   levels: Array<{
     price: number;
     bidVolume: number;
@@ -118,11 +130,24 @@ Useful helpers when your upstream feed is not already normalized:
 - `normalizeOrderFlowBatch()`
 - `normalizeOrderFlowPatch()`
 - `applyOrderFlowPatch()`
+- `aggregateOrderFlowBarsByInterval()`
+- `aggregateMarketBarsByInterval()`
+- `buildAggregatedMarketBarsFromOrderFlowBars()`
+- `buildOrderFlowBarsFromTicks()`
+- `createOrderFlowTickStreamController()`
 - `resolveSessions()`
 
-The current demo app ships real market bars and reconstructs order-flow ladders synthetically until
-tick fixtures are available for a session. See `docs/TICK_DATA.md` for the recommended tick-storage
-layout and the replay/live update contract.
+The preferred canonical demo layout is now `1m`-based:
+
+- `bars-1m.json`
+  Candle summaries with required OHLCV plus optional `vwap`, `tradeCount`, `bidVolume`,
+  `askVolume`, `delta`, `deltaMin`, `deltaMax`, `pocPrice`, and `pocVolume`
+- `orderflow-1m.json`
+  Footprint-capable `OrderFlowBar[]` with per-price bid/ask participation
+
+The demo derives higher intervals such as `5m` from those `1m` files instead of storing separate
+canonical interval files. Local vendor capture now writes into `connectors/vendors/<vendor>/data/`
+as a cache-first source, while checked-in demo fixtures stay under `data/market/`.
 
 ## Choose The Right Study
 
@@ -390,11 +415,14 @@ function OrderFlowPane({ bars, chart }: { bars: OrderFlowBar[]; chart: IChartApi
 
 ## Demo
 
-The repo contains two demo entry points:
+The repo contains three demo entry points:
 
 - Learn mode at `#/`
   Educational kitchen sink with six controls: `Preset`, `Theme`, `Date`, `Symbol`, `Interval`,
   and `Lessons`
+- Connect at `#/connect`
+  Demo-only direct vendor flow with `Preset`, `Theme`, `Date`, `Symbol`, `Interval`, `Mintick`,
+  plus icon actions for save, direct retrieval, and connector status
 - Playground at `#/playground`
   Advanced view for trying lower-level fixtures and renderer combinations
 
@@ -434,8 +462,24 @@ be re-skinned without changing the underlying study composition.
   Learn-mode concept presets, lessons, and educational mappings
 - `demo/src/fixtures`
   Playground and test-oriented fixture data
+- `connectors/`
+  Repo-side, non-dist connector bridge, vendor adapters, and persistence helpers used by the
+  `Connect` demo surface
 - `data/market`
   Source-managed market fixtures used by the demo and verification flows, not by the published dist
+
+## Repo-Side Connectors
+
+The `connectors/` tree is intentionally a repo-side integration layer rather than part of the
+published npm surface.
+
+- The browser demo never talks to vendor sockets directly.
+- The `Connect` page uses a local HTTP plus SSE bridge started with `npm run demo:connect-bridge`.
+- Vendor adapters such as IBKR live under `connectors/vendors/`.
+- The bridge writes to `data/market` by default, but `CONNECTOR_MARKET_DATA_ROOT` can point it at an
+  alternate location for safe experimentation.
+
+See `connectors/README.md` for the connector protocol, bridge workflow, and extension guidance.
 
 ## Extension Guide
 
@@ -456,5 +500,6 @@ npm run typecheck
 npm run test
 npm run build
 npm run demo
+npm run demo:connect-bridge
 npm run demo:build
 ```

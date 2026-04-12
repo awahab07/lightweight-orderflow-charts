@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import {
-  applyOrderFlowPatch,
   buildSupportedMinticks,
   clusterOrderFlowBarsByMintick,
+  createOrderFlowTickStreamController,
   type FootprintCandlePosition,
   type FootprintSeriesPartialOptions,
   inferPricePrecision,
@@ -17,16 +17,18 @@ import {
   AVAILABLE_INTERVALS,
   AVAILABLE_SYMBOLS,
   availableDatesForSymbol,
+  hasStoredTradeTicks,
+  intervalToSeconds,
   loadInstrument,
   loadOrderFlowBars,
+  loadQuoteTicks,
+  loadTickDerivedOrderFlowBars,
+  loadTradeTicks,
+  preferredTickDateForSymbol,
   type BarInterval,
   type SymbolCode,
 } from '../lib/marketData';
-import {
-  buildReplayPatch,
-  STREAM_STEP_INTERVAL_MS,
-  STREAM_STEPS_PER_BAR,
-} from '../lib/orderFlowReplay';
+import { buildTickReplayFrames, STREAM_STEP_INTERVAL_MS } from '../lib/tickReplay';
 
 import { OrderFlowChart, type SeriesMode } from './OrderFlowChart';
 
@@ -60,7 +62,9 @@ export function FixtureDemoPage() {
   const preset = FIXTURE_PRESETS[presetId];
   const [symbol, setSymbol] = useState<SymbolCode>('TSLA');
   const [interval, setInterval] = useState<BarInterval>('5m');
-  const [sessionDate, setSessionDate] = useState(() => availableDatesForSymbol('TSLA').at(-1) ?? '');
+  const [sessionDate, setSessionDate] = useState(
+    () => preferredTickDateForSymbol('TSLA') ?? availableDatesForSymbol('TSLA').at(-1) ?? '',
+  );
   const [seriesMode, setSeriesMode] = useState<SeriesMode>(preset.seriesMode);
   const [showVisibleProfile, setShowVisibleProfile] = useState(true);
   const [showSessionProfiles, setShowSessionProfiles] = useState(true);
@@ -94,17 +98,53 @@ export function FixtureDemoPage() {
 
   const instrument = useMemo(() => loadInstrument(symbol), [symbol]);
   const availableDates = useMemo(() => availableDatesForSymbol(symbol), [symbol]);
-  const sourceBars = useMemo(
+  const barBackedBars = useMemo(
     () => loadOrderFlowBars(symbol, sessionDate, interval),
     [interval, sessionDate, symbol],
   );
+  const hasTickData = useMemo(() => hasStoredTradeTicks(symbol, sessionDate), [sessionDate, symbol]);
+  const tradeTicks = useMemo(
+    () => (hasTickData ? loadTradeTicks(symbol, sessionDate) : []),
+    [hasTickData, sessionDate, symbol],
+  );
+  const quoteTicks = useMemo(
+    () => (hasTickData ? loadQuoteTicks(symbol, sessionDate) : []),
+    [hasTickData, sessionDate, symbol],
+  );
+  const intervalSeconds = useMemo(() => intervalToSeconds(interval), [interval]);
+  const tickBackedBars = useMemo(
+    () =>
+      hasTickData
+        ? loadTickDerivedOrderFlowBars(symbol, sessionDate, interval)
+        : [],
+    [hasTickData, interval, sessionDate, symbol],
+  );
+  const hasUsableTickBars = tickBackedBars.length >= 3;
+  const replayFrames = useMemo(
+    () =>
+      hasTickData
+        ? buildTickReplayFrames({
+            trades: tradeTicks,
+            quotes: quoteTicks,
+            intervalSeconds,
+          })
+        : [],
+    [hasTickData, intervalSeconds, quoteTicks, tradeTicks],
+  );
+  const sourceBars = hasUsableTickBars ? tickBackedBars : barBackedBars;
   const basePriceStep = instrument.tickSize > 0 ? instrument.tickSize : 0.01;
 
   useEffect(() => {
     if (availableDates.length && !availableDates.includes(sessionDate)) {
-      setSessionDate(availableDates[availableDates.length - 1]);
+      setSessionDate(preferredTickDateForSymbol(symbol) ?? availableDates[availableDates.length - 1]);
     }
-  }, [availableDates, sessionDate]);
+  }, [availableDates, sessionDate, symbol]);
+
+  useEffect(() => {
+    if (!hasTickData && streamEnabled) {
+      setStreamEnabled(false);
+    }
+  }, [hasTickData, streamEnabled]);
 
   useEffect(() => {
     if (!streamEnabled) {
@@ -112,35 +152,33 @@ export function FixtureDemoPage() {
       return;
     }
 
-    if (!sourceBars.length) {
-      setStreamBars([]);
+    if (!replayFrames.length) {
+      setStreamBars(sourceBars);
       return;
     }
 
-    let barIndex = 0;
-    let stageIndex = 0;
+    const controller = createOrderFlowTickStreamController({
+      instrument,
+      intervalSeconds,
+    });
+    let frameIndex = 0;
     let intervalId = 0;
 
     const advance = () => {
-      const sourceBar = sourceBars[barIndex];
+      const frame = replayFrames[frameIndex];
 
-      if (!sourceBar) {
+      if (!frame) {
         if (intervalId) {
           window.clearInterval(intervalId);
         }
         return;
       }
 
-      const patch = buildReplayPatch(sourceBar, stageIndex, STREAM_STEPS_PER_BAR);
-      setStreamBars((current) => applyOrderFlowPatch(current, patch));
+      const result = controller.push(frame);
+      setStreamBars(result.bars);
+      frameIndex += 1;
 
-      stageIndex += 1;
-      if (stageIndex >= STREAM_STEPS_PER_BAR) {
-        stageIndex = 0;
-        barIndex += 1;
-      }
-
-      if (barIndex >= sourceBars.length && intervalId) {
+      if (frameIndex >= replayFrames.length && intervalId) {
         window.clearInterval(intervalId);
       }
     };
@@ -154,7 +192,7 @@ export function FixtureDemoPage() {
         window.clearInterval(intervalId);
       }
     };
-  }, [sourceBars, streamEnabled]);
+  }, [instrument, intervalSeconds, replayFrames, sourceBars, streamEnabled]);
 
   const displayBars = streamEnabled ? streamBars : sourceBars;
 
@@ -172,11 +210,13 @@ export function FixtureDemoPage() {
 
   const footerText = useMemo(
     () =>
-      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Candle position: ${candlePosition} | Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode} | Stream: ${streamEnabled ? 'on' : 'off'}`,
+      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Source: ${streamEnabled ? 'tick-replay' : hasUsableTickBars ? 'tick-derived' : hasTickData ? 'bar-backed + real ticks' : 'ohlc-synthetic'} | Candle position: ${candlePosition} | Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode} | Stream: ${streamEnabled ? 'on' : 'off'}`,
     [
       candlePosition,
       displayBars.length,
       effectiveMintick,
+      hasTickData,
+      hasUsableTickBars,
       interval,
       preset,
       seriesMode,
@@ -455,19 +495,30 @@ export function FixtureDemoPage() {
         </button>
 
         <button
-          onClick={() => setStreamEnabled((current) => !current)}
+          onClick={() => {
+            if (hasTickData) {
+              setStreamEnabled((current) => !current);
+            }
+          }}
+          disabled={!hasTickData}
           style={{
-            background: streamEnabled ? 'rgba(34, 197, 94, 0.2)' : 'rgba(148, 163, 184, 0.16)',
-            color: streamEnabled ? '#bbf7d0' : '#e2e8f0',
-            border: streamEnabled
-              ? '1px solid rgba(34, 197, 94, 0.28)'
-              : '1px solid rgba(148, 163, 184, 0.2)',
+            background: !hasTickData
+              ? 'rgba(71, 85, 105, 0.18)'
+              : streamEnabled
+                ? 'rgba(34, 197, 94, 0.2)'
+                : 'rgba(148, 163, 184, 0.16)',
+            color: !hasTickData ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
+            border: !hasTickData
+              ? '1px solid rgba(71, 85, 105, 0.28)'
+              : streamEnabled
+                ? '1px solid rgba(34, 197, 94, 0.28)'
+                : '1px solid rgba(148, 163, 184, 0.2)',
             borderRadius: 8,
             padding: '8px 14px',
-            cursor: 'pointer',
+            cursor: hasTickData ? 'pointer' : 'not-allowed',
           }}
         >
-          Stream
+          {hasTickData ? 'Stream' : 'Stream (ticks unavailable)'}
         </button>
       </section>
 

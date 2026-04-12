@@ -174,12 +174,35 @@ export function clusterOrderFlowBarByMintick(
     (total, level) => total + (level.delta ?? level.askVolume - level.bidVolume),
     0,
   );
+  const bidVolume = levels.reduce((total, level) => total + level.bidVolume, 0);
+  const askVolume = levels.reduce((total, level) => total + level.askVolume, 0);
+  const tradeCount = levels.reduce((count, level) => count + (level.tradeCount ?? 0), 0);
+  const weightedPriceVolume = levels.reduce(
+    (total, level) => total + level.price * (level.totalVolume ?? level.bidVolume + level.askVolume),
+    0,
+  );
+  let pocPrice: number | undefined;
+  let pocVolume = -1;
+
+  for (const level of levels) {
+    const levelVolume = level.totalVolume ?? level.bidVolume + level.askVolume;
+    if (levelVolume > pocVolume) {
+      pocPrice = level.price;
+      pocVolume = levelVolume;
+    }
+  }
 
   return {
     ...clusterOhlcBarByMintick(bar, normalizedMintick, sourceTickSize),
     levels,
     totalVolume,
     delta,
+    bidVolume,
+    askVolume,
+    tradeCount: tradeCount > 0 ? tradeCount : undefined,
+    vwap: totalVolume > 0 ? weightedPriceVolume / totalVolume : undefined,
+    pocPrice,
+    pocVolume: pocVolume >= 0 ? pocVolume : undefined,
   };
 }
 

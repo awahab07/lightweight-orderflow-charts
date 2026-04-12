@@ -38,6 +38,7 @@ import {
 import {
   captureChartViewState,
   createSeriesMetricPrimitive,
+  inferPriceStep,
   restoreChartViewState,
   setPriceScaleAutoFit,
   type SeriesMetricPrimitive,
@@ -65,6 +66,10 @@ const DEFAULT_THEME: OrderFlowChartTheme = {
   panelBackground: 'rgba(15, 23, 42, 0.75)',
   panelBorder: '1px solid rgba(148, 163, 184, 0.12)',
 };
+
+const AUTO_FIT_UPDATE_THROTTLE_MS = 250;
+const AUTO_FIT_TOP_INSET_RATIO = 0.05;
+const AUTO_FIT_BOTTOM_INSET_RATIO = 0.05;
 
 interface OrderFlowChartProps {
   bars: OrderFlowBar[];
@@ -211,6 +216,8 @@ export function OrderFlowChart({
   const blockViewStateEmitRef = useRef(false);
   const autoFitFrameRef = useRef<number | null>(null);
   const autoFitTimeoutRef = useRef<number | null>(null);
+  const autoFitLastAppliedAtRef = useRef(0);
+  const autoFitEnabledRef = useRef(defaultAutoFitEnabled);
   const restoreRedrawFrameRef = useRef<number | null>(null);
   const restoreFreezeFrameRef = useRef<number | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
@@ -238,18 +245,126 @@ export function OrderFlowChart({
   const mainPricePaneIndex = 0;
   const primaryPaneReady = showOrderFlowPane ? Boolean(series) : referenceCandleReady;
 
+  const cancelScheduledAutoFit = () => {
+    if (autoFitTimeoutRef.current !== null) {
+      window.clearTimeout(autoFitTimeoutRef.current);
+      autoFitTimeoutRef.current = null;
+    }
+
+    if (autoFitFrameRef.current !== null) {
+      window.cancelAnimationFrame(autoFitFrameRef.current);
+      autoFitFrameRef.current = null;
+    }
+  };
+
+  const applyAutoFitNow = () => {
+    if (!chart || !primaryPaneReady || !bars.length) {
+      return;
+    }
+
+    autoFitLastAppliedAtRef.current = Date.now();
+    series?.setData(bars);
+    candleSeriesRef.current?.setData(candleData);
+
+    const visibleLogicalRange = chart.timeScale().getVisibleLogicalRange();
+    const startIndex = visibleLogicalRange ? Math.max(0, Math.floor(visibleLogicalRange.from) - 1) : 0;
+    const endIndex = visibleLogicalRange
+      ? Math.min(bars.length - 1, Math.ceil(visibleLogicalRange.to) + 1)
+      : bars.length - 1;
+    const visibleBars = bars.slice(startIndex, endIndex + 1);
+
+    if (!visibleBars.length) {
+      return;
+    }
+
+    const highestPrice = visibleBars.reduce((maximum, bar) => Math.max(maximum, bar.high), Number.NEGATIVE_INFINITY);
+    const lowestPrice = visibleBars.reduce((minimum, bar) => Math.min(minimum, bar.low), Number.POSITIVE_INFINITY);
+    const inferredStep =
+      inferPriceStep(visibleBars.flatMap((bar) => bar.levels)) ??
+      inferPriceStep(
+        visibleBars.flatMap((bar) => [{ price: bar.open }, { price: bar.high }, { price: bar.low }, { price: bar.close }]),
+      ) ??
+      0.01;
+    const contentSpan = Math.max(highestPrice - lowestPrice, inferredStep);
+    const usableRatio = Math.max(1 - AUTO_FIT_TOP_INSET_RATIO - AUTO_FIT_BOTTOM_INSET_RATIO, 0.01);
+    const paddedSpan = contentSpan / usableRatio;
+    const priceScale = chart.priceScale('right', mainPricePaneIndex);
+
+    priceScale.applyOptions({
+      autoScale: false,
+      scaleMargins: {
+        top: AUTO_FIT_TOP_INSET_RATIO,
+        bottom: AUTO_FIT_BOTTOM_INSET_RATIO,
+      },
+    });
+    priceScale.setAutoScale(false);
+    priceScale.setVisibleRange({
+      from: lowestPrice - paddedSpan * AUTO_FIT_BOTTOM_INSET_RATIO,
+      to: highestPrice + paddedSpan * AUTO_FIT_TOP_INSET_RATIO,
+    });
+
+    const width = containerRef.current?.clientWidth;
+
+    if (width) {
+      chart.applyOptions({ width });
+    }
+  };
+
+  const requestAutoFit = (immediate = false) => {
+    if (!chart || !primaryPaneReady) {
+      return;
+    }
+
+    if (immediate) {
+      cancelScheduledAutoFit();
+    } else if (autoFitTimeoutRef.current !== null || autoFitFrameRef.current !== null) {
+      return;
+    }
+
+    const elapsedMs = Date.now() - autoFitLastAppliedAtRef.current;
+    const delayMs = immediate ? 0 : Math.max(AUTO_FIT_UPDATE_THROTTLE_MS - elapsedMs, 0);
+
+    const scheduleFrame = () => {
+      autoFitTimeoutRef.current = null;
+      autoFitFrameRef.current = window.requestAnimationFrame(() => {
+        autoFitFrameRef.current = null;
+
+        if (!autoFitEnabledRef.current && !immediate) {
+          return;
+        }
+
+        applyAutoFitNow();
+      });
+    };
+
+    if (delayMs === 0) {
+      scheduleFrame();
+      return;
+    }
+
+    autoFitTimeoutRef.current = window.setTimeout(scheduleFrame, delayMs);
+  };
+
   const setAutoFitMode = (enabled: boolean) => {
     setAutoFitEnabled(enabled);
+    autoFitEnabledRef.current = enabled;
     setPriceScaleContextMenu(null);
+
+    cancelScheduledAutoFit();
 
     if (!chart) {
       return;
     }
 
-    setPriceScaleAutoFit(chart, enabled, {
+    if (enabled) {
+      requestAutoFit(true);
+      return;
+    }
+
+    setPriceScaleAutoFit(chart, false, {
       paneIndex: mainPricePaneIndex,
-      topInsetRatio: 0.05,
-      bottomInsetRatio: 0.05,
+      topInsetRatio: AUTO_FIT_TOP_INSET_RATIO,
+      bottomInsetRatio: AUTO_FIT_BOTTOM_INSET_RATIO,
     });
   };
 
@@ -763,60 +878,49 @@ export function OrderFlowChart({
 
     handledAutoFitRequestRef.current = autoFitRequestKey;
     setAutoFitEnabled(true);
+    autoFitEnabledRef.current = true;
+    requestAutoFit(true);
   }, [autoFitRequestKey]);
 
   useEffect(() => {
-    if (!chart || !primaryPaneReady || !autoFitEnabled) {
+    autoFitEnabledRef.current = autoFitEnabled;
+  }, [autoFitEnabled]);
+
+  useEffect(() => {
+    if (!autoFitEnabled) {
       return;
     }
 
-    if (autoFitTimeoutRef.current !== null) {
-      window.clearTimeout(autoFitTimeoutRef.current);
-    }
-
-    if (autoFitFrameRef.current !== null) {
-      window.cancelAnimationFrame(autoFitFrameRef.current);
-    }
-
-    autoFitTimeoutRef.current = window.setTimeout(
-      () => {
-        autoFitTimeoutRef.current = null;
-        autoFitFrameRef.current = window.requestAnimationFrame(() => {
-          autoFitFrameRef.current = null;
-          setPriceScaleAutoFit(chart, true, {
-            paneIndex: mainPricePaneIndex,
-            topInsetRatio: 0.05,
-            bottomInsetRatio: 0.05,
-          });
-
-          const width = containerRef.current?.clientWidth;
-
-          if (width) {
-            chart.applyOptions({ width });
-          }
-        });
-      },
-      initialViewState ? 240 : 120,
-    );
-
-    return () => {
-      if (autoFitTimeoutRef.current !== null) {
-        window.clearTimeout(autoFitTimeoutRef.current);
-        autoFitTimeoutRef.current = null;
-      }
-      if (autoFitFrameRef.current !== null) {
-        window.cancelAnimationFrame(autoFitFrameRef.current);
-        autoFitFrameRef.current = null;
-      }
-    };
+    requestAutoFit(false);
   }, [
     autoFitEnabled,
+    bars,
     chart,
     dataSourceKey,
     initialViewState,
     mainPricePaneIndex,
     primaryPaneReady,
   ]);
+
+  useEffect(() => {
+    if (!chart || !autoFitEnabled) {
+      return;
+    }
+
+    const handleVisibleLogicalRangeChange = () => {
+      requestAutoFit(false);
+    };
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
+
+    return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
+    };
+  }, [autoFitEnabled, chart, dataSourceKey, primaryPaneReady]);
+
+  useEffect(() => () => {
+    cancelScheduledAutoFit();
+  }, []);
 
   useEffect(() => {
     if (!chart || !containerRef.current) {
@@ -1040,7 +1144,7 @@ export function OrderFlowChart({
               data={bars}
               options={volumeFootprintOptions}
               paneIndex={orderFlowPaneIndex ?? undefined}
-              onReady={setSeries as never}
+              onReady={setSeries}
             />
           )
         ) : null}

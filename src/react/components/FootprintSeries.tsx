@@ -9,7 +9,7 @@ export interface FootprintSeriesProps {
   data: OrderFlowBar[];
   options?: FootprintSeriesPartialOptions;
   paneIndex?: number;
-  onReady?: (series: ISeriesApi<'Custom', TimeValue>) => void;
+  onReady?: (series: ISeriesApi<'Custom', TimeValue> | null) => void;
 }
 
 export function FootprintSeries(props: FootprintSeriesProps) {

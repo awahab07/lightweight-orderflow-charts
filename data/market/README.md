@@ -14,38 +14,50 @@ Date window:
 - `2026-03-01` through `2026-03-10`
 - only open-market sessions are stored
 
-Intervals:
+Canonical interval:
 
 - `1m`
-- `5m`
-- `15m`
 
-Tick-level content:
+Higher interval behavior:
 
-- trade ticks
-- quote ticks when available
+- `5m` is derived from stored `1m` data
+- separate canonical `5m` or `15m` files are not the preferred long-term contract
+
+Footprint-capable content:
+
+- `orderflow-1m.json`
+- `bars-1m.json`
+- `session-manifest.json`
 
 Current committed status:
 
-- bar fixtures are present and drive the demo today
-- tick fixtures are optional and may be absent for some or all sessions
-- when tick fixtures are absent, the demo falls back to synthetic order-flow reconstruction from bars
+- `bars-1m.json` remains the minimum required checked-in fixture
+- `orderflow-1m.json` is the preferred checked-in footprint source
+- some sessions may still contain legacy interval or raw-tick artifacts while the canonical dataset is
+  refreshed
+- local vendor capture should write to `connectors/vendors/<vendor>/data/` first and only curated
+  sessions should be promoted here
 
 ## Layout
 
 Each symbol/session partition can contain:
 
 - `bars-1m.json`
+- `orderflow-1m.json`
+- `session-manifest.json`
+
+Legacy migration artifacts may still exist for older sessions:
+
 - `bars-5m.json`
 - `bars-15m.json`
 - `ticks-manifest.json`
 - `trades.ndjson.gz`
 - `quotes.ndjson.gz`
-- derived order-flow or study fixtures for fast demo loading
+- `trades.ndjson.gz.partial`
+- `quotes.ndjson.gz.partial`
 
 ## Notes
 
 - These files are intended for source-level demo and test usage.
 - They are not part of the distributed npm package output.
-- Use `ticks-manifest.json` as the stable entry point when tick files are sharded or only partially
-  available.
+- Use `session-manifest.json` as the stable entry point for aggregated minute fixtures.

@@ -46,6 +46,33 @@ export interface OrderFlowBar extends CustomData<TimeValue> {
   levels: PriceLevelVolume[];
   totalVolume?: number;
   delta?: number;
+  bidVolume?: number;
+  askVolume?: number;
+  tradeCount?: number;
+  vwap?: number;
+  pocPrice?: number;
+  pocVolume?: number;
+  deltaMin?: number;
+  deltaMax?: number;
+  sessionId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AggregatedMarketBar extends CustomData<TimeValue> {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  vwap?: number;
+  tradeCount?: number;
+  bidVolume?: number;
+  askVolume?: number;
+  delta?: number;
+  deltaMin?: number;
+  deltaMax?: number;
+  pocPrice?: number;
+  pocVolume?: number;
   sessionId?: string;
   metadata?: Record<string, unknown>;
 }
@@ -79,6 +106,12 @@ export interface QuoteTick {
   bidSize: number;
   askSize: number;
   attributes?: Record<string, unknown>;
+}
+
+export interface OrderFlowTickStreamUpdate {
+  trades?: TradeTick[];
+  quotes?: QuoteTick[];
+  metadata?: Record<string, unknown>;
 }
 
 export interface TickSessionChunk {

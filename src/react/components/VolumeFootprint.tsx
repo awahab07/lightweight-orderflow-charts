@@ -9,7 +9,7 @@ export interface VolumeFootprintProps {
   data: OrderFlowBar[];
   options?: VolumeFootprintPartialOptions;
   paneIndex?: number;
-  onReady?: (series: ISeriesApi<'Custom', TimeValue>) => void;
+  onReady?: (series: ISeriesApi<'Custom', TimeValue> | null) => void;
 }
 
 export function VolumeFootprint(props: VolumeFootprintProps) {

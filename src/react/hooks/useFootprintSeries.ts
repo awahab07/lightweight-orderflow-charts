@@ -17,7 +17,7 @@ export interface UseFootprintSeriesProps {
   options?: FootprintSeriesPartialOptions | VolumeFootprintPartialOptions;
   paneIndex?: number;
   variant?: 'footprint' | 'volume-footprint';
-  onReady?: (series: ISeriesApi<'Custom', TimeValue>) => void;
+  onReady?: (series: ISeriesApi<'Custom', TimeValue> | null) => void;
 }
 
 export function useFootprintSeries({
@@ -48,6 +48,7 @@ export function useFootprintSeries({
     onReady?.(nextSeries);
 
     return () => {
+      onReady?.(null);
       safeRemoveSeries(resolvedChart, nextSeries);
       setSeries(null);
     };

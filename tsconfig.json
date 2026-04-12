@@ -20,6 +20,6 @@
     },
     "types": ["node", "vite/client", "vitest/globals"]
   },
-  "include": ["src", "demo", "tests", "tsup.config.ts", "vitest.config.ts"],
+  "include": ["src", "demo", "connectors", "tests", "tsup.config.ts", "vitest.config.ts"],
   "exclude": ["dist", "node_modules"]
 }
