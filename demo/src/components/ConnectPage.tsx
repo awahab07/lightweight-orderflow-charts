@@ -1,7 +1,7 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -28,12 +28,14 @@ import type {
   ConnectorBridgeEvent,
   ConnectorBridgeState,
   ConnectorConfigValue,
+  ConnectorGrabProgress,
+  ConnectorSessionDataPayload,
   MarketDataConnectorDescriptor,
 } from '../../../connectors/core/contracts';
 import {
   connectConnector,
-  disconnectConnector,
   getConnectorBridgeBaseUrl,
+  loadConnectorCacheSession,
   loadConnectorBridgeState,
   startConnectorGrab,
   subscribeToConnectorBridgeEvents,
@@ -51,7 +53,6 @@ import {
   availableDatesForSymbol,
   intervalToSeconds,
   loadInstrument,
-  loadOrderFlowBars,
   preferredTickDateForSymbol,
   type BarInterval,
   type SymbolCode,
@@ -135,16 +136,6 @@ function renderStreamIcon(): ReactNode {
   );
 }
 
-function renderSaveIcon(): ReactNode {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M5 4h11l3 3v13H5z" />
-      <path d="M9 4v6h6V4" />
-      <path d="M9 18h6" />
-    </svg>
-  );
-}
-
 function resolveConnectButtonVisual(state: ConnectorBridgeState | null): {
   color: string;
   borderColor: string;
@@ -206,6 +197,210 @@ function resolveConnectButtonVisual(state: ConnectorBridgeState | null): {
         title: 'Disconnected',
       };
   }
+}
+
+function resolvePayloadBars(
+  payload: ConnectorSessionDataPayload,
+  instrument: ReturnType<typeof loadInstrument>,
+): {
+  bars: OrderFlowBar[] | null;
+  mode: 'footprint' | 'bar-backed' | null;
+} {
+  if (payload.orderFlowBars.length) {
+    return {
+      bars: payload.orderFlowBars,
+      mode: 'footprint',
+    };
+  }
+
+  if (!payload.marketBars.length) {
+    return {
+      bars: null,
+      mode: null,
+    };
+  }
+
+  return {
+    bars: buildSyntheticOrderFlowFromBars({
+      bars: payload.marketBars.map((bar) => ({
+        time: Number(bar.time),
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume,
+        count: bar.tradeCount,
+        vwap: bar.vwap,
+      })),
+      instrument: payload.instrument ?? instrument,
+    }),
+    mode: 'bar-backed',
+  };
+}
+
+function resolveCoverageBarVisual(progress: ConnectorGrabProgress | null): {
+  pct: number;
+  fill: string;
+  borderColor: string;
+  label: string;
+  tooltip: string;
+} {
+  const pct = Math.min(Math.max(progress?.coveragePct ?? progress?.progressPct ?? 0, 0), 100);
+
+  if (!progress) {
+    return {
+      pct: 0,
+      fill: 'rgba(100, 116, 139, 0.45)',
+      borderColor: 'rgba(148, 163, 184, 0.18)',
+      label: 'Cache 0%',
+      tooltip: 'No cache summary is available for the current selection yet.',
+    };
+  }
+
+  const tooltip = [
+    `${progress.symbol} ${progress.sessionDate}`,
+    `Status: ${progress.status}`,
+    `Coverage: ${pct.toFixed(2)}%`,
+    progress.requiredMinutes != null && progress.coveredMinutes != null
+      ? `Covered minutes: ${progress.coveredMinutes}/${progress.requiredMinutes}`
+      : `Loaded market bars: ${progress.loadedMarketBars}`,
+    progress.contiguousCoveredMinutes != null
+      ? `Contiguous coverage from open: ${progress.contiguousCoveredMinutes}`
+      : null,
+    progress.message ?? null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  if (progress.status === 'error') {
+    return {
+      pct,
+      fill: 'linear-gradient(90deg, rgba(239, 68, 68, 0.92), rgba(248, 113, 113, 0.92))',
+      borderColor: 'rgba(248, 113, 113, 0.28)',
+      label: 'Error',
+      tooltip,
+    };
+  }
+
+  if (progress.status === 'loading-cache' || progress.status === 'loading-vendor') {
+    return {
+      pct,
+      fill: 'linear-gradient(90deg, rgba(34, 211, 238, 0.92), rgba(59, 130, 246, 0.92))',
+      borderColor: 'rgba(34, 211, 238, 0.28)',
+      label: `Streaming ${pct.toFixed(1)}%`,
+      tooltip,
+    };
+  }
+
+  if (progress.complete) {
+    return {
+      pct,
+      fill: 'linear-gradient(90deg, rgba(74, 222, 128, 0.92), rgba(34, 197, 94, 0.92))',
+      borderColor: 'rgba(74, 222, 128, 0.28)',
+      label: 'Cache 100%',
+      tooltip,
+    };
+  }
+
+  if (pct > 0) {
+    return {
+      pct,
+      fill: 'linear-gradient(90deg, rgba(250, 204, 21, 0.92), rgba(249, 115, 22, 0.92))',
+      borderColor: 'rgba(250, 204, 21, 0.28)',
+      label: `Cache ${pct.toFixed(1)}%`,
+      tooltip,
+    };
+  }
+
+  return {
+    pct,
+    fill: 'rgba(100, 116, 139, 0.45)',
+    borderColor: 'rgba(148, 163, 184, 0.18)',
+    label: 'Cache 0%',
+    tooltip,
+  };
+}
+
+function ToolbarCoverageBar({
+  progress,
+  loading,
+}: {
+  progress: ConnectorGrabProgress | null;
+  loading?: boolean;
+}) {
+  const visual =
+    loading && !progress
+      ? {
+          pct: 0,
+          fill: 'linear-gradient(90deg, rgba(96, 165, 250, 0.78), rgba(34, 211, 238, 0.78))',
+          borderColor: 'rgba(96, 165, 250, 0.24)',
+          label: 'Inspecting cache',
+          tooltip: 'Reading the cached session summary for the current connector selection.',
+        }
+      : resolveCoverageBarVisual(progress);
+
+  return (
+    <div
+      title={visual.tooltip}
+      style={{
+        width: '100%',
+        minWidth: 160,
+        display: 'grid',
+        gap: 6,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: 11,
+          color: '#94a3b8',
+          letterSpacing: 0.2,
+        }}
+      >
+        <span>{visual.label}</span>
+        <span>100%</span>
+      </div>
+
+      <div
+        style={{
+          position: 'relative',
+          height: 30,
+          borderRadius: 999,
+          overflow: 'hidden',
+          background: 'rgba(2, 6, 23, 0.86)',
+          border: `1px solid ${visual.borderColor}`,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: `${visual.pct}%`,
+            background: visual.fill,
+            transition: 'width 180ms ease-out',
+          }}
+        />
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 12px',
+            color: '#e2e8f0',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          <span>{Math.round(visual.pct)}%</span>
+          <span>{progress?.status === 'loading-vendor' ? 'streaming' : progress?.complete ? 'ready' : 'cache'}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ConnectDialog({
@@ -501,6 +696,11 @@ export function ConnectPage() {
   const [connectingConnector, setConnectingConnector] = useState(false);
   const [liveBars, setLiveBars] = useState<OrderFlowBar[] | null>(null);
   const [liveDataMode, setLiveDataMode] = useState<'footprint' | 'bar-backed' | null>(null);
+  const [selectionProgress, setSelectionProgress] = useState<ConnectorGrabProgress | null>(null);
+  const [selectionSource, setSelectionSource] = useState<ConnectorSessionDataPayload['source'] | null>(
+    null,
+  );
+  const [cacheSummaryLoading, setCacheSummaryLoading] = useState(false);
 
   const preset = useMemo(() => getConceptPreset(presetId), [presetId]);
   const themePreset = useMemo(() => getThemePreset(themeId), [themeId]);
@@ -515,10 +715,6 @@ export function ConnectPage() {
     [instrument.tickSize, mintick],
   );
   const availableDates = useMemo(() => availableDatesForSymbol(symbol), [symbol]);
-  const staticSourceBars = useMemo(
-    () => loadOrderFlowBars(symbol, sessionDate, interval),
-    [interval, sessionDate, symbol],
-  );
   const intervalSeconds = useMemo(() => intervalToSeconds(interval), [interval]);
   const liveBarsForInterval = useMemo(
     () =>
@@ -531,14 +727,18 @@ export function ConnectPage() {
   );
 
   const activeGrabMatchesSelection =
-    bridgeState?.activeGrab?.symbol === symbol && bridgeState?.activeGrab?.sessionDate === sessionDate;
-  const directModeActive =
-    activeGrabMatchesSelection &&
-    ['loading-cache', 'loading-vendor', 'paused', 'completed'].includes(
-      bridgeState?.activeGrab?.status ?? '',
-    ) &&
-    Boolean(liveBarsForInterval);
-  const activeSourceBars = directModeActive ? liveBarsForInterval ?? [] : staticSourceBars;
+    bridgeState?.activeGrab?.vendorId === selectedVendorId &&
+    bridgeState?.activeGrab?.symbol === symbol &&
+    bridgeState?.activeGrab?.sessionDate === sessionDate;
+  const currentProgress = activeGrabMatchesSelection ? bridgeState?.activeGrab ?? null : selectionProgress;
+  const directModeActive = Boolean(
+    liveBarsForInterval &&
+      currentProgress &&
+      ['idle', 'loading-cache', 'loading-vendor', 'paused', 'completed'].includes(
+        currentProgress.status,
+      ),
+  );
+  const activeSourceBars = liveBarsForInterval ?? [];
   const clusteredBars = useMemo(
     () => clusterOrderFlowBarsByMintick(activeSourceBars, effectiveMintick, instrument.tickSize),
     [activeSourceBars, effectiveMintick, instrument.tickSize],
@@ -679,31 +879,36 @@ export function ConnectPage() {
 
     return restoredViewState;
   }, [preset.showOrderFlowPane, preset.showVolumeDeltaPivot, restoredViewState]);
-
-  const footerText = useMemo(() => {
-    const sourceLabel = directModeActive
-      ? liveDataMode === 'bar-backed'
-        ? `cache-first ${bridgeState?.connection.vendorLabel ?? 'vendor'} bar-backed load`
-        : `cache-first ${bridgeState?.connection.vendorLabel ?? 'vendor'} footprint load`
-      : 'canonical aggregated data';
-    return `${symbol} | ${sessionDate} | ${interval} | Mintick: ${formatMintick(
-      effectiveMintick,
-    )} | Theme: ${themePreset.label} | Source: ${sourceLabel}`;
-  }, [
-    bridgeState?.connection.vendorLabel,
-    directModeActive,
-    effectiveMintick,
-    interval,
-    liveDataMode,
-    sessionDate,
-    symbol,
-    themePreset.label,
-  ]);
-
   const selectedVendor = useMemo(
     () => bridgeState?.vendors.find((vendor) => vendor.id === selectedVendorId) ?? null,
     [bridgeState?.vendors, selectedVendorId],
   );
+
+  const footerText = useMemo(() => {
+    const sourceLabel =
+      cacheSummaryLoading && !liveBarsForInterval
+        ? `loading ${selectedVendor?.label ?? 'connector'} cache summary`
+        : directModeActive
+          ? liveDataMode === 'bar-backed'
+            ? `${selectionSource ?? 'cache'} ${selectedVendor?.label ?? 'vendor'} bar-backed session`
+            : `${selectionSource ?? 'cache'} ${selectedVendor?.label ?? 'vendor'} footprint session`
+          : `${selectedVendor?.label ?? 'vendor'} connector cache`;
+    return `${symbol} | ${sessionDate} | ${interval} | Mintick: ${formatMintick(
+      effectiveMintick,
+    )} | Theme: ${themePreset.label} | Source: ${sourceLabel}`;
+  }, [
+    cacheSummaryLoading,
+    directModeActive,
+    effectiveMintick,
+    interval,
+    liveDataMode,
+    liveBarsForInterval,
+    sessionDate,
+    selectedVendor?.label,
+    selectionSource,
+    symbol,
+    themePreset.label,
+  ]);
 
   const connectVisual = resolveConnectButtonVisual(bridgeState);
 
@@ -730,6 +935,30 @@ export function ConnectPage() {
       bridgeState &&
       testedConfigFingerprint &&
       currentConfigFingerprint === testedConfigFingerprint,
+  );
+
+  const applySessionPayload = useCallback(
+    (
+      payload: ConnectorSessionDataPayload,
+      options?: {
+        overwriteMessage?: boolean;
+      },
+    ) => {
+      const resolved = resolvePayloadBars(payload, instrument);
+      setLiveBars(resolved.bars);
+      setLiveDataMode(resolved.mode);
+      setSelectionProgress(payload.progress);
+      setSelectionSource(payload.source);
+
+      if (options?.overwriteMessage !== false && payload.progress.message) {
+        setConnectorResultMessage(
+          resolved.mode === 'bar-backed'
+            ? `${payload.progress.message} Rendering a synthetic bar-backed ladder because this vendor session does not include true order-flow levels.`
+            : payload.progress.message,
+        );
+      }
+    },
+    [instrument],
   );
 
   useEffect(() => {
@@ -781,38 +1010,14 @@ export function ConnectPage() {
 
         if (event.type === 'session-data') {
           const payload = event.payload;
-          if (payload.progress.symbol !== symbol || payload.progress.sessionDate !== sessionDate) {
+          if (
+            payload.vendorId !== selectedVendorId ||
+            payload.progress.symbol !== symbol ||
+            payload.progress.sessionDate !== sessionDate
+          ) {
             return;
           }
-
-          const resolvedBars = payload.orderFlowBars.length
-            ? payload.orderFlowBars
-            : payload.marketBars.length
-              ? buildSyntheticOrderFlowFromBars({
-                  bars: payload.marketBars.map((bar) => ({
-                    time: Number(bar.time),
-                    open: bar.open,
-                    high: bar.high,
-                    low: bar.low,
-                    close: bar.close,
-                    volume: bar.volume,
-                    count: bar.tradeCount,
-                    vwap: bar.vwap,
-                  })),
-                  instrument: payload.instrument ?? instrument,
-                })
-              : null;
-          setLiveBars(resolvedBars);
-          setLiveDataMode(
-            payload.orderFlowBars.length ? 'footprint' : payload.marketBars.length ? 'bar-backed' : null,
-          );
-          if (payload.progress.message) {
-            setConnectorResultMessage(
-              payload.orderFlowBars.length || !payload.marketBars.length
-                ? payload.progress.message
-                : `${payload.progress.message} Rendering a synthetic bar-backed ladder because this vendor session does not include true order-flow levels.`,
-            );
-          }
+          applySessionPayload(payload);
           return;
         }
 
@@ -831,7 +1036,7 @@ export function ConnectPage() {
       disposed = true;
       unsubscribe();
     };
-  }, [instrument, selectedVendorId, sessionDate, symbol]);
+  }, [applySessionPayload, selectedVendorId, sessionDate, symbol]);
 
   useEffect(() => {
     if (!selectedVendor) {
@@ -848,6 +1053,67 @@ export function ConnectPage() {
       return next;
     });
   }, [selectedVendor]);
+
+  useEffect(() => {
+    if (!bridgeState?.bridgeAvailable || !selectedVendor) {
+      setSelectionProgress(null);
+      setSelectionSource(null);
+      setLiveBars(null);
+      setLiveDataMode(null);
+      return;
+    }
+
+    let disposed = false;
+    setCacheSummaryLoading(true);
+    setSelectionProgress(null);
+    setSelectionSource(null);
+    setLiveBars(null);
+    setLiveDataMode(null);
+
+    loadConnectorCacheSession({
+      vendorId: selectedVendor.id,
+      symbol,
+      sessionDate,
+      intervalSeconds: 60,
+      includeTicks: selectedVendor.supportsHistoricalTicks,
+      includeQuotes: selectedVendor.supportsQuotes,
+    })
+      .then((result) => {
+        if (disposed || !result.payload || result.payload.vendorId !== selectedVendor.id) {
+          return;
+        }
+
+        applySessionPayload(result.payload, { overwriteMessage: false });
+      })
+      .catch((error) => {
+        if (disposed) {
+          return;
+        }
+
+        setSelectionProgress(null);
+        setSelectionSource(null);
+        setLiveBars(null);
+        setLiveDataMode(null);
+        setConnectorResultMessage(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        if (!disposed) {
+          setCacheSummaryLoading(false);
+        }
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, [
+    applySessionPayload,
+    bridgeState?.bridgeAvailable,
+    selectedVendor?.id,
+    selectedVendor?.supportsHistoricalTicks,
+    selectedVendor?.supportsQuotes,
+    sessionDate,
+    symbol,
+  ]);
 
   useEffect(() => {
     setLiveBars(null);
@@ -919,7 +1185,7 @@ export function ConnectPage() {
     }
 
     try {
-      await startConnectorGrab({
+      const result = await startConnectorGrab({
         vendorId: selectedVendor.id,
         symbol,
         sessionDate,
@@ -927,6 +1193,7 @@ export function ConnectPage() {
         includeTicks: selectedVendor.supportsHistoricalTicks,
         includeQuotes: selectedVendor.supportsQuotes,
       });
+      setConnectorResultMessage(result.message);
     } catch (error) {
       setConnectorResultMessage(error instanceof Error ? error.message : String(error));
     }
@@ -935,11 +1202,14 @@ export function ConnectPage() {
     bridgeState &&
       selectedVendor &&
       !connectingConnector &&
-      !['loading-cache', 'loading-vendor'].includes(bridgeState.activeGrab?.status ?? ''),
+      !(
+        activeGrabMatchesSelection &&
+        ['loading-cache', 'loading-vendor'].includes(bridgeState.activeGrab?.status ?? '')
+      ),
   );
-  const loadInProgress = ['loading-cache', 'loading-vendor'].includes(
-    bridgeState?.activeGrab?.status ?? '',
-  );
+  const loadInProgress =
+    activeGrabMatchesSelection &&
+    ['loading-cache', 'loading-vendor'].includes(bridgeState?.activeGrab?.status ?? '');
 
   return (
     <>
@@ -1023,6 +1293,7 @@ export function ConnectPage() {
           setRestoredViewState(nextViewState);
           setViewState(nextViewState);
         }}
+        statusContent={<ToolbarCoverageBar progress={currentProgress} loading={cacheSummaryLoading} />}
         rightActions={
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
@@ -1030,8 +1301,8 @@ export function ConnectPage() {
               disabled={!loadEnabled}
               title={
                 loadInProgress
-                  ? 'Loading from cache or vendor'
-                  : 'Load cached data or refresh it from the vendor'
+                  ? 'Streaming missing session coverage from cache or vendor'
+                  : 'Stream the missing session coverage from cache or vendor'
               }
               style={{
                 ...buttonBaseStyle(loadEnabled),
@@ -1120,9 +1391,11 @@ export function ConnectPage() {
             color: '#cbd5e1',
           }}
         >
-          {directModeActive
-            ? 'Waiting for cached or vendor-loaded minute data to materialize the selected chart.'
-            : 'No stored market data is available for this selection yet.'}
+          {cacheSummaryLoading
+            ? 'Inspecting the selected connector cache session.'
+            : directModeActive
+              ? 'Waiting for cached or vendor-loaded minute data to materialize the selected chart.'
+              : `No cached ${selectedVendor?.label ?? 'connector'} session is available for this selection yet. Connect the vendor and stream to build it.`}
         </section>
       )}
 

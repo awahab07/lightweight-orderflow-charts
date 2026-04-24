@@ -13,10 +13,14 @@ import type {
   ConnectorGrabProgress,
   ConnectorLogLevel,
   ConnectorSaveResult,
+  ConnectorSessionDataPayload,
   ConnectorStoredSessionSummary,
+  ConnectorVendorId,
   MarketDataConnectorDefinition,
   MarketDataConnectorSession,
 } from '../core/contracts';
+import { assessMinuteCoverage } from '../core/minuteCoverage';
+import { sessionProgressPct } from '../core/time';
 import {
   loadAggregatedSession,
   resolveVendorCacheRoot,
@@ -91,6 +95,106 @@ function writeJson(response: ServerResponse, statusCode: number, body: unknown):
 
 function writeSse(response: ServerResponse, event: ConnectorBridgeEvent): void {
   response.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function buildStoredSummary(
+  symbol: string,
+  sessionDate: string,
+  includeTicks: boolean,
+  stored: ReturnType<typeof loadAggregatedSession>,
+): ConnectorStoredSessionSummary {
+  const coverage = assessMinuteCoverage(stored.marketBars, stored.orderFlowBars);
+  const complete = includeTicks
+    ? stored.summary.complete && stored.summary.footprintAvailable && coverage.isComplete
+    : stored.summary.complete && stored.marketBars.length > 0;
+  const coveragePct = includeTicks
+    ? coverage.coverageRatio * 100
+    : complete
+      ? 100
+      : sessionProgressPct(stored.summary.lastBarTime);
+
+  return {
+    ...stored.summary,
+    symbol,
+    sessionDate,
+    complete,
+    requiredMinutes: includeTicks ? coverage.requiredMinuteCount : null,
+    coveredMinutes: includeTicks ? coverage.coveredMinuteCount : stored.marketBars.length,
+    contiguousCoveredMinutes: includeTicks
+      ? coverage.contiguousCoveredMinuteCount
+      : stored.marketBars.length,
+    coveragePct,
+  };
+}
+
+function buildStoredSessionPayload(input: {
+  vendorId: ConnectorVendorId;
+  vendorLabel: string;
+  symbol: string;
+  sessionDate: string;
+  intervalSeconds: number;
+  includeTicks: boolean;
+  includeQuotes: boolean;
+  stored: ReturnType<typeof loadAggregatedSession>;
+  message: string;
+}): ConnectorSessionDataPayload {
+  const summary = buildStoredSummary(
+    input.symbol,
+    input.sessionDate,
+    input.includeTicks,
+    input.stored,
+  );
+  const currentBar =
+    input.stored.orderFlowBars.length > 0
+      ? input.stored.orderFlowBars[input.stored.orderFlowBars.length - 1]
+      : null;
+  const completedMinutes = input.includeTicks
+    ? summary.complete
+      ? summary.contiguousCoveredMinutes ?? 0
+      : Math.max((summary.contiguousCoveredMinutes ?? 0) - (currentBar ? 1 : 0), 0)
+    : input.stored.marketBars.length;
+
+  return {
+    vendorId: input.vendorId,
+    vendorLabel: input.vendorLabel,
+    orderFlowBars: input.stored.orderFlowBars,
+    marketBars: input.stored.marketBars,
+    progress: {
+      vendorId: input.vendorId as ConnectorGrabProgress['vendorId'],
+      vendorLabel: input.vendorLabel,
+      symbol: input.symbol,
+      sessionDate: input.sessionDate,
+      intervalSeconds: input.intervalSeconds,
+      includeTicks: input.includeTicks,
+      includeQuotes: input.includeQuotes,
+      status: summary.complete ? 'completed' : input.stored.marketBars.length || input.stored.orderFlowBars.length ? 'paused' : 'idle',
+      cacheHit: input.stored.marketBars.length > 0 || input.stored.orderFlowBars.length > 0,
+      cachedOrderFlowBars: input.stored.orderFlowBars.length,
+      loadedOrderFlowBars: input.stored.orderFlowBars.length,
+      loadedMarketBars: input.stored.marketBars.length,
+      requestCount: 0,
+      lastObservedTime: summary.lastBarTime,
+      cursor: {
+        tradeNextTime: null,
+        quoteNextTime: null,
+      },
+      progressPct: sessionProgressPct(summary.lastBarTime),
+      requiredMinutes: summary.requiredMinutes,
+      coveredMinutes: summary.coveredMinutes,
+      contiguousCoveredMinutes: summary.contiguousCoveredMinutes,
+      coveragePct: summary.coveragePct,
+      complete: summary.complete,
+      dirty: false,
+      rawTicksFetchedCurrentRun: 0,
+      rawTradeTicksFetchedCurrentRun: 0,
+      rawQuoteTicksFetchedCurrentRun: 0,
+      completedMinutes,
+      currentMinutePriceLevels: currentBar?.levels.length ?? 0,
+      message: input.message,
+    },
+    instrument: null,
+    source: 'cache',
+  };
 }
 
 export function createConnectorBridgeServer(options: ConnectorBridgeServerOptions = {}) {
@@ -190,6 +294,8 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         emitEvent({
           type: 'session-data',
           payload: {
+            vendorId: control.vendorId as ConnectorSessionDataPayload['vendorId'],
+            vendorLabel: control.vendorLabel,
             orderFlowBars: snapshot.orderFlowBars,
             marketBars: snapshot.marketBars,
             progress: snapshot.progress,
@@ -261,6 +367,70 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
 
     if (method === 'GET' && url.pathname === '/api/connectors/state') {
       writeJson(response, 200, buildState());
+      return;
+    }
+
+    if (method === 'POST' && url.pathname === '/api/connectors/cache/session') {
+      const body = await readJsonBody<{
+        vendorId: string;
+        symbol: string;
+        sessionDate: string;
+        intervalSeconds: number;
+        includeTicks?: boolean;
+        includeQuotes?: boolean;
+      }>(request);
+      const connector = getConnectorDefinition(body.vendorId);
+      if (!connector) {
+        writeJson(response, 404, {
+          ok: false,
+          message: `Unknown connector vendor '${body.vendorId}'.`,
+        } satisfies BridgeCommandResponse);
+        return;
+      }
+
+      const symbol = String(body.symbol || '').trim().toUpperCase();
+      const sessionDate = String(body.sessionDate || '').trim();
+      if (!symbol || !sessionDate || !Number.isFinite(body.intervalSeconds)) {
+        writeJson(response, 400, {
+          ok: false,
+          message: 'vendorId, symbol, sessionDate, and intervalSeconds are required.',
+        } satisfies BridgeCommandResponse);
+        return;
+      }
+
+      const includeTicks =
+        Boolean(body.includeTicks ?? connector.descriptor.supportsHistoricalTicks) &&
+        connector.descriptor.supportsHistoricalTicks;
+      const includeQuotes =
+        Boolean(body.includeQuotes ?? connector.descriptor.supportsQuotes) &&
+        connector.descriptor.supportsQuotes;
+      const stored = loadAggregatedSession(
+        symbol,
+        sessionDate,
+        resolveConnectorDataRoot(connector),
+      );
+      const payload = buildStoredSessionPayload({
+        vendorId: connector.descriptor.id,
+        vendorLabel: connector.descriptor.label,
+        symbol,
+        sessionDate,
+        intervalSeconds: Number(body.intervalSeconds),
+        includeTicks,
+        includeQuotes,
+        stored,
+        message:
+          stored.marketBars.length || stored.orderFlowBars.length
+            ? buildStoredSummary(symbol, sessionDate, includeTicks, stored).complete
+              ? 'Loaded the cached session for the current selection.'
+              : `Loaded cached progress. Connect ${connector.descriptor.label} and stream to continue from the first incomplete minute.`
+            : `No cached ${connector.descriptor.label} session exists for this selection yet.`,
+      });
+
+      writeJson(response, 200, {
+        ok: true,
+        message: payload.progress.message ?? 'Loaded cached session data.',
+        payload,
+      } satisfies BridgeCommandResponse<ConnectorSessionDataPayload>);
       return;
     }
 
@@ -451,43 +621,24 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         Boolean(activeSession && activeConnector) &&
         activeConnector?.descriptor.id === requestedConnector.descriptor.id;
       const stored = loadAggregatedSession(symbol, sessionDate, dataRoot);
-      storedSummary = stored.summary;
+      const cachedPayload = buildStoredSessionPayload({
+        vendorId: requestedConnector.descriptor.id,
+        vendorLabel: requestedConnector.descriptor.label,
+        symbol,
+        sessionDate,
+        intervalSeconds: Number(body.intervalSeconds),
+        includeTicks,
+        includeQuotes,
+        stored,
+        message:
+          stored.marketBars.length || stored.orderFlowBars.length
+            ? 'Loaded cached progress for the selected session.'
+            : `No cached ${requestedConnector.descriptor.label} session exists for this selection yet.`,
+      });
+      storedSummary = buildStoredSummary(symbol, sessionDate, includeTicks, stored);
 
       if (!vendorReadyForFetch) {
         if (stored.marketBars.length || stored.orderFlowBars.length) {
-          const progress: ConnectorGrabProgress = {
-            symbol,
-            sessionDate,
-            intervalSeconds: Number(body.intervalSeconds),
-            includeTicks,
-            includeQuotes,
-            status: stored.summary.complete ? 'completed' : 'paused',
-            cacheHit: true,
-            cachedOrderFlowBars: stored.orderFlowBars.length,
-            loadedOrderFlowBars: stored.orderFlowBars.length,
-            loadedMarketBars: stored.marketBars.length,
-            requestCount: 0,
-            lastObservedTime: stored.summary.lastBarTime,
-            cursor: {
-              tradeNextTime: null,
-              quoteNextTime: null,
-            },
-            progressPct: null,
-            complete: stored.summary.complete,
-            dirty: false,
-            rawTicksFetchedCurrentRun: 0,
-            rawTradeTicksFetchedCurrentRun: 0,
-            rawQuoteTicksFetchedCurrentRun: 0,
-            completedMinutes: stored.orderFlowBars.length,
-            currentMinutePriceLevels:
-              stored.orderFlowBars.length > 0
-                ? stored.orderFlowBars[stored.orderFlowBars.length - 1].levels.length
-                : 0,
-            message: stored.summary.complete
-              ? 'Loaded a complete cached session without opening a vendor connection.'
-              : `Loaded cached progress. Connect ${requestedConnector.descriptor.label} to refresh or complete the session.`,
-          };
-
           activeGrab = {
             vendorId: requestedConnector.descriptor.id,
             vendorLabel: requestedConnector.descriptor.label,
@@ -497,27 +648,30 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
             includeTicks,
             includeQuotes,
             maxRequests: body.maxRequests,
-            orderFlowBars: stored.orderFlowBars,
-            marketBars: stored.marketBars,
-            progress,
+            orderFlowBars: cachedPayload.orderFlowBars,
+            marketBars: cachedPayload.marketBars,
+            progress: {
+              ...cachedPayload.progress,
+              status: cachedPayload.progress.complete ? 'completed' : 'paused',
+              message: cachedPayload.progress.complete
+                ? 'Loaded a complete cached session without opening a vendor connection.'
+                : `Loaded cached progress. Connect ${requestedConnector.descriptor.label} to refresh or complete the session.`,
+            },
             runPromise: null,
           };
 
           emitEvent({
             type: 'session-data',
             payload: {
-              orderFlowBars: stored.orderFlowBars,
-              marketBars: stored.marketBars,
-              progress,
-              instrument: null,
-              source: 'cache',
+              ...cachedPayload,
+              progress: activeGrab.progress,
             },
           });
           emitState();
 
           writeJson(response, 200, {
             ok: true,
-            message: progress.message ?? 'Loaded the cached session.',
+            message: activeGrab.progress.message ?? 'Loaded the cached session.',
             payload: buildState(),
           } satisfies BridgeCommandResponse<ConnectorBridgeState>);
           return;
@@ -527,6 +681,41 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
           ok: false,
           message: `Connect ${requestedConnector.descriptor.label} before loading uncached market data.`,
         } satisfies BridgeCommandResponse);
+        return;
+      }
+
+      if (cachedPayload.progress.complete) {
+        activeGrab = {
+          vendorId: requestedConnector.descriptor.id,
+          vendorLabel: requestedConnector.descriptor.label,
+          symbol,
+          sessionDate,
+          intervalSeconds: Number(body.intervalSeconds),
+          includeTicks,
+          includeQuotes,
+          maxRequests: body.maxRequests,
+          orderFlowBars: cachedPayload.orderFlowBars,
+          marketBars: cachedPayload.marketBars,
+          progress: {
+            ...cachedPayload.progress,
+            status: 'completed',
+            message: 'Loaded a complete cached session. No vendor re-stream was required.',
+          },
+          runPromise: null,
+        };
+        emitEvent({
+          type: 'session-data',
+          payload: {
+            ...cachedPayload,
+            progress: activeGrab.progress,
+          },
+        });
+        emitState();
+        writeJson(response, 200, {
+          ok: true,
+          message: activeGrab.progress.message ?? 'Loaded the cached session.',
+          payload: buildState(),
+        } satisfies BridgeCommandResponse<ConnectorBridgeState>);
         return;
       }
 
@@ -550,33 +739,9 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         orderFlowBars: stored.orderFlowBars,
         marketBars: stored.marketBars,
         progress: {
-          symbol,
-          sessionDate,
-          intervalSeconds: Number(body.intervalSeconds),
-          includeTicks,
-          includeQuotes,
+          ...cachedPayload.progress,
           status: 'loading-cache',
-          cacheHit: stored.orderFlowBars.length > 0 || stored.marketBars.length > 0,
-          cachedOrderFlowBars: stored.orderFlowBars.length,
-          loadedOrderFlowBars: stored.orderFlowBars.length,
-          loadedMarketBars: stored.marketBars.length,
-          requestCount: 0,
-          lastObservedTime: stored.summary.lastBarTime,
-          cursor: {
-            tradeNextTime: null,
-            quoteNextTime: null,
-          },
-          progressPct: null,
           complete: false,
-          dirty: false,
-          rawTicksFetchedCurrentRun: 0,
-          rawTradeTicksFetchedCurrentRun: 0,
-          rawQuoteTicksFetchedCurrentRun: 0,
-          completedMinutes: stored.orderFlowBars.length,
-          currentMinutePriceLevels:
-            stored.orderFlowBars.length > 0
-              ? stored.orderFlowBars[stored.orderFlowBars.length - 1].levels.length
-              : 0,
           message:
             stored.orderFlowBars.length > 0 || stored.marketBars.length > 0
               ? `Loaded cached data and refreshing it from ${requestedConnector.descriptor.label}.`

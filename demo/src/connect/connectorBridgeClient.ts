@@ -2,6 +2,7 @@ import type {
   ConnectorBridgeEvent,
   ConnectorBridgeState,
   ConnectorConfigValue,
+  ConnectorSessionDataPayload,
   ConnectorSaveResult,
 } from '../../../connectors/core/contracts';
 
@@ -81,6 +82,17 @@ export async function startConnectorGrab(input: {
   maxRequests?: number;
 }): Promise<{ ok: boolean; message: string; payload?: ConnectorBridgeState }> {
   return postJson('/api/connectors/grab/start', input);
+}
+
+export async function loadConnectorCacheSession(input: {
+  vendorId: string;
+  symbol: string;
+  sessionDate: string;
+  intervalSeconds: number;
+  includeTicks?: boolean;
+  includeQuotes?: boolean;
+}): Promise<{ ok: boolean; message: string; payload?: ConnectorSessionDataPayload }> {
+  return postJson('/api/connectors/cache/session', input);
 }
 
 export async function stopConnectorGrab(): Promise<{

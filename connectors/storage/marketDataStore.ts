@@ -189,6 +189,10 @@ function summarizeTicks(
           : null,
     footprintAvailable: trades.length > 0,
     complete: Boolean(manifest?.complete),
+    requiredMinutes: null,
+    coveredMinutes: null,
+    contiguousCoveredMinutes: null,
+    coveragePct: null,
     manifest: null,
   };
 }

@@ -1,15 +1,8 @@
-import type {
-  AggregatedMarketBar,
-  InstrumentContext,
-  OrderFlowBar,
-  QuoteTick,
-  TradeTick,
-} from 'lightweight-orderflow-charts';
+import type { AggregatedMarketBar, InstrumentContext, OrderFlowBar } from 'lightweight-orderflow-charts';
 import {
   aggregateMarketBarsByInterval,
   aggregateOrderFlowBarsByInterval,
   buildAggregatedMarketBarsFromOrderFlowBars,
-  buildOrderFlowBarsFromTicks,
 } from 'lightweight-orderflow-charts';
 
 import {
@@ -32,40 +25,18 @@ interface MarketInstrumentRecord {
   longName?: string;
 }
 
-const instrumentModules = import.meta.glob('../../../data/market/*/instrument.json', {
-  eager: true,
-});
-const minuteBarModules = import.meta.glob('../../../data/market/*/*/bars-1m.json', {
-  eager: true,
-});
-const minuteOrderFlowModules = import.meta.glob('../../../data/market/*/*/orderflow-1m.json', {
-  eager: true,
-});
-const legacyTradeTickModules = import.meta.glob('../../../data/market/*/*/trades.ndjson.gz.partial', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-});
-const legacyQuoteTickModules = import.meta.glob('../../../data/market/*/*/quotes.ndjson.gz.partial', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-});
+const instrumentModules = import.meta.glob('../../../data/market/*/instrument.json', { eager: true });
+const minuteBarModules = import.meta.glob('../../../data/market/*/*/bars-1m.json');
+const minuteOrderFlowModules = import.meta.glob('../../../data/market/*/*/orderflow-1m.json');
 
 const instruments = new Map<SymbolCode, MarketInstrumentRecord>();
-const marketBars1mByKey = new Map<string, AggregatedMarketBar[]>();
-const orderFlowBars1mByKey = new Map<string, OrderFlowBar[]>();
-const legacyTradesByKey = new Map<string, TradeTick[]>();
-const legacyQuotesByKey = new Map<string, QuoteTick[]>();
 const datesBySymbol = new Map<SymbolCode, Set<string>>();
+const minuteBarLoadersByKey = new Map<string, () => Promise<unknown>>();
+const minuteOrderFlowLoadersByKey = new Map<string, () => Promise<unknown>>();
+const marketBars1mCache = new Map<string, Promise<AggregatedMarketBar[]>>();
+const orderFlowBars1mCache = new Map<string, Promise<OrderFlowBar[]>>();
 
-function parseNdjson<T>(rawText: string): T[] {
-  return rawText
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as T);
-}
+type JsonModule<T> = { default: T } | T;
 
 export function intervalToSeconds(interval: BarInterval): number {
   switch (interval) {
@@ -101,7 +72,7 @@ for (const [pathname, moduleValue] of Object.entries(instrumentModules)) {
   instruments.set(symbol, (moduleValue as { default: MarketInstrumentRecord }).default);
 }
 
-for (const [pathname, moduleValue] of Object.entries(minuteBarModules)) {
+for (const [pathname, moduleLoader] of Object.entries(minuteBarModules)) {
   const match = pathname.match(/data\/market\/([^/]+)\/([^/]+)\/bars-1m\.json$/);
   if (!match) {
     continue;
@@ -109,10 +80,7 @@ for (const [pathname, moduleValue] of Object.entries(minuteBarModules)) {
 
   const symbol = match[1].toUpperCase() as SymbolCode;
   const sessionDate = match[2];
-  marketBars1mByKey.set(
-    `${symbol}:${sessionDate}`,
-    (moduleValue as { default: AggregatedMarketBar[] }).default,
-  );
+  minuteBarLoadersByKey.set(`${symbol}:${sessionDate}`, moduleLoader);
 
   if (!datesBySymbol.has(symbol)) {
     datesBySymbol.set(symbol, new Set());
@@ -120,7 +88,7 @@ for (const [pathname, moduleValue] of Object.entries(minuteBarModules)) {
   datesBySymbol.get(symbol)?.add(sessionDate);
 }
 
-for (const [pathname, moduleValue] of Object.entries(minuteOrderFlowModules)) {
+for (const [pathname, moduleLoader] of Object.entries(minuteOrderFlowModules)) {
   const match = pathname.match(/data\/market\/([^/]+)\/([^/]+)\/orderflow-1m\.json$/);
   if (!match) {
     continue;
@@ -128,48 +96,7 @@ for (const [pathname, moduleValue] of Object.entries(minuteOrderFlowModules)) {
 
   const symbol = match[1].toUpperCase() as SymbolCode;
   const sessionDate = match[2];
-  orderFlowBars1mByKey.set(
-    `${symbol}:${sessionDate}`,
-    (moduleValue as { default: OrderFlowBar[] }).default,
-  );
-
-  if (!datesBySymbol.has(symbol)) {
-    datesBySymbol.set(symbol, new Set());
-  }
-  datesBySymbol.get(symbol)?.add(sessionDate);
-}
-
-for (const [pathname, moduleValue] of Object.entries(legacyTradeTickModules)) {
-  const match = pathname.match(/data\/market\/([^/]+)\/([^/]+)\/trades\.ndjson\.gz\.partial$/);
-  if (!match) {
-    continue;
-  }
-
-  const symbol = match[1].toUpperCase() as SymbolCode;
-  const sessionDate = match[2];
-  legacyTradesByKey.set(
-    `${symbol}:${sessionDate}`,
-    parseNdjson<TradeTick>((moduleValue as string) || ''),
-  );
-
-  if (!datesBySymbol.has(symbol)) {
-    datesBySymbol.set(symbol, new Set());
-  }
-  datesBySymbol.get(symbol)?.add(sessionDate);
-}
-
-for (const [pathname, moduleValue] of Object.entries(legacyQuoteTickModules)) {
-  const match = pathname.match(/data\/market\/([^/]+)\/([^/]+)\/quotes\.ndjson\.gz\.partial$/);
-  if (!match) {
-    continue;
-  }
-
-  const symbol = match[1].toUpperCase() as SymbolCode;
-  const sessionDate = match[2];
-  legacyQuotesByKey.set(
-    `${symbol}:${sessionDate}`,
-    parseNdjson<QuoteTick>((moduleValue as string) || ''),
-  );
+  minuteOrderFlowLoadersByKey.set(`${symbol}:${sessionDate}`, moduleLoader);
 
   if (!datesBySymbol.has(symbol)) {
     datesBySymbol.set(symbol, new Set());
@@ -187,48 +114,17 @@ export function availableDatesForSymbol(symbol: SymbolCode): string[] {
 }
 
 export function preferredTickDateForSymbol(symbol: SymbolCode): string | null {
-  let bestDate: string | null = null;
-  let bestBarCount = -1;
+  const orderFlowDates = Array.from(minuteOrderFlowLoadersByKey.keys())
+    .map((key) => key.split(':'))
+    .filter(([entrySymbol]) => entrySymbol === symbol)
+    .map(([, sessionDate]) => sessionDate)
+    .sort();
 
-  for (const [key, orderFlowBars] of orderFlowBars1mByKey.entries()) {
-    const [entrySymbol, sessionDate] = key.split(':');
-    if (entrySymbol !== symbol) {
-      continue;
-    }
-
-    if (orderFlowBars.length > bestBarCount) {
-      bestBarCount = orderFlowBars.length;
-      bestDate = sessionDate;
-    }
+  if (orderFlowDates.length > 0) {
+    return orderFlowDates.at(-1) ?? null;
   }
 
-  if (bestDate) {
-    return bestDate;
-  }
-
-  let bestTimeSpan = -1;
-  let bestTradeCount = -1;
-
-  for (const [key, trades] of legacyTradesByKey.entries()) {
-    const [entrySymbol, sessionDate] = key.split(':');
-    if (entrySymbol !== symbol) {
-      continue;
-    }
-
-    const timeSpan =
-      trades.length > 1 ? trades[trades.length - 1].time - trades[0].time : trades.length ? 1 : 0;
-
-    if (
-      timeSpan > bestTimeSpan ||
-      (timeSpan === bestTimeSpan && trades.length > bestTradeCount)
-    ) {
-      bestTimeSpan = timeSpan;
-      bestTradeCount = trades.length;
-      bestDate = sessionDate;
-    }
-  }
-
-  return bestDate ?? availableDatesForSymbol(symbol).at(-1) ?? null;
+  return availableDatesForSymbol(symbol).at(-1) ?? null;
 }
 
 export function loadInstrument(symbol: SymbolCode): InstrumentContext {
@@ -245,108 +141,95 @@ export function loadInstrument(symbol: SymbolCode): InstrumentContext {
   };
 }
 
-export function loadMarketBars(
+async function loadJsonModule<T>(loader: () => Promise<unknown>): Promise<T> {
+  const moduleValue = (await loader()) as JsonModule<T>;
+  if (typeof moduleValue === 'object' && moduleValue && 'default' in moduleValue) {
+    return (moduleValue as { default: T }).default;
+  }
+
+  return moduleValue as T;
+}
+
+async function loadMarketBars1m(symbol: SymbolCode, sessionDate: string): Promise<AggregatedMarketBar[]> {
+  const sessionKey = `${symbol}:${sessionDate}`;
+  if (!marketBars1mCache.has(sessionKey)) {
+    marketBars1mCache.set(
+      sessionKey,
+      (async () => {
+        const directLoader = minuteBarLoadersByKey.get(sessionKey);
+        if (directLoader) {
+          return loadJsonModule<AggregatedMarketBar[]>(directLoader);
+        }
+
+        if (minuteOrderFlowLoadersByKey.has(sessionKey)) {
+          const orderFlowBars = await loadOrderFlowBars1m(symbol, sessionDate);
+          return buildAggregatedMarketBarsFromOrderFlowBars(orderFlowBars);
+        }
+
+        return [];
+      })(),
+    );
+  }
+
+  return (await marketBars1mCache.get(sessionKey)) ?? [];
+}
+
+async function loadOrderFlowBars1m(symbol: SymbolCode, sessionDate: string): Promise<OrderFlowBar[]> {
+  const sessionKey = `${symbol}:${sessionDate}`;
+  if (!orderFlowBars1mCache.has(sessionKey)) {
+    orderFlowBars1mCache.set(
+      sessionKey,
+      (async () => {
+        const directLoader = minuteOrderFlowLoadersByKey.get(sessionKey);
+        if (directLoader) {
+          return loadJsonModule<OrderFlowBar[]>(directLoader);
+        }
+
+        const marketBars1m = await loadMarketBars1m(symbol, sessionDate);
+        if (!marketBars1m.length) {
+          return [];
+        }
+
+        return buildSyntheticOrderFlowFromBars({
+          bars: marketBars1m.map((bar) => ({
+            time: Number(bar.time),
+            open: bar.open,
+            high: bar.high,
+            low: bar.low,
+            close: bar.close,
+            volume: bar.volume,
+            count: bar.tradeCount,
+            vwap: bar.vwap,
+          })),
+          instrument: loadInstrument(symbol),
+        });
+      })(),
+    );
+  }
+
+  return (await orderFlowBars1mCache.get(sessionKey)) ?? [];
+}
+
+export async function loadMarketBars(
   symbol: SymbolCode,
   sessionDate: string,
   interval: BarInterval,
-): AggregatedMarketBar[] {
-  const sessionKey = `${symbol}:${sessionDate}`;
+): Promise<AggregatedMarketBar[]> {
   const intervalSeconds = intervalToSeconds(interval);
-  const storedBars1m = marketBars1mByKey.get(sessionKey);
-  if (storedBars1m?.length) {
-    return interval === '1m'
-      ? storedBars1m.slice()
-      : aggregateMarketBarsByInterval(storedBars1m, intervalSeconds);
-  }
-
-  const storedOrderFlow1m = orderFlowBars1mByKey.get(sessionKey);
-  if (storedOrderFlow1m?.length) {
-    const derivedBars1m = buildAggregatedMarketBarsFromOrderFlowBars(storedOrderFlow1m);
-    return interval === '1m'
-      ? derivedBars1m
-      : aggregateMarketBarsByInterval(derivedBars1m, intervalSeconds);
-  }
-
-  return [];
+  const storedBars1m = await loadMarketBars1m(symbol, sessionDate);
+  return interval === '1m'
+    ? storedBars1m.slice()
+    : aggregateMarketBarsByInterval(storedBars1m, intervalSeconds);
 }
 
-export function loadOrderFlowBars(
+export async function loadOrderFlowBars(
   symbol: SymbolCode,
   sessionDate: string,
   interval: BarInterval,
-): OrderFlowBar[] {
-  const sessionKey = `${symbol}:${sessionDate}`;
+): Promise<OrderFlowBar[]> {
   const intervalSeconds = intervalToSeconds(interval);
-  const storedOrderFlow1m = orderFlowBars1mByKey.get(sessionKey);
-  if (storedOrderFlow1m?.length) {
-    return interval === '1m'
-      ? storedOrderFlow1m.slice()
-      : aggregateOrderFlowBarsByInterval(storedOrderFlow1m, intervalSeconds);
-  }
-
-  const legacyTickDerived = loadLegacyTickDerivedOrderFlowBars(symbol, sessionDate, interval);
-  if (legacyTickDerived.length) {
-    return legacyTickDerived;
-  }
-
-  return buildSyntheticOrderFlowFromBars({
-    bars: loadMarketBars(symbol, sessionDate, interval).map((bar) => ({
-      time: Number(bar.time),
-      open: bar.open,
-      high: bar.high,
-      low: bar.low,
-      close: bar.close,
-      volume: bar.volume,
-      count: bar.tradeCount,
-      vwap: bar.vwap,
-    })),
-    instrument: loadInstrument(symbol),
-  });
-}
-
-export function hasStoredTradeTicks(symbol: SymbolCode, sessionDate: string): boolean {
-  return legacyTradesByKey.has(`${symbol}:${sessionDate}`);
-}
-
-export function loadTradeTicks(symbol: SymbolCode, sessionDate: string): TradeTick[] {
-  return legacyTradesByKey.get(`${symbol}:${sessionDate}`) ?? [];
-}
-
-export function loadQuoteTicks(symbol: SymbolCode, sessionDate: string): QuoteTick[] {
-  return legacyQuotesByKey.get(`${symbol}:${sessionDate}`) ?? [];
-}
-
-function loadLegacyTickDerivedOrderFlowBars(
-  symbol: SymbolCode,
-  sessionDate: string,
-  interval: BarInterval,
-): OrderFlowBar[] {
-  const sessionKey = `${symbol}:${sessionDate}`;
-  if (!legacyTradesByKey.has(sessionKey)) {
-    return [];
-  }
-
-  return buildOrderFlowBarsFromTicks({
-    instrument: loadInstrument(symbol),
-    intervalSeconds: intervalToSeconds(interval),
-    trades: legacyTradesByKey.get(sessionKey) ?? [],
-    quotes: legacyQuotesByKey.get(sessionKey) ?? [],
-  });
-}
-
-export function loadTickDerivedOrderFlowBars(
-  symbol: SymbolCode,
-  sessionDate: string,
-  interval: BarInterval,
-): OrderFlowBar[] {
-  const sessionKey = `${symbol}:${sessionDate}`;
-  const intervalSeconds = intervalToSeconds(interval);
-  const storedOrderFlow1m = orderFlowBars1mByKey.get(sessionKey);
-  if (storedOrderFlow1m?.length) {
-    return interval === '1m'
-      ? storedOrderFlow1m.slice()
-      : aggregateOrderFlowBarsByInterval(storedOrderFlow1m, intervalSeconds);
-  }
-
-  return loadLegacyTickDerivedOrderFlowBars(symbol, sessionDate, interval);
+  const storedOrderFlow1m = await loadOrderFlowBars1m(symbol, sessionDate);
+  return interval === '1m'
+    ? storedOrderFlow1m.slice()
+    : aggregateOrderFlowBarsByInterval(storedOrderFlow1m, intervalSeconds);
 }

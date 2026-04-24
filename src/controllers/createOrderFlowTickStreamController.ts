@@ -114,22 +114,6 @@ function resolveTradeSide(
         source: 'quote',
       };
     }
-
-    const midpoint = (latestQuote.bidPrice + latestQuote.askPrice) / 2;
-
-    if (trade.price > midpoint) {
-      return {
-        side: 'buy',
-        source: 'quote',
-      };
-    }
-
-    if (trade.price < midpoint) {
-      return {
-        side: 'sell',
-        source: 'quote',
-      };
-    }
   }
 
   if (previousTradePrice !== null) {

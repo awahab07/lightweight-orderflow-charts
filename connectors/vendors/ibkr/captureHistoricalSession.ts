@@ -79,6 +79,8 @@ function resolveRewriteStart(
 }
 
 function buildProgress(input: {
+  vendorId?: ConnectorVendorId | null;
+  vendorLabel?: string | null;
   symbol: string;
   sessionDate: string;
   intervalSeconds: number;
@@ -102,12 +104,20 @@ function buildProgress(input: {
   coverage: MinuteCoverageAssessment;
 }): ConnectorGrabProgress {
   const currentBar = input.orderFlowBars.length ? input.orderFlowBars[input.orderFlowBars.length - 1] : null;
-  const completedMinutes =
-    input.complete
+  const completedMinutes = input.includeTicks
+    ? input.complete
       ? input.coverage.contiguousCoveredMinuteCount
-      : Math.max(input.coverage.contiguousCoveredMinuteCount - (currentBar ? 1 : 0), 0);
+      : Math.max(input.coverage.contiguousCoveredMinuteCount - (currentBar ? 1 : 0), 0)
+    : input.marketBars.length;
+  const coveragePct = input.includeTicks
+    ? input.coverage.coverageRatio * 100
+    : input.complete
+      ? 100
+      : sessionProgressPct(input.lastObservedTime);
 
   return {
+    vendorId: input.vendorId ?? null,
+    vendorLabel: input.vendorLabel ?? null,
     symbol: input.symbol,
     sessionDate: input.sessionDate,
     intervalSeconds: input.intervalSeconds,
@@ -125,6 +135,12 @@ function buildProgress(input: {
       quoteNextTime: input.quoteNextTime,
     },
     progressPct: sessionProgressPct(input.lastObservedTime),
+    requiredMinutes: input.includeTicks ? input.coverage.requiredMinuteCount : null,
+    coveredMinutes: input.includeTicks ? input.coverage.coveredMinuteCount : input.marketBars.length,
+    contiguousCoveredMinutes: input.includeTicks
+      ? input.coverage.contiguousCoveredMinuteCount
+      : input.marketBars.length,
+    coveragePct,
     complete: input.complete,
     dirty: input.dirty,
     rawTicksFetchedCurrentRun: input.rawTicksFetchedCurrentRun,
@@ -285,6 +301,7 @@ export async function* captureHistoricalSession(
 
   if (cacheHit) {
     const cachedProgress = buildProgress({
+      vendorId: options.vendorId,
       symbol: options.symbol,
       sessionDate: options.sessionDate,
       intervalSeconds: 60,
@@ -384,6 +401,7 @@ export async function* captureHistoricalSession(
       vendorId: options.vendorId,
     });
     const progress = buildProgress({
+      vendorId: options.vendorId,
       symbol: options.symbol,
       sessionDate: options.sessionDate,
       intervalSeconds: 60,
@@ -475,6 +493,10 @@ export async function* captureHistoricalSession(
                   : null,
               footprintAvailable: mergedOrderFlowBars.length > 0,
               complete: captureComplete,
+              requiredMinutes: mergedCoverage.requiredMinuteCount,
+              coveredMinutes: mergedCoverage.coveredMinuteCount,
+              contiguousCoveredMinutes: mergedCoverage.contiguousCoveredMinuteCount,
+              coveragePct: mergedCoverage.coverageRatio * 100,
               manifest: stored.summary.manifest,
             },
             sessionDirectory: stored.sessionDirectory,
@@ -499,6 +521,7 @@ export async function* captureHistoricalSession(
         : 'Persisting partial aggregated minute data so the run can resume safely.',
     });
     const progress = buildProgress({
+      vendorId: options.vendorId,
       symbol: options.symbol,
       sessionDate: options.sessionDate,
       intervalSeconds: 60,

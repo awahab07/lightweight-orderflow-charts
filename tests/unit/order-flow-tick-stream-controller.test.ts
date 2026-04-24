@@ -137,6 +137,64 @@ describe('createOrderFlowTickStreamController', () => {
       deltaMax: 0,
     });
   });
+
+  it('falls back to tick rule when a trade prints inside the spread', () => {
+    const controller = createOrderFlowTickStreamController({
+      instrument,
+      intervalSeconds: 60,
+    });
+
+    const result = controller.push({
+      quotes: [
+        {
+          time: 1_700_000_460,
+          bidPrice: 100,
+          askPrice: 100.04,
+          bidSize: 20,
+          askSize: 20,
+        },
+      ],
+      trades: [
+        {
+          time: 1_700_000_460,
+          price: 100.04,
+          size: 4,
+        },
+        {
+          time: 1_700_000_461,
+          price: 100.02,
+          size: 3,
+        },
+        {
+          time: 1_700_000_462,
+          price: 100.03,
+          size: 2,
+        },
+      ],
+    });
+
+    expect(result.bars).toHaveLength(1);
+    expect(result.bars[0]).toMatchObject({
+      askVolume: 6,
+      bidVolume: 3,
+      tradeCount: 3,
+      delta: 3,
+    });
+    expect(result.bars[0].levels).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          price: 100.02,
+          bidVolume: 3,
+          askVolume: 0,
+        }),
+        expect.objectContaining({
+          price: 100.03,
+          bidVolume: 0,
+          askVolume: 2,
+        }),
+      ]),
+    );
+  });
 });
 
 describe('buildOrderFlowBarsFromTicks', () => {

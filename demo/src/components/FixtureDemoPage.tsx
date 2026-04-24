@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   buildSupportedMinticks,
   clusterOrderFlowBarsByMintick,
-  createOrderFlowTickStreamController,
   type FootprintCandlePosition,
   type FootprintSeriesPartialOptions,
   inferPricePrecision,
@@ -17,18 +16,17 @@ import {
   AVAILABLE_INTERVALS,
   AVAILABLE_SYMBOLS,
   availableDatesForSymbol,
-  hasStoredTradeTicks,
-  intervalToSeconds,
   loadInstrument,
   loadOrderFlowBars,
-  loadQuoteTicks,
-  loadTickDerivedOrderFlowBars,
-  loadTradeTicks,
   preferredTickDateForSymbol,
   type BarInterval,
   type SymbolCode,
 } from '../lib/marketData';
-import { buildTickReplayFrames, STREAM_STEP_INTERVAL_MS } from '../lib/tickReplay';
+import {
+  buildSyntheticStreamBars,
+  resolveSyntheticStreamFrameCount,
+  STREAM_STEP_INTERVAL_MS,
+} from '../lib/syntheticStream';
 
 import { OrderFlowChart, type SeriesMode } from './OrderFlowChart';
 
@@ -79,6 +77,9 @@ export function FixtureDemoPage() {
   const [showValueUnit, setShowValueUnit] = useState(true);
   const [autoFitRequestKey, setAutoFitRequestKey] = useState(0);
   const [streamEnabled, setStreamEnabled] = useState(false);
+  const [dataStatus, setDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [sourceBars, setSourceBars] = useState<OrderFlowBar[]>([]);
   const [streamBars, setStreamBars] = useState<OrderFlowBar[]>([]);
 
   useEffect(() => {
@@ -98,40 +99,6 @@ export function FixtureDemoPage() {
 
   const instrument = useMemo(() => loadInstrument(symbol), [symbol]);
   const availableDates = useMemo(() => availableDatesForSymbol(symbol), [symbol]);
-  const barBackedBars = useMemo(
-    () => loadOrderFlowBars(symbol, sessionDate, interval),
-    [interval, sessionDate, symbol],
-  );
-  const hasTickData = useMemo(() => hasStoredTradeTicks(symbol, sessionDate), [sessionDate, symbol]);
-  const tradeTicks = useMemo(
-    () => (hasTickData ? loadTradeTicks(symbol, sessionDate) : []),
-    [hasTickData, sessionDate, symbol],
-  );
-  const quoteTicks = useMemo(
-    () => (hasTickData ? loadQuoteTicks(symbol, sessionDate) : []),
-    [hasTickData, sessionDate, symbol],
-  );
-  const intervalSeconds = useMemo(() => intervalToSeconds(interval), [interval]);
-  const tickBackedBars = useMemo(
-    () =>
-      hasTickData
-        ? loadTickDerivedOrderFlowBars(symbol, sessionDate, interval)
-        : [],
-    [hasTickData, interval, sessionDate, symbol],
-  );
-  const hasUsableTickBars = tickBackedBars.length >= 3;
-  const replayFrames = useMemo(
-    () =>
-      hasTickData
-        ? buildTickReplayFrames({
-            trades: tradeTicks,
-            quotes: quoteTicks,
-            intervalSeconds,
-          })
-        : [],
-    [hasTickData, intervalSeconds, quoteTicks, tradeTicks],
-  );
-  const sourceBars = hasUsableTickBars ? tickBackedBars : barBackedBars;
   const basePriceStep = instrument.tickSize > 0 ? instrument.tickSize : 0.01;
 
   useEffect(() => {
@@ -141,58 +108,63 @@ export function FixtureDemoPage() {
   }, [availableDates, sessionDate, symbol]);
 
   useEffect(() => {
-    if (!hasTickData && streamEnabled) {
-      setStreamEnabled(false);
-    }
-  }, [hasTickData, streamEnabled]);
+    let cancelled = false;
+    setDataStatus('loading');
+    setDataError(null);
+
+    loadOrderFlowBars(symbol, sessionDate, interval)
+      .then((bars) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSourceBars(bars);
+        setDataStatus('ready');
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSourceBars([]);
+        setDataStatus('error');
+        setDataError(error instanceof Error ? error.message : String(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [interval, sessionDate, symbol]);
 
   useEffect(() => {
-    if (!streamEnabled) {
+    if (!streamEnabled || !sourceBars.length) {
       setStreamBars(sourceBars);
       return;
     }
 
-    if (!replayFrames.length) {
-      setStreamBars(sourceBars);
-      return;
-    }
-
-    const controller = createOrderFlowTickStreamController({
-      instrument,
-      intervalSeconds,
-    });
+    const frameCount = resolveSyntheticStreamFrameCount(sourceBars);
     let frameIndex = 0;
     let intervalId = 0;
 
-    const advance = () => {
-      const frame = replayFrames[frameIndex];
+    setStreamBars([]);
+    setStreamBars(buildSyntheticStreamBars(sourceBars, frameIndex));
+    frameIndex += 1;
 
-      if (!frame) {
-        if (intervalId) {
-          window.clearInterval(intervalId);
-        }
-        return;
-      }
-
-      const result = controller.push(frame);
-      setStreamBars(result.bars);
+    intervalId = window.setInterval(() => {
+      setStreamBars(buildSyntheticStreamBars(sourceBars, frameIndex));
       frameIndex += 1;
 
-      if (frameIndex >= replayFrames.length && intervalId) {
+      if (frameIndex >= frameCount && intervalId) {
         window.clearInterval(intervalId);
       }
-    };
-
-    setStreamBars([]);
-    advance();
-    intervalId = window.setInterval(advance, STREAM_STEP_INTERVAL_MS);
+    }, STREAM_STEP_INTERVAL_MS);
 
     return () => {
       if (intervalId) {
         window.clearInterval(intervalId);
       }
     };
-  }, [instrument, intervalSeconds, replayFrames, sourceBars, streamEnabled]);
+  }, [sourceBars, streamEnabled]);
 
   const displayBars = streamEnabled ? streamBars : sourceBars;
 
@@ -210,13 +182,11 @@ export function FixtureDemoPage() {
 
   const footerText = useMemo(
     () =>
-      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Source: ${streamEnabled ? 'tick-replay' : hasUsableTickBars ? 'tick-derived' : hasTickData ? 'bar-backed + real ticks' : 'ohlc-synthetic'} | Candle position: ${candlePosition} | Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode} | Stream: ${streamEnabled ? 'on' : 'off'}`,
+      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Source: ${streamEnabled ? 'synthetic-stream' : 'canonical aggregated data'} | Candle position: ${candlePosition} | Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode} | Stream: ${streamEnabled ? 'on' : 'off'}`,
     [
       candlePosition,
       displayBars.length,
       effectiveMintick,
-      hasTickData,
-      hasUsableTickBars,
       interval,
       preset,
       seriesMode,
@@ -496,29 +466,29 @@ export function FixtureDemoPage() {
 
         <button
           onClick={() => {
-            if (hasTickData) {
+            if (sourceBars.length > 0) {
               setStreamEnabled((current) => !current);
             }
           }}
-          disabled={!hasTickData}
+          disabled={!sourceBars.length}
           style={{
-            background: !hasTickData
+            background: !sourceBars.length
               ? 'rgba(71, 85, 105, 0.18)'
               : streamEnabled
                 ? 'rgba(34, 197, 94, 0.2)'
                 : 'rgba(148, 163, 184, 0.16)',
-            color: !hasTickData ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
-            border: !hasTickData
+            color: !sourceBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
+            border: !sourceBars.length
               ? '1px solid rgba(71, 85, 105, 0.28)'
               : streamEnabled
                 ? '1px solid rgba(34, 197, 94, 0.28)'
                 : '1px solid rgba(148, 163, 184, 0.2)',
             borderRadius: 8,
             padding: '8px 14px',
-            cursor: hasTickData ? 'pointer' : 'not-allowed',
+            cursor: sourceBars.length ? 'pointer' : 'not-allowed',
           }}
         >
-          {hasTickData ? 'Stream' : 'Stream (ticks unavailable)'}
+          {sourceBars.length ? 'Stream' : 'Stream (data unavailable)'}
         </button>
       </section>
 
@@ -555,7 +525,11 @@ export function FixtureDemoPage() {
             color: '#cbd5e1',
           }}
         >
-          No stored market data is available for this selection yet.
+          {dataStatus === 'loading'
+            ? 'Loading canonical aggregated data for this selection.'
+            : dataError
+              ? `Unable to load canonical aggregated data: ${dataError}`
+              : 'No stored market data is available for this selection yet.'}
         </section>
       )}
     </>

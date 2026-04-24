@@ -2,14 +2,17 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 
 import {
   DEFAULT_FOOTPRINT_STYLE,
+  buildAggregatedMarketBarsFromOrderFlowBars,
   buildSupportedMinticks,
   buildVolumeDeltaPivotSeriesData,
+  type AggregatedMarketBar,
   type ChartViewStateSnapshot,
   clusterOhlcBarsByMintick,
   clusterOrderFlowBarsByMintick,
   formatCompactNumericValue,
   inferPricePrecision,
   normalizeMintick,
+  type OrderFlowBar,
   resolveMetricStyleToken,
   type VolumeDeltaPivotPoint,
   type SeriesMetricPrimitiveDatum,
@@ -33,6 +36,11 @@ import {
   type BarInterval,
   type SymbolCode,
 } from '../lib/marketData';
+import {
+  buildSyntheticStreamBars,
+  resolveSyntheticStreamFrameCount,
+  STREAM_STEP_INTERVAL_MS,
+} from '../lib/syntheticStream';
 import { readLearnDemoUrlState, writeLearnDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
@@ -155,6 +163,13 @@ export function LearnDemoPage() {
   const [viewState, setViewState] = useState<ChartViewStateSnapshot | null>(
     initialUrlState?.chartView ?? initialPreset.defaultViewState ?? null,
   );
+  const [streamEnabled, setStreamEnabled] = useState(false);
+  const [dataStatus, setDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [loadedBars, setLoadedBars] = useState<OrderFlowBar[]>([]);
+  const [loadedChartBars, setLoadedChartBars] = useState<AggregatedMarketBar[]>([]);
+  const [loadedLowerOrderFlowBars, setLoadedLowerOrderFlowBars] = useState<OrderFlowBar[]>([]);
+  const [streamBars, setStreamBars] = useState<OrderFlowBar[]>([]);
 
   const preset = useMemo(() => getConceptPreset(presetId), [presetId]);
   const themePreset = useMemo(() => getThemePreset(themeId), [themeId]);
@@ -169,30 +184,35 @@ export function LearnDemoPage() {
     [instrument.tickSize, mintick],
   );
   const availableDates = useMemo(() => availableDatesForSymbol(symbol), [symbol]);
-  const rawBars = useMemo(
-    () => loadOrderFlowBars(symbol, sessionDate, interval),
-    [interval, sessionDate, symbol],
-  );
-  const rawChartBars = useMemo(
-    () => loadMarketBars(symbol, sessionDate, interval),
-    [interval, sessionDate, symbol],
-  );
-  const rawLowerOrderFlowBars = useMemo(
+  const sourceBars = streamEnabled ? streamBars : loadedBars;
+  const sourceChartBars = useMemo(
     () =>
-      loadOrderFlowBars(
-        symbol,
-        sessionDate,
-        interval === '5m' ? '1m' : interval,
-      ),
-    [interval, sessionDate, symbol],
+      streamEnabled
+        ? buildAggregatedMarketBarsFromOrderFlowBars(streamBars)
+        : loadedChartBars,
+    [loadedChartBars, streamBars, streamEnabled],
   );
+  const lowerOrderFlowSourceBars = useMemo(() => {
+    if (!streamEnabled) {
+      return loadedLowerOrderFlowBars;
+    }
+
+    if (interval === '5m') {
+      return loadedLowerOrderFlowBars.slice(
+        0,
+        Math.min(sourceBars.length * 5, loadedLowerOrderFlowBars.length),
+      );
+    }
+
+    return sourceBars;
+  }, [interval, loadedLowerOrderFlowBars, sourceBars, streamEnabled]);
   const bars = useMemo(
-    () => clusterOrderFlowBarsByMintick(rawBars, effectiveMintick, instrument.tickSize),
-    [effectiveMintick, instrument.tickSize, rawBars],
+    () => clusterOrderFlowBarsByMintick(sourceBars, effectiveMintick, instrument.tickSize),
+    [effectiveMintick, instrument.tickSize, sourceBars],
   );
   const chartBars = useMemo(
-    () => clusterOhlcBarsByMintick(rawChartBars, effectiveMintick, instrument.tickSize),
-    [effectiveMintick, instrument.tickSize, rawChartBars],
+    () => clusterOhlcBarsByMintick(sourceChartBars, effectiveMintick, instrument.tickSize),
+    [effectiveMintick, instrument.tickSize, sourceChartBars],
   );
   const deltaSourceBars = useMemo(
     () =>
@@ -220,7 +240,7 @@ export function LearnDemoPage() {
   const lowerDeltaSourceBars = useMemo(
     () =>
       clusterOrderFlowBarsByMintick(
-        rawLowerOrderFlowBars,
+        lowerOrderFlowSourceBars,
         effectiveMintick,
         instrument.tickSize,
       ).map((bar) => ({
@@ -242,7 +262,7 @@ export function LearnDemoPage() {
             0,
           ),
       })),
-    [effectiveMintick, instrument.tickSize, rawLowerOrderFlowBars],
+    [effectiveMintick, instrument.tickSize, lowerOrderFlowSourceBars],
   );
   const volumeDeltaPivotData = useMemo<VolumeDeltaPivotPoint[]>(() => {
     if (!preset.showVolumeDeltaPivot) {
@@ -384,6 +404,73 @@ export function LearnDemoPage() {
   }, [availableDates, restoredViewState, sessionDate, viewState]);
 
   useEffect(() => {
+    let cancelled = false;
+    setDataStatus('loading');
+    setDataError(null);
+
+    Promise.all([
+      loadOrderFlowBars(symbol, sessionDate, interval),
+      loadMarketBars(symbol, sessionDate, interval),
+      loadOrderFlowBars(symbol, sessionDate, interval === '5m' ? '1m' : interval),
+    ])
+      .then(([nextBars, nextChartBars, nextLowerOrderFlowBars]) => {
+        if (cancelled) {
+          return;
+        }
+
+        setLoadedBars(nextBars);
+        setLoadedChartBars(nextChartBars);
+        setLoadedLowerOrderFlowBars(nextLowerOrderFlowBars);
+        setDataStatus('ready');
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setLoadedBars([]);
+        setLoadedChartBars([]);
+        setLoadedLowerOrderFlowBars([]);
+        setDataStatus('error');
+        setDataError(error instanceof Error ? error.message : String(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [interval, sessionDate, symbol]);
+
+  useEffect(() => {
+    if (!streamEnabled || !loadedBars.length) {
+      setStreamBars(loadedBars);
+      return;
+    }
+
+    const frameCount = resolveSyntheticStreamFrameCount(loadedBars);
+    let frameIndex = 0;
+    let intervalId = 0;
+
+    setStreamBars([]);
+    setStreamBars(buildSyntheticStreamBars(loadedBars, frameIndex));
+    frameIndex += 1;
+
+    intervalId = window.setInterval(() => {
+      setStreamBars(buildSyntheticStreamBars(loadedBars, frameIndex));
+      frameIndex += 1;
+
+      if (frameIndex >= frameCount && intervalId) {
+        window.clearInterval(intervalId);
+      }
+    }, STREAM_STEP_INTERVAL_MS);
+
+    return () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [loadedBars, streamEnabled]);
+
+  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       writeLearnDemoUrlState({
         presetId,
@@ -412,6 +499,11 @@ export function LearnDemoPage() {
     setRestoredViewState(nextPreset.defaultViewState ?? null);
     setViewState(nextPreset.defaultViewState ?? null);
   };
+  const footerText = `${symbol} | ${sessionDate} | ${interval} | Mintick: ${formatMintick(
+    effectiveMintick,
+  )} | Theme: ${themePreset.label} | Source: ${
+    streamEnabled ? 'canonical synthetic stream' : 'canonical aggregated data'
+  } | Stream: ${streamEnabled ? 'on' : 'off'}`;
 
   return (
     <>
@@ -483,91 +575,120 @@ export function LearnDemoPage() {
           setViewState(nextViewState);
         }}
         rightActions={
-          <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setLessonsOpen((open) => !open)}
-            style={{
-              background: 'rgba(37, 99, 235, 0.16)',
-              color: '#dbeafe',
-              border: '1px solid rgba(96, 165, 250, 0.28)',
-              borderRadius: 8,
-              padding: '8px 12px',
-              cursor: 'pointer',
-            }}
-          >
-            Lessons
-          </button>
-
-          {lessonsOpen ? (
-            <div
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button
+              onClick={() => {
+                if (loadedBars.length > 0) {
+                  setStreamEnabled((current) => !current);
+                }
+              }}
+              disabled={!loadedBars.length}
               style={{
-                position: 'absolute',
-                right: 0,
-                top: 'calc(100% + 10px)',
-                width: 420,
-                zIndex: 10,
-                borderRadius: 12,
-                background: '#0f172a',
-                border: '1px solid rgba(148, 163, 184, 0.16)',
-                boxShadow: '0 18px 50px rgba(2, 6, 23, 0.45)',
-                padding: 12,
-                display: 'grid',
-                gap: 10,
+                background: !loadedBars.length
+                  ? 'rgba(71, 85, 105, 0.18)'
+                  : streamEnabled
+                    ? 'rgba(34, 197, 94, 0.2)'
+                    : 'rgba(148, 163, 184, 0.16)',
+                color: !loadedBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
+                border: !loadedBars.length
+                  ? '1px solid rgba(71, 85, 105, 0.28)'
+                  : streamEnabled
+                    ? '1px solid rgba(34, 197, 94, 0.28)'
+                    : '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '8px 12px',
+                cursor: loadedBars.length ? 'pointer' : 'not-allowed',
               }}
             >
-              {visibleLessons.map((lesson) => (
+              {loadedBars.length ? 'Stream' : 'Stream (data unavailable)'}
+            </button>
+
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setLessonsOpen((open) => !open)}
+                style={{
+                  background: 'rgba(37, 99, 235, 0.16)',
+                  color: '#dbeafe',
+                  border: '1px solid rgba(96, 165, 250, 0.28)',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                }}
+              >
+                Lessons
+              </button>
+
+              {lessonsOpen ? (
                 <div
-                  key={lesson.id}
                   style={{
-                    borderRadius: 10,
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 10px)',
+                    width: 420,
+                    zIndex: 10,
+                    borderRadius: 12,
+                    background: '#0f172a',
+                    border: '1px solid rgba(148, 163, 184, 0.16)',
+                    boxShadow: '0 18px 50px rgba(2, 6, 23, 0.45)',
                     padding: 12,
-                    background: 'rgba(15, 23, 42, 0.65)',
-                    border: '1px solid rgba(148, 163, 184, 0.12)',
+                    display: 'grid',
+                    gap: 10,
                   }}
                 >
-                  <div style={{ color: '#f8fafc', fontWeight: 600 }}>{lesson.title}</div>
-                  <div style={{ color: '#94a3b8', fontSize: 14, marginTop: 4 }}>
-                    {lesson.shortDescription}
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                    <button
-                      onClick={() => {
-                        setLessonsOpen(false);
-                        applyPresetDefaults(lesson.presetId);
-                      }}
+                  {visibleLessons.map((lesson) => (
+                    <div
+                      key={lesson.id}
                       style={{
-                        background: 'rgba(34, 197, 94, 0.16)',
-                        color: '#bbf7d0',
-                        border: '1px solid rgba(34, 197, 94, 0.24)',
-                        borderRadius: 8,
-                        padding: '6px 10px',
-                        cursor: 'pointer',
+                        borderRadius: 10,
+                        padding: 12,
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        border: '1px solid rgba(148, 163, 184, 0.12)',
                       }}
                     >
-                      View chart
-                    </button>
-                    <button
-                      onClick={() => {
-                        setLessonsOpen(false);
-                        setReadingLessonId(lesson.id);
-                        applyPresetDefaults(lesson.presetId);
-                      }}
-                      style={{
-                        background: 'rgba(59, 130, 246, 0.16)',
-                        color: '#bfdbfe',
-                        border: '1px solid rgba(96, 165, 250, 0.24)',
-                        borderRadius: 8,
-                        padding: '6px 10px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Read
-                    </button>
-                  </div>
+                      <div style={{ color: '#f8fafc', fontWeight: 600 }}>{lesson.title}</div>
+                      <div style={{ color: '#94a3b8', fontSize: 14, marginTop: 4 }}>
+                        {lesson.shortDescription}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                        <button
+                          onClick={() => {
+                            setLessonsOpen(false);
+                            applyPresetDefaults(lesson.presetId);
+                          }}
+                          style={{
+                            background: 'rgba(34, 197, 94, 0.16)',
+                            color: '#bbf7d0',
+                            border: '1px solid rgba(34, 197, 94, 0.24)',
+                            borderRadius: 8,
+                            padding: '6px 10px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          View chart
+                        </button>
+                        <button
+                          onClick={() => {
+                            setLessonsOpen(false);
+                            setReadingLessonId(lesson.id);
+                            applyPresetDefaults(lesson.presetId);
+                          }}
+                          style={{
+                            background: 'rgba(59, 130, 246, 0.16)',
+                            color: '#bfdbfe',
+                            border: '1px solid rgba(96, 165, 250, 0.24)',
+                            borderRadius: 8,
+                            padding: '6px 10px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Read
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : null}
             </div>
-          ) : null}
           </div>
         }
       />
@@ -576,9 +697,7 @@ export function LearnDemoPage() {
         <OrderFlowChart
           bars={bars}
           chartHeight={900}
-          footerText={`${symbol} | ${sessionDate} | ${interval} | Mintick: ${formatMintick(
-            effectiveMintick,
-          )} | Theme: ${themePreset.label}`}
+          footerText={footerText}
           theme={themePreset.surface}
           seriesMode={preset.seriesMode}
           showVisibleProfile={preset.showVisibleProfile}
@@ -602,7 +721,7 @@ export function LearnDemoPage() {
           volumeDeltaPivotBaselineOptions={themePreset.volumeDeltaPivotBaseline}
           initialViewState={effectiveRestoredViewState}
           onViewStateChange={setViewState}
-          dataSourceKey={`${symbol}:${sessionDate}:${interval}:${effectiveMintick}`}
+          dataSourceKey={`${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
         />
       ) : (
         <section
@@ -614,7 +733,11 @@ export function LearnDemoPage() {
             color: '#cbd5e1',
           }}
         >
-          No stored market data is available for this selection yet.
+          {dataStatus === 'loading'
+            ? 'Loading canonical aggregated data for this selection.'
+            : dataError
+              ? `Unable to load canonical aggregated data: ${dataError}`
+              : 'No stored market data is available for this selection yet.'}
         </section>
       )}
 

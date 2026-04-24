@@ -59,6 +59,10 @@ export interface ConnectorStoredSessionSummary {
   lastBarTime: number | null;
   footprintAvailable: boolean;
   complete: boolean;
+  requiredMinutes: number | null;
+  coveredMinutes: number | null;
+  contiguousCoveredMinutes: number | null;
+  coveragePct: number | null;
   manifest: AggregatedSessionManifest | null;
 }
 
@@ -144,6 +148,8 @@ export interface ConnectorGrabCursor {
 }
 
 export interface ConnectorGrabProgress {
+  vendorId: ConnectorVendorId | null;
+  vendorLabel: string | null;
   symbol: string;
   sessionDate: string;
   intervalSeconds: number;
@@ -158,6 +164,10 @@ export interface ConnectorGrabProgress {
   lastObservedTime: number | null;
   cursor: ConnectorGrabCursor;
   progressPct: number | null;
+  requiredMinutes: number | null;
+  coveredMinutes: number | null;
+  contiguousCoveredMinutes: number | null;
+  coveragePct: number | null;
   complete: boolean;
   dirty: boolean;
   rawTicksFetchedCurrentRun: number;
@@ -206,6 +216,16 @@ export interface ConnectorLogEvent {
   at: string;
 }
 
+export interface ConnectorSessionDataPayload {
+  vendorId: ConnectorVendorId;
+  vendorLabel: string;
+  orderFlowBars: OrderFlowBar[];
+  marketBars: AggregatedMarketBar[];
+  progress: ConnectorGrabProgress;
+  instrument: InstrumentContext | null;
+  source: 'cache' | 'vendor' | 'cache+vendor';
+}
+
 export type ConnectorBridgeEvent =
   | {
       type: 'state';
@@ -213,13 +233,7 @@ export type ConnectorBridgeEvent =
     }
   | {
       type: 'session-data';
-      payload: {
-        orderFlowBars: OrderFlowBar[];
-        marketBars: AggregatedMarketBar[];
-        progress: ConnectorGrabProgress;
-        instrument: InstrumentContext | null;
-        source: 'cache' | 'vendor' | 'cache+vendor';
-      };
+      payload: ConnectorSessionDataPayload;
     }
   | {
       type: 'order-flow-patch';

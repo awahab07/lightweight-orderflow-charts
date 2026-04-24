@@ -110,6 +110,10 @@ function summarizeSession(
     lastBarTime: resolveLastBarTime(marketBars, orderFlowBars),
     footprintAvailable: orderFlowBars.length > 0,
     complete: Boolean(manifest?.complete),
+    requiredMinutes: null,
+    coveredMinutes: null,
+    contiguousCoveredMinutes: null,
+    coveragePct: null,
     manifest,
   };
 }
