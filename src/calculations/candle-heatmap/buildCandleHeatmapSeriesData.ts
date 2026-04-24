@@ -268,27 +268,27 @@ function validateOptions(options: CandleHeatmapOptions): void {
   const {
     min,
     minThreshold,
-    midpoint,
+    threshold,
     maxThreshold,
     max,
   } = options.domain;
 
-  if (!(min < midpoint && midpoint < max)) {
-    throw new Error('Candle heatmap domain must satisfy min < midpoint < max.');
+  if (!(min < threshold && threshold < max)) {
+    throw new Error('Candle heatmap domain must satisfy min < threshold < max.');
   }
 
   if (
     minThreshold !== undefined &&
-    !(min <= minThreshold && minThreshold <= midpoint)
+    !(min <= minThreshold && minThreshold <= threshold)
   ) {
-    throw new Error('Candle heatmap minThreshold must satisfy min <= minThreshold <= midpoint.');
+    throw new Error('Candle heatmap minThreshold must satisfy min <= minThreshold <= threshold.');
   }
 
   if (
     maxThreshold !== undefined &&
-    !(midpoint <= maxThreshold && maxThreshold <= max)
+    !(threshold <= maxThreshold && maxThreshold <= max)
   ) {
-    throw new Error('Candle heatmap maxThreshold must satisfy midpoint <= maxThreshold <= max.');
+    throw new Error('Candle heatmap maxThreshold must satisfy threshold <= maxThreshold <= max.');
   }
 }
 
@@ -339,7 +339,7 @@ function resolveVariantDistance(
   const {
     min,
     minThreshold,
-    midpoint,
+    threshold,
     maxThreshold,
     max,
   } = options.domain;
@@ -361,12 +361,12 @@ function resolveVariantDistance(
 
   if (options.shadeCount === 1) {
     return {
-      variant: clampedValue < midpoint ? 'secondary' : 'primary',
+      variant: clampedValue < threshold ? 'secondary' : 'primary',
       normalizedDistance: 1,
     };
   }
 
-  if (clampedValue < midpoint) {
+  if (clampedValue < threshold) {
     if (minThreshold !== undefined && clampedValue <= minThreshold) {
       return {
         variant: 'secondary',
@@ -375,7 +375,7 @@ function resolveVariantDistance(
     }
 
     const lowerEdge = minThreshold ?? min;
-    const span = midpoint - lowerEdge;
+    const span = threshold - lowerEdge;
 
     return {
       variant: 'secondary',
@@ -392,11 +392,11 @@ function resolveVariantDistance(
   }
 
   const upperEdge = maxThreshold ?? max;
-  const span = upperEdge - midpoint;
+  const span = upperEdge - threshold;
 
   return {
     variant: 'primary',
-    normalizedDistance: span <= 0 ? 1 : clamp((clampedValue - midpoint) / span, 0, 1),
+    normalizedDistance: span <= 0 ? 1 : clamp((clampedValue - threshold) / span, 0, 1),
   };
 }
 

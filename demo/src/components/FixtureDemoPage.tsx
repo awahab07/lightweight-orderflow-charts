@@ -108,7 +108,7 @@ export function FixtureDemoPage() {
   const [heatmapShader, setHeatmapShader] = useState<CandleHeatmapShader>('alpha');
   const [heatmapMin, setHeatmapMin] = useState('0');
   const [heatmapMinThreshold, setHeatmapMinThreshold] = useState('0.1');
-  const [heatmapMidpoint, setHeatmapMidpoint] = useState('0.5');
+  const [heatmapThreshold, setHeatmapThreshold] = useState('0.5');
   const [heatmapMaxThreshold, setHeatmapMaxThreshold] = useState('0.9');
   const [heatmapMax, setHeatmapMax] = useState('1');
   const [autoFitRequestKey, setAutoFitRequestKey] = useState(0);
@@ -136,7 +136,7 @@ export function FixtureDemoPage() {
     setHeatmapShader(resolvedHeatmap.shader);
     setHeatmapMin(String(resolvedHeatmap.domain.min));
     setHeatmapMinThreshold(formatOptionalNumber(resolvedHeatmap.domain.minThreshold));
-    setHeatmapMidpoint(String(resolvedHeatmap.domain.midpoint));
+    setHeatmapThreshold(String(resolvedHeatmap.domain.threshold));
     setHeatmapMaxThreshold(formatOptionalNumber(resolvedHeatmap.domain.maxThreshold));
     setHeatmapMax(String(resolvedHeatmap.domain.max));
     setMintick(0.1);
@@ -236,9 +236,9 @@ export function FixtureDemoPage() {
       domain: {
         min: parseNumberInput(heatmapMin, resolvedPresetHeatmapOptions.domain.min),
         minThreshold: parseOptionalNumberInput(heatmapMinThreshold),
-        midpoint: parseNumberInput(
-          heatmapMidpoint,
-          resolvedPresetHeatmapOptions.domain.midpoint,
+        threshold: parseNumberInput(
+          heatmapThreshold,
+          resolvedPresetHeatmapOptions.domain.threshold,
         ),
         maxThreshold: parseOptionalNumberInput(heatmapMaxThreshold),
         max: parseNumberInput(heatmapMax, resolvedPresetHeatmapOptions.domain.max),
@@ -248,13 +248,13 @@ export function FixtureDemoPage() {
       heatmapMax,
       heatmapMaxThreshold,
       heatmapMetricStyleKey,
-      heatmapMidpoint,
+      heatmapThreshold,
       heatmapMin,
       heatmapMinThreshold,
       heatmapShader,
       heatmapShadeCount,
       resolvedPresetHeatmapOptions.domain.max,
-      resolvedPresetHeatmapOptions.domain.midpoint,
+      resolvedPresetHeatmapOptions.domain.threshold,
       resolvedPresetHeatmapOptions.domain.min,
     ],
   );
@@ -663,12 +663,12 @@ export function FixtureDemoPage() {
 
         {showHeatmapControls ? (
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Midpoint
+            Threshold
             <input
               type="number"
               step="0.01"
-              value={heatmapMidpoint}
-              onChange={(event) => setHeatmapMidpoint(event.target.value)}
+              value={heatmapThreshold}
+              onChange={(event) => setHeatmapThreshold(event.target.value)}
               style={{
                 width: 96,
                 background: '#0f172a',

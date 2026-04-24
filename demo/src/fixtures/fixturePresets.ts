@@ -220,7 +220,7 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
       domain: {
         min: 0,
         minThreshold: 0.1,
-        midpoint: 0.5,
+        threshold: 0.5,
         maxThreshold: 0.9,
         max: 1,
       },

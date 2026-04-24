@@ -38,7 +38,7 @@ describe('resolveCandleHeatmapColor', () => {
     });
   });
 
-  it('quantizes alpha shading around the midpoint', () => {
+  it('quantizes alpha shading around the threshold', () => {
     const result = resolveCandleHeatmapColor({
       value: 0.5,
       metricStyles: DEFAULT_FOOTPRINT_STYLE.metricStyles,
@@ -67,7 +67,7 @@ describe('resolveCandleHeatmapColor', () => {
         domain: {
           min: 0,
           minThreshold: 0.1,
-          midpoint: 0.5,
+          threshold: 0.5,
           maxThreshold: 0.9,
           max: 1,
         },
@@ -82,7 +82,7 @@ describe('resolveCandleHeatmapColor', () => {
         domain: {
           min: 0,
           minThreshold: 0.1,
-          midpoint: 0.5,
+          threshold: 0.5,
           maxThreshold: 0.9,
           max: 1,
         },

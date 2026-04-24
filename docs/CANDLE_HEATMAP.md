@@ -28,7 +28,7 @@ const candleData = buildCandleHeatmapSeriesData({
     domain: {
       min: 0,
       minThreshold: 0.1,
-      midpoint: 0.5,
+      threshold: 0.5,
       maxThreshold: 0.9,
       max: 1,
     },
@@ -49,7 +49,7 @@ The heatmap uses a diverging domain:
 
 - `min`
   Lowest supported metric value. This edge resolves to the selected metric style's secondary color.
-- `midpoint`
+- `threshold`
   Split between the low and high halves of the domain. Values below it use the secondary side, and
   values at or above it use the primary side.
 - `max`
@@ -72,7 +72,7 @@ The helper resolves:
 ### `shadeCount`
 
 - `1`
-  Two solid colors split at the midpoint
+  Two solid colors split at the threshold
 - `n > 1`
   `n` discrete shades per side
 - `0`
@@ -81,7 +81,7 @@ The helper resolves:
 ### `shader`
 
 - `alpha`
-  Keeps the edge hue fixed and varies opacity toward the midpoint. The helper raises the minimum
+  Keeps the edge hue fixed and varies opacity toward the threshold. The helper raises the minimum
   alpha on dark surfaces so low-intensity candles stay visible.
 - `hue`
   Keeps candles opaque and blends each edge hue back toward a theme-aware neutral tone.
