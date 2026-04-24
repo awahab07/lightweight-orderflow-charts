@@ -210,6 +210,27 @@ running delta reached inside the bar before settling on the final close.
 Read it with the primary price chart. Strong price movement with weak delta follow-through is often
 more interesting than a large delta candle by itself.`,
   },
+  {
+    id: 'candle-heatmap',
+    title: 'Candle Heatmap',
+    shortDescription: 'Standard candles can carry a score without changing their shape.',
+    presetId: 'candle-heatmap',
+    markdown: `# Candle heatmap
+
+The candle heatmap keeps the standard OHLC candle geometry but replaces simple up/down coloring with
+a metric-driven diverging palette.
+
+## What to look for
+
+- low scores clustering into the secondary color
+- high scores clustering into the primary color
+- whether transitions happen gradually or snap into the solid threshold zones
+
+## How to use it
+
+Use it when every bar already has a normalized score such as probability, percentile rank, or model
+confidence. The candle still shows price structure, while the color carries the second variable.`,
+  },
 ];
 
 export function getLesson(lessonId: string): LessonDefinition {

@@ -19,6 +19,10 @@ export type {
   VwapPoint,
 } from './models/contracts';
 export type {
+  CandleHeatmapDomainOptions,
+  CandleHeatmapOptions,
+  CandleHeatmapPartialOptions,
+  CandleHeatmapShader,
   ColorScaleOptions,
   ColorScalePartialOptions,
   ColorScaleRangeOptions,
@@ -76,6 +80,7 @@ export type {
 } from './models/studies';
 
 export {
+  DEFAULT_CANDLE_HEATMAP_OPTIONS,
   DEFAULT_DELTA_SUMMARY_SERIES_OPTIONS,
   DEFAULT_DELTA_SUMMARY_ROW_STYLES,
   DEFAULT_FOOTPRINT_CANDLE_OPTIONS,
@@ -92,6 +97,7 @@ export {
   DEFAULT_VOLUME_PROFILE_OPTIONS,
   DEFAULT_VWAP_OPTIONS,
   createFootprintMetricPresets,
+  mergeCandleHeatmapOptions,
   mergeDeltaSummarySeriesOptions,
   mergeFootprintSeriesOptions,
   mergeSessionVolumeProfileOptions,
@@ -131,6 +137,16 @@ export { buildFootprintBarModel } from './calculations/footprint/buildFootprintB
 export { buildProfile } from './calculations/profile/buildProfile';
 export { buildVisibleRangeProfile } from './calculations/profile/buildVisibleRangeProfile';
 export { buildSessionProfiles } from './calculations/profile/buildSessionProfiles';
+export type {
+  BuildCandleHeatmapSeriesDataInput,
+  CandleHeatmapBarLike,
+  CandleHeatmapColorResolution,
+  ResolveCandleHeatmapColorInput,
+} from './calculations/candle-heatmap/buildCandleHeatmapSeriesData';
+export {
+  buildCandleHeatmapSeriesData,
+  resolveCandleHeatmapColor,
+} from './calculations/candle-heatmap/buildCandleHeatmapSeriesData';
 export type {
   BuildVolumeDeltaPivotSeriesDataOptions,
   VolumeDeltaPivotPoint,

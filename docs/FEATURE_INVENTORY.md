@@ -17,6 +17,8 @@ presets.
   Row-based subchart for aligned delta, cumulative delta, volume, and other summary columns.
 - `VWAP`
   Session or continuous VWAP series for higher-level context.
+- `Candle Heatmap`
+  Standard OHLC candles colored by a per-bar metric using a diverging primary/secondary palette.
 - `Volume Delta Pivot`
   Zero-anchored delta candle subchart that traces intrabar pressure inside each displayed bar.
 
@@ -72,5 +74,7 @@ presets.
   Combines candles, VWAP, profiles, and footprint context across the session.
 - `Volume Footprint`
   Switches to total volume at price when shape matters more than aggressor side.
+- `Candle Heatmap`
+  Standard candles with theme-aware diverging shading driven by a deterministic per-bar demo score.
 - `Volume Delta Pivot`
   Standard price candles plus a smaller zero-anchored delta pane styled with the dark-default theme.

@@ -14,6 +14,7 @@ import {
   SHADED_REFERENCE_FOOTPRINT_OPTIONS,
   SHADED_REFERENCE_VOLUME_PROFILE_OPTIONS,
   VOLUME_FOOTPRINT_REFERENCE_OPTIONS,
+  type CandleHeatmapPartialOptions,
   type DeltaSummarySeriesPartialOptions,
   type FootprintCandlePosition,
   type FootprintSeriesPartialOptions,
@@ -31,7 +32,8 @@ export type FixturePresetId =
   | 'fp-candle-001'
   | 'footprint-corn-candles'
   | 'volume-footprint-reference'
-  | 'footprint-shades';
+  | 'footprint-shades'
+  | 'candle-heatmap';
 
 export interface FixturePresetDefinition {
   id: FixturePresetId;
@@ -55,6 +57,7 @@ export interface FixturePresetDefinition {
   volumeProfileOptions?: VolumeProfilePartialOptions;
   sessionVolumeProfileOptions?: SessionVolumeProfilePartialOptions;
   deltaSummaryOptions?: DeltaSummarySeriesPartialOptions;
+  candleHeatmapOptions?: CandleHeatmapPartialOptions;
   candleSeriesOptions?: CandlestickSeriesPartialOptions;
   volumeSeriesOptions?: HistogramSeriesPartialOptions;
 }
@@ -195,5 +198,35 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
     footprintOptions: SHADED_REFERENCE_FOOTPRINT_OPTIONS,
     volumeProfileOptions: SHADED_REFERENCE_VOLUME_PROFILE_OPTIONS,
     deltaSummaryOptions: SHADED_REFERENCE_DELTA_SUMMARY_OPTIONS,
+  },
+  'candle-heatmap': {
+    id: 'candle-heatmap',
+    label: 'Candle Heatmap',
+    bars: demoBars,
+    chartHeight: 820,
+    seriesMode: 'candle-heatmap',
+    theme: DARK_REFERENCE_THEME,
+    showVisibleProfile: false,
+    showSessionProfiles: false,
+    showVwap: false,
+    showReferenceCandles: true,
+    showVolumePane: false,
+    showDeltaSummary: false,
+    showCandle: true,
+    showWicks: true,
+    candlePosition: 'left',
+    footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
+    candleHeatmapOptions: {
+      domain: {
+        min: 0,
+        minThreshold: 0.1,
+        midpoint: 0.5,
+        maxThreshold: 0.9,
+        max: 1,
+      },
+      metricStyleKey: 'metric0',
+      shadeCount: 10,
+      shader: 'alpha',
+    },
   },
 };

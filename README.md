@@ -17,6 +17,7 @@ profiles, VWAP, and aligned order-flow subcharts.
 - Theme-level metric style palettes so imbalance text, candle-side metrics, and summary badges can
   share consistent positive/negative styling
 - Scale-driven shading for footprint cells and delta-summary tables
+- Metric-driven candle heatmap helper for diverging probability or score overlays on standard candles
 - Delta-summary subchart with selectable row keys and configurable row color scales
 - Volume Delta Pivot data builder for zero-anchored delta candles
 - Public style presets and public theme presets so consumers can start from working baselines
@@ -72,6 +73,8 @@ See `CONTRIBUTING.md` for the short contributor workflow.
   Publishable docs entry point for GitHub Pages or a static docs generator
 - `docs/DATA_REQUIREMENTS.md`
   What each chart or study needs from the host data pipeline
+- `docs/CANDLE_HEATMAP.md`
+  Public candle-heatmap helper for score-driven candlestick coloring
 - `docs/TICK_DATA.md`
   Aggregated minute storage, local vendor cache layout, and replay guidance
 - `docs/MINTICK.md`
@@ -135,6 +138,7 @@ Useful helpers when your upstream feed is not already normalized:
 - `aggregateOrderFlowBarsByInterval()`
 - `aggregateMarketBarsByInterval()`
 - `buildAggregatedMarketBarsFromOrderFlowBars()`
+- `buildCandleHeatmapSeriesData()`
 - `buildOrderFlowBarsFromTicks()`
 - `createOrderFlowTickStreamController()`
 - `resolveSessions()`
@@ -159,6 +163,7 @@ ticks are requested, while Polygon.io / Massive REST on the current Basic plan o
 
 | Study                            | Best Input                           | Notes                                                                                                            |
 | -------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Candle Heatmap                   | OHLC bars plus one metric per bar    | Best when the host already has a normalized score such as probability, percentile, or model confidence          |
 | Footprint                        | Price-level bid/ask volume per bar   | Primary view for ladder-level order-flow analysis                                                                |
 | Volume Footprint                 | Price-level total volume per bar     | Useful when total participation matters more than aggressor side                                                 |
 | Visible / Session Volume Profile | Price-level volume across a scope    | Built from normalized bars and aggregated by price                                                               |
@@ -186,6 +191,37 @@ The published presets now include:
 - `ORDER_FLOW_THEME_PRESETS.smoothLight`
   The light order-flow surface used by the demo default, with red/green row shading and blue
   diagonal-dominance text
+
+### Candle Heatmap Example
+
+```ts
+import {
+  DEFAULT_FOOTPRINT_STYLE,
+  buildCandleHeatmapSeriesData,
+} from 'lightweight-orderflow-charts';
+
+const candleData = buildCandleHeatmapSeriesData({
+  bars,
+  metricStyles: DEFAULT_FOOTPRINT_STYLE.metricStyles,
+  options: {
+    domain: {
+      min: 0,
+      minThreshold: 0.1,
+      midpoint: 0.5,
+      maxThreshold: 0.9,
+      max: 1,
+    },
+    metricStyleKey: 'metric0',
+    shadeCount: 10,
+    shader: 'alpha',
+  },
+  backgroundColor: '#020617',
+  getValue: (bar) => Number(bar.metadata?.probabilityScore ?? null),
+});
+```
+
+This helper preserves candle geometry while replacing simple up/down candle colors with a
+metric-driven diverging scale. See `docs/CANDLE_HEATMAP.md` for the full contract.
 
 Use style presets when you want a strong starting point for a specific study configuration. Use
 theme presets when you want to re-skin an existing chart composition without changing the study

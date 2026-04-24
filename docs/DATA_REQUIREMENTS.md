@@ -55,6 +55,7 @@ Supporting contracts:
 
 | Study                        | Minimum Input                                              | Recommended Input                                                                              | Why                                                                                |
 | ---------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Candle Heatmap               | OHLC bars plus one metric value per bar                    | `AggregatedMarketBar[]` or equivalent OHLC bars with a normalized score accessor               | It keeps the candle geometry and uses color to carry a second bar-level variable   |
 | Footprint                    | `OrderFlowBar[]` with `levels`                             | Price-level bid/ask volume derived from ticks or exchange ladder data                          | The ladder needs per-price participation, not just OHLCV                           |
 | Volume Footprint             | `OrderFlowBar[]` with `levels` and `totalVolume`           | Price-level total volume with optional bid/ask split                                           | The chart can ignore side attribution, but it still needs price-level distribution |
 | Visible-Range Volume Profile | `OrderFlowBar[]` with `levels`                             | Same bars used by the footprint                                                                | The profile aggregates volume by price across a chosen scope                       |
@@ -106,6 +107,26 @@ If the host application needs execution-grade VWAP semantics, prefer:
 - trade ticks
 - one-second bars with price-at-volume detail
 - upstream VWAP values produced from the original trade stream
+
+### Candle Heatmap
+
+The candle heatmap is the lightest-weight public charting surface in the package. It only needs:
+
+- `time`
+- `open`
+- `high`
+- `low`
+- `close`
+- one metric accessor that returns a normalized bar score
+
+Typical inputs include:
+
+- probability scores in the range `0..1`
+- percentile ranks in the range `0..1`
+- normalized factor scores remapped into a bounded domain
+
+Use `buildCandleHeatmapSeriesData()` when you want to keep ordinary candles but encode the second
+variable into the candle color.
 
 ### Volume Delta Pivot
 

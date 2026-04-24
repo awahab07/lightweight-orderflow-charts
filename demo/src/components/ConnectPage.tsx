@@ -58,6 +58,10 @@ import {
   type SymbolCode,
 } from '../lib/marketData';
 import { buildSyntheticOrderFlowFromBars } from '../lib/buildSyntheticOrderFlowFromBars';
+import {
+  buildDemoCandleHeatmapScores,
+  resolveDemoCandleHeatmapScore,
+} from '../lib/candleHeatmapMetric';
 import { readLearnDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
@@ -818,6 +822,14 @@ export function ConnectPage() {
       }),
     [effectiveMintick, themedVolumeFootprintOptions],
   );
+  const candleHeatmapScores = useMemo(
+    () => buildDemoCandleHeatmapScores(clusteredBars),
+    [clusteredBars],
+  );
+  const candleHeatmapAccessor = useCallback(
+    (bar: OrderFlowBar) => resolveDemoCandleHeatmapScore(bar, candleHeatmapScores),
+    [candleHeatmapScores],
+  );
   const candleMetricData = useMemo<SeriesMetricPrimitiveDatum[]>(() => {
     if (!preset.showVolumeDeltaPivot) {
       return [];
@@ -1373,6 +1385,8 @@ export function ConnectPage() {
           deltaSummaryOptions={themedDeltaSummaryOptions}
           volumeDeltaPivotData={volumeDeltaPivotData}
           candleSeriesOptions={themePreset.candleSeries}
+          candleHeatmapOptions={preset.candleHeatmapOptions}
+          candleHeatmapAccessor={candleHeatmapAccessor}
           candleMetricData={candleMetricData}
           volumeSeriesOptions={themePreset.volumeSeries}
           volumeDeltaPivotSeriesOptions={themePreset.volumeDeltaPivotSeries}

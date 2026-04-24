@@ -1,4 +1,5 @@
 import type {
+  CandleHeatmapPartialOptions,
   ChartViewStateSnapshot,
   DeltaSummarySeriesPartialOptions,
   FootprintCandlePosition,
@@ -52,6 +53,7 @@ export interface ConceptPresetDefinition {
   volumeProfileOptions?: VolumeProfilePartialOptions;
   sessionVolumeProfileOptions?: SessionVolumeProfilePartialOptions;
   deltaSummaryOptions?: DeltaSummarySeriesPartialOptions;
+  candleHeatmapOptions?: CandleHeatmapPartialOptions;
   lessonIds: string[];
 }
 
@@ -257,6 +259,42 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     volumeFootprintOptions: VOLUME_FOOTPRINT_REFERENCE_OPTIONS,
     volumeProfileOptions: LEFT_ALIGNED_REFERENCE_VOLUME_PROFILE_OPTIONS,
     lessonIds: ['when-to-use-volume-footprint'],
+  },
+  {
+    id: 'candle-heatmap',
+    label: 'Candle Heatmap',
+    summary:
+      'Map a per-bar score onto standard candles with a diverging blue/red heat scale while keeping price geometry intact.',
+    defaultThemeId: 'depth-heat',
+    defaultSymbol: 'TSLA',
+    defaultDate: '2026-03-06',
+    defaultInterval: '5m',
+    defaultMintick: 0.1,
+    seriesMode: 'candle-heatmap',
+    showVisibleProfile: false,
+    showSessionProfiles: false,
+    showVwap: false,
+    showReferenceCandles: true,
+    showOrderFlowPane: false,
+    showVolumePane: true,
+    showDeltaSummary: false,
+    showCandle: true,
+    showWicks: true,
+    candlePosition: 'left',
+    footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
+    candleHeatmapOptions: {
+      domain: {
+        min: 0,
+        minThreshold: 0.1,
+        midpoint: 0.5,
+        maxThreshold: 0.9,
+        max: 1,
+      },
+      metricStyleKey: 'metric0',
+      shadeCount: 10,
+      shader: 'alpha',
+    },
+    lessonIds: ['candle-heatmap'],
   },
   {
     id: 'volume-delta-pivot',

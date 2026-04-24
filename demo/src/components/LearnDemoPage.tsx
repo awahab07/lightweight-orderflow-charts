@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 
 import {
   DEFAULT_FOOTPRINT_STYLE,
@@ -41,6 +41,10 @@ import {
   resolveSyntheticStreamFrameCount,
   STREAM_STEP_INTERVAL_MS,
 } from '../lib/syntheticStream';
+import {
+  buildDemoCandleHeatmapScores,
+  resolveDemoCandleHeatmapScore,
+} from '../lib/candleHeatmapMetric';
 import { readLearnDemoUrlState, writeLearnDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
@@ -322,6 +326,11 @@ export function LearnDemoPage() {
         },
       }),
     [effectiveMintick, themedVolumeFootprintOptions],
+  );
+  const candleHeatmapScores = useMemo(() => buildDemoCandleHeatmapScores(bars), [bars]);
+  const candleHeatmapAccessor = useCallback(
+    (bar: OrderFlowBar) => resolveDemoCandleHeatmapScore(bar, candleHeatmapScores),
+    [candleHeatmapScores],
   );
   const candleMetricData = useMemo<SeriesMetricPrimitiveDatum[]>(() => {
     if (!preset.showVolumeDeltaPivot) {
@@ -715,6 +724,8 @@ export function LearnDemoPage() {
           deltaSummaryOptions={themedDeltaSummaryOptions}
           volumeDeltaPivotData={volumeDeltaPivotData}
           candleSeriesOptions={themePreset.candleSeries}
+          candleHeatmapOptions={preset.candleHeatmapOptions}
+          candleHeatmapAccessor={candleHeatmapAccessor}
           candleMetricData={candleMetricData}
           volumeSeriesOptions={themePreset.volumeSeries}
           volumeDeltaPivotSeriesOptions={themePreset.volumeDeltaPivotSeries}

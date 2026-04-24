@@ -113,6 +113,39 @@ export type ColorScalePartialOptions = Omit<Partial<ColorScaleOptions>, 'range' 
   stops?: ColorScaleStop[];
 };
 
+/**
+ * Diverging metric domain used by the candle heatmap helper.
+ *
+ * The domain is split around `midpoint`. Values near `min` resolve toward the selected metric
+ * palette's secondary color, while values near `max` resolve toward the primary color.
+ */
+export interface CandleHeatmapDomainOptions {
+  min: number;
+  minThreshold?: number;
+  midpoint: number;
+  maxThreshold?: number;
+  max: number;
+}
+
+export type CandleHeatmapShader = 'alpha' | 'hue';
+
+/**
+ * Configures metric-driven candle coloring for a standard candlestick series.
+ *
+ * `shadeCount: 1` collapses the mapping to two solid colors split by `midpoint`.
+ * `shadeCount: 0` uses a continuous mapping with 256 internal steps.
+ */
+export interface CandleHeatmapOptions {
+  domain: CandleHeatmapDomainOptions;
+  metricStyleKey: MetricStyleKey;
+  shadeCount: number;
+  shader: CandleHeatmapShader;
+}
+
+export type CandleHeatmapPartialOptions = Omit<Partial<CandleHeatmapOptions>, 'domain'> & {
+  domain?: Partial<CandleHeatmapDomainOptions>;
+};
+
 export interface FootprintStyleOptions {
   fontFamily: string;
   fontSize: number;
@@ -845,6 +878,19 @@ export const DEFAULT_VWAP_OPTIONS: VwapOptions = {
   resetMode: 'session',
 };
 
+export const DEFAULT_CANDLE_HEATMAP_OPTIONS: CandleHeatmapOptions = {
+  domain: {
+    min: 0,
+    minThreshold: 0.1,
+    midpoint: 0.5,
+    maxThreshold: 0.9,
+    max: 1,
+  },
+  metricStyleKey: 'metric0',
+  shadeCount: 1,
+  shader: 'alpha',
+};
+
 export function mergeFootprintSeriesOptions(
   options?: FootprintSeriesPartialOptions,
 ): FootprintSeriesOptions {
@@ -1006,5 +1052,18 @@ export function mergeVwapOptions(options?: Partial<VwapOptions>): VwapOptions {
   return {
     ...DEFAULT_VWAP_OPTIONS,
     ...options,
+  };
+}
+
+export function mergeCandleHeatmapOptions(
+  options?: CandleHeatmapPartialOptions,
+): CandleHeatmapOptions {
+  return {
+    ...DEFAULT_CANDLE_HEATMAP_OPTIONS,
+    ...options,
+    domain: {
+      ...DEFAULT_CANDLE_HEATMAP_OPTIONS.domain,
+      ...options?.domain,
+    },
   };
 }
