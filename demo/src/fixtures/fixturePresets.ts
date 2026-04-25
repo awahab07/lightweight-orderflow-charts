@@ -51,6 +51,7 @@ export interface FixturePresetDefinition {
   showReferenceCandles: boolean;
   showVolumePane: boolean;
   showDeltaSummary: boolean;
+  deltaSummaryPaneHeightRatio?: number;
   showCandle: boolean;
   showWicks: boolean;
   candlePosition: FootprintCandlePosition;
@@ -275,6 +276,7 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
     showReferenceCandles: false,
     showVolumePane: false,
     showDeltaSummary: true,
+    deltaSummaryPaneHeightRatio: 0.1,
     showCandle: true,
     showWicks: false,
     candlePosition: 'middle',

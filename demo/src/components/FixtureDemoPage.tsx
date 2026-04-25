@@ -823,7 +823,7 @@ export function FixtureDemoPage() {
 
       {clusteredBars.length ? (
         <OrderFlowChart
-          key={`${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
+          key={`${preset.id}:${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
           bars={clusteredBars}
           seriesMode={seriesMode}
           showVisibleProfile={showVisibleProfile}
@@ -833,6 +833,7 @@ export function FixtureDemoPage() {
           showOrderFlowPane={showOrderFlowControls}
           showVolumePane={showVolumePane}
           showDeltaSummary={showDeltaSummary}
+          deltaSummaryPaneHeightRatio={preset.deltaSummaryPaneHeightRatio}
           chartHeight={chartHeight}
           footerText={footerText}
           theme={theme}

@@ -73,6 +73,10 @@ const AUTO_FIT_UPDATE_THROTTLE_MS = 250;
 const AUTO_FIT_TOP_INSET_RATIO = 0.05;
 const AUTO_FIT_BOTTOM_INSET_RATIO = 0.05;
 
+function clampRatio(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
 interface OrderFlowChartProps {
   bars: OrderFlowBar[];
   seriesMode: SeriesMode;
@@ -85,6 +89,7 @@ interface OrderFlowChartProps {
   showVolumePane?: boolean;
   showVolumeDeltaPivot?: boolean;
   showDeltaSummary?: boolean;
+  deltaSummaryPaneHeightRatio?: number;
   chartHeight?: number;
   footerText?: string;
   theme?: Partial<OrderFlowChartTheme>;
@@ -190,6 +195,7 @@ export function OrderFlowChart({
   showVolumePane = true,
   showVolumeDeltaPivot = false,
   showDeltaSummary = false,
+  deltaSummaryPaneHeightRatio = 0.2,
   chartHeight = 860,
   footerText,
   theme,
@@ -787,16 +793,22 @@ export function OrderFlowChart({
   ]);
 
   useEffect(() => {
-    setDeltaSummaryReady(false);
-  }, [dataSourceKey, showDeltaSummary]);
+    if (!showDeltaSummary) {
+      setDeltaSummaryReady(false);
+    }
+  }, [showDeltaSummary]);
 
   useEffect(() => {
-    setVolumePaneReady(false);
-  }, [dataSourceKey, showVolumePane]);
+    if (!showVolumePane) {
+      setVolumePaneReady(false);
+    }
+  }, [showVolumePane]);
 
   useEffect(() => {
-    setVolumeDeltaPivotReady(false);
-  }, [dataSourceKey, showVolumeDeltaPivot]);
+    if (!showVolumeDeltaPivot) {
+      setVolumeDeltaPivotReady(false);
+    }
+  }, [showVolumeDeltaPivot]);
 
   useEffect(() => {
     if (!chart) {
@@ -817,6 +829,11 @@ export function OrderFlowChart({
         showDeltaSummary &&
         !showVolumePane &&
         !showVolumeDeltaPivot;
+      const resolvedDeltaSummaryPaneHeightRatio = clampRatio(
+        deltaSummaryPaneHeightRatio,
+        0.08,
+        0.5,
+      );
       const stretchFactors = Array.from({ length: panes.length }, () => null as number | null);
 
       if (showCandleSeries && referenceCandlePaneIndex !== null) {
@@ -836,7 +853,10 @@ export function OrderFlowChart({
 
           if (mainPane && deltaPane) {
             const combinedHeight = mainPane.getHeight() + deltaPane.getHeight();
-            const deltaHeight = Math.max(Math.round(combinedHeight * 0.2), 120);
+            const deltaHeight = Math.max(
+              Math.round(combinedHeight * resolvedDeltaSummaryPaneHeightRatio),
+              80,
+            );
             const mainHeight = Math.max(combinedHeight - deltaHeight, 0);
 
             mainPane.setHeight(mainHeight);
@@ -875,7 +895,11 @@ export function OrderFlowChart({
 
       if (showDeltaSummary && deltaSummaryPaneIndex !== null) {
         stretchFactors[deltaSummaryPaneIndex] =
-          usesDeltaSummaryOnlySupportingPane ? 0.2 : showVolumePane || showVolumeDeltaPivot ? 0.2 : 0.26;
+          usesDeltaSummaryOnlySupportingPane
+            ? resolvedDeltaSummaryPaneHeightRatio
+            : showVolumePane || showVolumeDeltaPivot
+              ? 0.2
+              : 0.26;
       }
 
       for (let index = 0; index < stretchFactors.length; index += 1) {
@@ -923,6 +947,7 @@ export function OrderFlowChart({
     chartHeight,
     dataSourceKey,
     deltaSummaryPaneIndex,
+    deltaSummaryPaneHeightRatio,
     deltaSummaryReady,
     referenceCandlePaneIndex,
     referencePanePlacement,
