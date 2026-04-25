@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+} from 'react';
 
 import {
   buildSupportedMinticks,
@@ -37,6 +46,214 @@ import {
 
 import { OrderFlowChart, type SeriesMode } from './OrderFlowChart';
 
+const SIDEBAR_SURFACE_STYLE: CSSProperties = {
+  display: 'grid',
+  gap: 12,
+  gridColumn: '2 / 3',
+  gridRow: '1 / 2',
+  maxHeight: 'calc(100vh - 32px)',
+  overflowY: 'auto',
+  padding: 14,
+  borderRadius: 16,
+  background:
+    'linear-gradient(180deg, rgba(11, 18, 32, 0.98) 0%, rgba(10, 16, 30, 0.98) 100%)',
+  border: '1px solid rgba(148, 163, 184, 0.12)',
+  boxShadow: '0 20px 48px rgba(2, 6, 23, 0.36)',
+  position: 'sticky',
+  top: 16,
+};
+
+const SIDEBAR_SECTION_STYLE: CSSProperties = {
+  display: 'grid',
+  gap: 10,
+  padding: 12,
+  borderRadius: 14,
+  background: 'rgba(15, 23, 42, 0.52)',
+  border: '1px solid rgba(148, 163, 184, 0.1)',
+};
+
+const SIDEBAR_SECTION_TITLE_STYLE: CSSProperties = {
+  margin: 0,
+  color: '#94a3b8',
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+};
+
+const SIDEBAR_FIELD_ROW_STYLE: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+};
+
+const SIDEBAR_LABEL_STYLE: CSSProperties = {
+  flex: '0 0 70px',
+  color: '#94a3b8',
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  lineHeight: 1.2,
+};
+
+const SIDEBAR_SUBLABEL_STYLE: CSSProperties = {
+  flex: '0 0 96px',
+  color: '#e2e8f0',
+  fontSize: 14,
+  fontWeight: 500,
+  lineHeight: 1.2,
+};
+
+const SIDEBAR_CONTROL_STYLE: CSSProperties = {
+  minWidth: 102,
+  background: 'rgba(15, 23, 42, 0.92)',
+  color: '#f8fafc',
+  border: '1px solid rgba(148, 163, 184, 0.18)',
+  borderRadius: 10,
+  padding: '7px 10px',
+  fontSize: 13,
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+};
+
+const SIDEBAR_COLOR_TEXT_STYLE: CSSProperties = {
+  ...SIDEBAR_CONTROL_STYLE,
+  minWidth: 0,
+  width: 84,
+  fontFamily:
+    'ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+  fontSize: 12,
+};
+
+const SIDEBAR_COLOR_SWATCH_STYLE: CSSProperties = {
+  width: 38,
+  height: 34,
+  padding: 2,
+  borderRadius: 10,
+  border: '1px solid rgba(148, 163, 184, 0.18)',
+  background: 'rgba(15, 23, 42, 0.92)',
+  cursor: 'pointer',
+};
+
+const SIDEBAR_ACTION_BUTTON_STYLE: CSSProperties = {
+  width: '100%',
+  borderRadius: 10,
+  padding: '9px 14px',
+  cursor: 'pointer',
+  fontSize: 14,
+  fontWeight: 600,
+};
+
+function normalizeColorPickerValue(value: string, fallback = '#000000'): string {
+  const trimmed = value.trim();
+  const shortHexMatch = trimmed.match(/^#([\da-f]{3})$/i);
+
+  if (shortHexMatch) {
+    return `#${shortHexMatch[1]
+      .split('')
+      .map((part) => `${part}${part}`)
+      .join('')
+      .toLowerCase()}`;
+  }
+
+  const hexMatch = trimmed.match(/^#([\da-f]{6})(?:[\da-f]{2})?$/i);
+
+  if (hexMatch) {
+    return `#${hexMatch[1].toLowerCase()}`;
+  }
+
+  const rgbMatch = trimmed.match(
+    /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*[\d.]+\s*)?\)$/i,
+  );
+
+  if (rgbMatch) {
+    const toHex = (raw: string) =>
+      Math.max(0, Math.min(255, Math.round(Number(raw) || 0))).toString(16).padStart(2, '0');
+
+    return `#${toHex(rgbMatch[1] ?? '0')}${toHex(rgbMatch[2] ?? '0')}${toHex(rgbMatch[3] ?? '0')}`;
+  }
+
+  return fallback;
+}
+
+function SidebarSection({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <section style={SIDEBAR_SECTION_STYLE}>
+      {title ? <h3 style={SIDEBAR_SECTION_TITLE_STYLE}>{title}</h3> : null}
+      <div style={{ display: 'grid', gap: 10 }}>{children}</div>
+    </section>
+  );
+}
+
+function FieldRow({
+  label,
+  labelTone = 'accent',
+  children,
+}: {
+  label: string;
+  labelTone?: 'accent' | 'default';
+  children: ReactNode;
+}) {
+  return (
+    <label style={SIDEBAR_FIELD_ROW_STYLE}>
+      <span style={labelTone === 'accent' ? SIDEBAR_LABEL_STYLE : SIDEBAR_SUBLABEL_STYLE}>
+        {label}
+      </span>
+      <span style={{ display: 'flex', justifyContent: 'flex-end', flex: '0 0 auto', minWidth: 0 }}>
+        {children}
+      </span>
+    </label>
+  );
+}
+
+function SelectControl({
+  style,
+  children,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  children: ReactNode;
+}) {
+  return (
+    <select {...props} style={{ ...SIDEBAR_CONTROL_STYLE, ...style }}>
+      {children}
+    </select>
+  );
+}
+
+function TextControl(props: InputHTMLAttributes<HTMLInputElement>) {
+  const { style, ...rest } = props;
+
+  return <input {...rest} style={{ ...SIDEBAR_CONTROL_STYLE, ...style }} />;
+}
+
+function ColorControl({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <input
+        type="color"
+        aria-label={`${value} color picker`}
+        value={normalizeColorPickerValue(value, '#000000')}
+        onChange={(event) => onChange(event.target.value)}
+        style={SIDEBAR_COLOR_SWATCH_STYLE}
+      />
+      <TextControl
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        spellCheck={false}
+        style={SIDEBAR_COLOR_TEXT_STYLE}
+      />
+    </div>
+  );
+}
+
 function Toggle({
   label,
   checked,
@@ -47,11 +264,21 @@ function Toggle({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+    <label
+      style={{
+        display: 'inline-flex',
+        gap: 10,
+        alignItems: 'center',
+        color: '#e2e8f0',
+        fontSize: 14,
+        lineHeight: 1.25,
+      }}
+    >
       <input
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
         type="checkbox"
+        style={{ accentColor: '#2563eb' }}
       />
       {label}
     </label>
@@ -426,521 +653,294 @@ export function FixtureDemoPage() {
         alignItems: 'start',
       }}
     >
-      <section
-        style={{
-          display: 'grid',
-          gap: 12,
-          gridColumn: '2 / 3',
-          gridRow: '1 / 2',
-          maxHeight: 'calc(100vh - 32px)',
-          overflowY: 'auto',
-          padding: 16,
-          borderRadius: 12,
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(148, 163, 184, 0.12)',
-          position: 'sticky',
-          top: 16,
-        }}
-      >
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Preset
-          <select
-            value={presetId}
-            onChange={(event) => setPresetId(event.target.value as FixturePresetId)}
-            style={{
-              background: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '6px 10px',
-            }}
-          >
-            {Object.values(FIXTURE_PRESETS).map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Symbol
-          <select
-            value={symbol}
-            onChange={(event) => setSymbol(event.target.value as SymbolCode)}
-            style={{
-              background: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '6px 10px',
-            }}
-          >
-            {AVAILABLE_SYMBOLS.map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Date
-          <select
-            value={sessionDate}
-            onChange={(event) => setSessionDate(event.target.value)}
-            style={{
-              background: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '6px 10px',
-            }}
-          >
-            {availableDates.map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Interval
-          <select
-            value={interval}
-            onChange={(event) => setInterval(event.target.value as BarInterval)}
-            style={{
-              background: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '6px 10px',
-            }}
-          >
-            {AVAILABLE_INTERVALS.map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Series Mode
-          <select
-            value={seriesMode}
-            onChange={(event) => setSeriesMode(event.target.value as SeriesMode)}
-            style={{
-              background: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '6px 10px',
-            }}
-          >
-            <option value="footprint">Footprint</option>
-            <option value="volume-footprint">Volume Footprint</option>
-            <option value="candle-heatmap">Candle Heatmap</option>
-          </select>
-        </label>
-
-        {showOrderFlowControls ? (
-          <Toggle
-            label="Visible Range Profile"
-            checked={showVisibleProfile}
-            onChange={setShowVisibleProfile}
-          />
-        ) : null}
-        {showOrderFlowControls ? (
-          <Toggle
-            label="Reference Candles Pane"
-            checked={showReferenceCandles}
-            onChange={setShowReferenceCandles}
-          />
-        ) : null}
-        {showOrderFlowControls ? (
-          <Toggle
-            label="Session Profiles"
-            checked={showSessionProfiles}
-            onChange={setShowSessionProfiles}
-          />
-        ) : null}
-        <Toggle label="Volume Pane" checked={showVolumePane} onChange={setShowVolumePane} />
-        <Toggle label="VWAP" checked={showVwap} onChange={setShowVwap} />
-        <Toggle label="Delta Summary" checked={showDeltaSummary} onChange={setShowDeltaSummary} />
-        {showOrderFlowControls ? (
-          <Toggle label="Show Candle" checked={showCandle} onChange={setShowCandle} />
-        ) : null}
-        <Toggle label="Show Wicks" checked={showWicks} onChange={setShowWicks} />
-        {showOrderFlowControls ? (
-          <Toggle label="Show Unit Symbol" checked={showValueUnit} onChange={setShowValueUnit} />
-        ) : null}
-
-        {showOrderFlowControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Candle Position
-            <select
-              value={candlePosition}
-              onChange={(event) => setCandlePosition(event.target.value as FootprintCandlePosition)}
-              style={{
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
+      <section style={SIDEBAR_SURFACE_STYLE}>
+        <SidebarSection title="Setup">
+          <FieldRow label="Preset">
+            <SelectControl
+              value={presetId}
+              onChange={(event) => setPresetId(event.target.value as FixturePresetId)}
+              style={{ width: 138 }}
             >
-              <option value="left">Left</option>
-              <option value="middle">Middle</option>
-              <option value="right">Right</option>
-            </select>
-          </label>
+              {Object.values(FIXTURE_PRESETS).map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.label}
+                </option>
+              ))}
+            </SelectControl>
+          </FieldRow>
+
+          <FieldRow label="Symbol">
+            <SelectControl
+              value={symbol}
+              onChange={(event) => setSymbol(event.target.value as SymbolCode)}
+              style={{ width: 96 }}
+            >
+              {AVAILABLE_SYMBOLS.map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry}
+                </option>
+              ))}
+            </SelectControl>
+          </FieldRow>
+
+          <FieldRow label="Date">
+            <SelectControl
+              value={sessionDate}
+              onChange={(event) => setSessionDate(event.target.value)}
+              style={{ width: 132 }}
+            >
+              {availableDates.map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry}
+                </option>
+              ))}
+            </SelectControl>
+          </FieldRow>
+
+          <FieldRow label="Interval">
+            <SelectControl
+              value={interval}
+              onChange={(event) => setInterval(event.target.value as BarInterval)}
+              style={{ width: 86 }}
+            >
+              {AVAILABLE_INTERVALS.map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry}
+                </option>
+              ))}
+            </SelectControl>
+          </FieldRow>
+
+          <FieldRow label="Series Mode">
+            <SelectControl
+              value={seriesMode}
+              onChange={(event) => setSeriesMode(event.target.value as SeriesMode)}
+              style={{ width: 138 }}
+            >
+              <option value="footprint">Footprint</option>
+              <option value="volume-footprint">Volume Footprint</option>
+              <option value="candle-heatmap">Candle Heatmap</option>
+            </SelectControl>
+          </FieldRow>
+        </SidebarSection>
+
+        <SidebarSection title="Studies">
+          {showOrderFlowControls ? (
+            <Toggle
+              label="Visible Range Profile"
+              checked={showVisibleProfile}
+              onChange={setShowVisibleProfile}
+            />
+          ) : null}
+          {showOrderFlowControls ? (
+            <Toggle
+              label="Reference Candles Pane"
+              checked={showReferenceCandles}
+              onChange={setShowReferenceCandles}
+            />
+          ) : null}
+          <Toggle label="Volume Pane" checked={showVolumePane} onChange={setShowVolumePane} />
+          <Toggle label="VWAP" checked={showVwap} onChange={setShowVwap} />
+          <Toggle label="Delta Summary" checked={showDeltaSummary} onChange={setShowDeltaSummary} />
+          {showOrderFlowControls ? (
+            <Toggle label="Show Candle" checked={showCandle} onChange={setShowCandle} />
+          ) : null}
+          {showOrderFlowControls ? (
+            <Toggle label="Show Wicks" checked={showWicks} onChange={setShowWicks} />
+          ) : null}
+          {showOrderFlowControls ? (
+            <Toggle label="Show Unit Symbol" checked={showValueUnit} onChange={setShowValueUnit} />
+          ) : null}
+        </SidebarSection>
+
+        <SidebarSection title="Display">
+          {showOrderFlowControls ? (
+            <FieldRow label="Candle Position" labelTone="default">
+              <SelectControl
+                value={candlePosition}
+                onChange={(event) =>
+                  setCandlePosition(event.target.value as FootprintCandlePosition)
+                }
+                style={{ width: 96 }}
+              >
+                <option value="left">Left</option>
+                <option value="middle">Middle</option>
+                <option value="right">Right</option>
+              </SelectControl>
+            </FieldRow>
+          ) : null}
+
+          <FieldRow label="Mintick" labelTone="default">
+            <SelectControl
+              value={String(effectiveMintick)}
+              onChange={(event) => setMintick(Number(event.target.value))}
+              style={{ width: 96 }}
+            >
+              {mintickOptions.map((entry) => (
+                <option key={entry} value={entry}>
+                  {formatMintick(entry)}
+                </option>
+              ))}
+            </SelectControl>
+          </FieldRow>
+        </SidebarSection>
+
+        {showHeatmapControls ? (
+          <SidebarSection title="Heatmap">
+            <FieldRow label="Down Fill" labelTone="default">
+              <ColorControl value={heatmapDownColor} onChange={setHeatmapDownColor} />
+            </FieldRow>
+
+            <FieldRow label="Up Fill" labelTone="default">
+              <ColorControl value={heatmapUpColor} onChange={setHeatmapUpColor} />
+            </FieldRow>
+
+            <FieldRow label="Down Wick" labelTone="default">
+              <ColorControl value={heatmapWickDownColor} onChange={setHeatmapWickDownColor} />
+            </FieldRow>
+
+            <FieldRow label="Up Wick" labelTone="default">
+              <ColorControl value={heatmapWickUpColor} onChange={setHeatmapWickUpColor} />
+            </FieldRow>
+
+            <FieldRow label="Down Border" labelTone="default">
+              <ColorControl value={heatmapBorderDownColor} onChange={setHeatmapBorderDownColor} />
+            </FieldRow>
+
+            <FieldRow label="Up Border" labelTone="default">
+              <ColorControl value={heatmapBorderUpColor} onChange={setHeatmapBorderUpColor} />
+            </FieldRow>
+
+            <Toggle
+              label="Heatmap Borders"
+              checked={heatmapBorderVisible}
+              onChange={setHeatmapBorderVisible}
+            />
+            <Toggle label="Shade Wicks" checked={heatmapShadeWicks} onChange={setHeatmapShadeWicks} />
+
+            <FieldRow label="Shader" labelTone="default">
+              <SelectControl
+                value={heatmapShader}
+                onChange={(event) => setHeatmapShader(event.target.value as CandleHeatmapShader)}
+                style={{ width: 96 }}
+              >
+                <option value="alpha">Alpha</option>
+                <option value="hue">Hue</option>
+              </SelectControl>
+            </FieldRow>
+
+            <FieldRow label="No. of Shades" labelTone="default">
+              <SelectControl
+                value={String(heatmapNoOfShades)}
+                onChange={(event) => setHeatmapNoOfShades(Number(event.target.value))}
+                style={{ width: 96 }}
+              >
+                <option value="0">Continuous</option>
+                <option value="1">1</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="16">16</option>
+              </SelectControl>
+            </FieldRow>
+
+            <FieldRow label="Min" labelTone="default">
+              <TextControl
+                type="text"
+                inputMode="decimal"
+                value={heatmapMin}
+                onChange={(event) => setHeatmapMin(normalizeDecimalInput(event.target.value))}
+                style={{ width: 96 }}
+              />
+            </FieldRow>
+
+            <FieldRow label="Min Shade Threshold" labelTone="default">
+              <TextControl
+                type="text"
+                inputMode="decimal"
+                value={heatmapMinShadeThreshold}
+                onChange={(event) =>
+                  setHeatmapMinShadeThreshold(normalizeDecimalInput(event.target.value))
+                }
+                placeholder="off"
+                style={{ width: 96 }}
+              />
+            </FieldRow>
+
+            <FieldRow label="Threshold" labelTone="default">
+              <TextControl
+                type="text"
+                inputMode="decimal"
+                value={heatmapThreshold}
+                onChange={(event) => setHeatmapThreshold(normalizeDecimalInput(event.target.value))}
+                style={{ width: 96 }}
+              />
+            </FieldRow>
+
+            <FieldRow label="Max Shade Threshold" labelTone="default">
+              <TextControl
+                type="text"
+                inputMode="decimal"
+                value={heatmapMaxShadeThreshold}
+                onChange={(event) =>
+                  setHeatmapMaxShadeThreshold(normalizeDecimalInput(event.target.value))
+                }
+                placeholder="off"
+                style={{ width: 96 }}
+              />
+            </FieldRow>
+
+            <FieldRow label="Max" labelTone="default">
+              <TextControl
+                type="text"
+                inputMode="decimal"
+                value={heatmapMax}
+                onChange={(event) => setHeatmapMax(normalizeDecimalInput(event.target.value))}
+                style={{ width: 96 }}
+              />
+            </FieldRow>
+          </SidebarSection>
         ) : null}
 
-        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          Mintick
-          <select
-            value={String(effectiveMintick)}
-            onChange={(event) => setMintick(Number(event.target.value))}
+        <SidebarSection title="Actions">
+          <button
+            onClick={() => setAutoFitRequestKey((current) => current + 1)}
             style={{
-              background: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '6px 10px',
+              ...SIDEBAR_ACTION_BUTTON_STYLE,
+              background: 'rgba(37, 99, 235, 0.22)',
+              color: '#dbeafe',
+              border: '1px solid rgba(96, 165, 250, 0.28)',
             }}
           >
-            {mintickOptions.map((entry) => (
-              <option key={entry} value={entry}>
-                {formatMintick(entry)}
-              </option>
-            ))}
-          </select>
-        </label>
+            Focus chart
+          </button>
 
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Down Fill
-            <input
-              type="text"
-              value={heatmapDownColor}
-              onChange={(event) => setHeatmapDownColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 116,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Up Fill
-            <input
-              type="text"
-              value={heatmapUpColor}
-              onChange={(event) => setHeatmapUpColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 116,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Down Wick
-            <input
-              type="text"
-              value={heatmapWickDownColor}
-              onChange={(event) => setHeatmapWickDownColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 116,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Up Wick
-            <input
-              type="text"
-              value={heatmapWickUpColor}
-              onChange={(event) => setHeatmapWickUpColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 116,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Down Border
-            <input
-              type="text"
-              value={heatmapBorderDownColor}
-              onChange={(event) => setHeatmapBorderDownColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 116,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Up Border
-            <input
-              type="text"
-              value={heatmapBorderUpColor}
-              onChange={(event) => setHeatmapBorderUpColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 116,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <Toggle
-            label="Heatmap Borders"
-            checked={heatmapBorderVisible}
-            onChange={setHeatmapBorderVisible}
-          />
-        ) : null}
-
-        {showHeatmapControls ? (
-          <Toggle label="Shade Wicks" checked={heatmapShadeWicks} onChange={setHeatmapShadeWicks} />
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Shader
-            <select
-              value={heatmapShader}
-              onChange={(event) => setHeatmapShader(event.target.value as CandleHeatmapShader)}
-              style={{
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            >
-              <option value="alpha">Alpha</option>
-              <option value="hue">Hue</option>
-            </select>
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            No. of Shades
-            <select
-              value={String(heatmapNoOfShades)}
-              onChange={(event) => setHeatmapNoOfShades(Number(event.target.value))}
-              style={{
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            >
-              <option value="0">Continuous</option>
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="16">16</option>
-            </select>
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Min
-            <input
-              type="text"
-              inputMode="decimal"
-              value={heatmapMin}
-              onChange={(event) => setHeatmapMin(normalizeDecimalInput(event.target.value))}
-              style={{
-                width: 88,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Min Shade Threshold
-            <input
-              type="text"
-              inputMode="decimal"
-              value={heatmapMinShadeThreshold}
-              onChange={(event) =>
-                setHeatmapMinShadeThreshold(normalizeDecimalInput(event.target.value))
+          <button
+            onClick={() => {
+              if (sourceBars.length > 0) {
+                setStreamEnabled((current) => !current);
               }
-              placeholder="off"
-              style={{
-                width: 110,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Threshold
-            <input
-              type="text"
-              inputMode="decimal"
-              value={heatmapThreshold}
-              onChange={(event) => setHeatmapThreshold(normalizeDecimalInput(event.target.value))}
-              style={{
-                width: 96,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Max Shade Threshold
-            <input
-              type="text"
-              inputMode="decimal"
-              value={heatmapMaxShadeThreshold}
-              onChange={(event) =>
-                setHeatmapMaxShadeThreshold(normalizeDecimalInput(event.target.value))
-              }
-              placeholder="off"
-              style={{
-                width: 110,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Max
-            <input
-              type="text"
-              inputMode="decimal"
-              value={heatmapMax}
-              onChange={(event) => setHeatmapMax(normalizeDecimalInput(event.target.value))}
-              style={{
-                width: 88,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        <button
-          onClick={() => setAutoFitRequestKey((current) => current + 1)}
-          style={{
-            background: 'rgba(59, 130, 246, 0.16)',
-            color: '#dbeafe',
-            border: '1px solid rgba(96, 165, 250, 0.24)',
-            borderRadius: 8,
-            padding: '8px 14px',
-            cursor: 'pointer',
-          }}
-        >
-          Focus chart
-        </button>
-
-        <button
-          onClick={() => {
-            if (sourceBars.length > 0) {
-              setStreamEnabled((current) => !current);
-            }
-          }}
-          disabled={!sourceBars.length}
-          style={{
-            background: !sourceBars.length
-              ? 'rgba(71, 85, 105, 0.18)'
-              : streamEnabled
-                ? 'rgba(34, 197, 94, 0.2)'
-                : 'rgba(148, 163, 184, 0.16)',
-            color: !sourceBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
-            border: !sourceBars.length
-              ? '1px solid rgba(71, 85, 105, 0.28)'
-              : streamEnabled
-                ? '1px solid rgba(34, 197, 94, 0.28)'
-                : '1px solid rgba(148, 163, 184, 0.2)',
-            borderRadius: 8,
-            padding: '8px 14px',
-            cursor: sourceBars.length ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {sourceBars.length ? 'Stream' : 'Stream (data unavailable)'}
-        </button>
+            }}
+            disabled={!sourceBars.length}
+            style={{
+              ...SIDEBAR_ACTION_BUTTON_STYLE,
+              background: !sourceBars.length
+                ? 'rgba(71, 85, 105, 0.18)'
+                : streamEnabled
+                  ? 'rgba(34, 197, 94, 0.22)'
+                  : 'rgba(148, 163, 184, 0.14)',
+              color: !sourceBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
+              border: !sourceBars.length
+                ? '1px solid rgba(71, 85, 105, 0.28)'
+                : streamEnabled
+                  ? '1px solid rgba(34, 197, 94, 0.28)'
+                  : '1px solid rgba(148, 163, 184, 0.18)',
+              cursor: sourceBars.length ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {sourceBars.length ? 'Stream' : 'Stream (data unavailable)'}
+          </button>
+        </SidebarSection>
       </section>
 
       <main style={{ gridColumn: '1 / 2', gridRow: '1 / 2', minWidth: 0 }}>

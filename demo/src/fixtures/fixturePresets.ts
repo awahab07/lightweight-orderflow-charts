@@ -183,7 +183,7 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
     theme: MODERN_THEME,
     allowsPatches: true,
     showVisibleProfile: true,
-    showSessionProfiles: true,
+    showSessionProfiles: false,
     showVwap: true,
     showReferenceCandles: true,
     showVolumePane: true,

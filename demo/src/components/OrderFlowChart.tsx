@@ -72,9 +72,101 @@ const DEFAULT_THEME: OrderFlowChartTheme = {
 const AUTO_FIT_UPDATE_THROTTLE_MS = 250;
 const AUTO_FIT_TOP_INSET_RATIO = 0.05;
 const AUTO_FIT_BOTTOM_INSET_RATIO = 0.05;
+const SUPPORT_PANE_MIN_HEIGHT = 80;
 
 function clampRatio(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+interface PaneHeightTarget {
+  paneIndex: number;
+  ratio: number;
+  minHeight?: number;
+}
+
+function applyPaneHeightTargets(
+  chart: IChartApi,
+  panes: ReturnType<IChartApi['panes']>,
+  chartHeight: number,
+  containerWidth: number | undefined,
+  targets: PaneHeightTarget[],
+): void {
+  const activeTargets = targets.filter(
+    (target) => target.ratio > 0 && panes[target.paneIndex] !== undefined,
+  );
+
+  if (!activeTargets.length) {
+    return;
+  }
+
+  const totalHeight = panes.reduce((sum, pane) => sum + pane.getHeight(), 0);
+
+  if (totalHeight <= 0) {
+    return;
+  }
+
+  const totalRatio = activeTargets.reduce((sum, target) => sum + target.ratio, 0);
+
+  if (totalRatio <= 0) {
+    return;
+  }
+
+  const heights = activeTargets.map((target) =>
+    Math.round((totalHeight * target.ratio) / totalRatio),
+  );
+  const minimumHeights = activeTargets.map((target) => target.minHeight ?? 0);
+
+  for (let index = 0; index < heights.length; index += 1) {
+    heights[index] = Math.max(heights[index] ?? 0, minimumHeights[index] ?? 0);
+  }
+
+  let overflow = heights.reduce((sum, height) => sum + height, 0) - totalHeight;
+
+  while (overflow > 0) {
+    const candidates = heights
+      .map((height, index) => ({
+        index,
+        slack: height - (minimumHeights[index] ?? 0),
+      }))
+      .filter((candidate) => candidate.slack > 0)
+      .sort((left, right) => right.slack - left.slack);
+
+    if (!candidates.length) {
+      break;
+    }
+
+    for (const candidate of candidates) {
+      if (overflow <= 0) {
+        break;
+      }
+
+      const reduction = Math.min(candidate.slack, overflow);
+      heights[candidate.index] -= reduction;
+      overflow -= reduction;
+    }
+  }
+
+  const primaryIndex = activeTargets.reduce(
+    (bestIndex, target, index, collection) =>
+      target.ratio > collection[bestIndex]!.ratio ? index : bestIndex,
+    0,
+  );
+  const remainingHeight = totalHeight - heights.reduce((sum, height) => sum + height, 0);
+
+  if (remainingHeight !== 0) {
+    heights[primaryIndex] = Math.max(
+      (heights[primaryIndex] ?? 0) + remainingHeight,
+      minimumHeights[primaryIndex] ?? 0,
+    );
+  }
+
+  activeTargets.forEach((target, index) => {
+    panes[target.paneIndex]?.setHeight(heights[index] ?? 0);
+  });
+
+  if (containerWidth) {
+    chart.resize(containerWidth, chartHeight, true);
+  }
 }
 
 interface OrderFlowChartProps {
@@ -836,104 +928,103 @@ export function OrderFlowChart({
         0.08,
         0.5,
       );
-      const stretchFactors = Array.from({ length: panes.length }, () => null as number | null);
+      const paneTargets: PaneHeightTarget[] = [];
 
       if (usesCandleOnlySingleSupportingPane) {
-        const mainPane = panes[0];
-        const supportPane = panes[1];
+        const supportPaneIndex =
+          volumePaneIndex ?? volumeDeltaPivotPaneIndex ?? deltaSummaryPaneIndex ?? null;
 
-        if (mainPane && supportPane) {
-          const combinedHeight = mainPane.getHeight() + supportPane.getHeight();
-          const supportHeight = Math.max(Math.round(combinedHeight * 0.2), 80);
-          const mainHeight = Math.max(combinedHeight - supportHeight, 0);
-
-          mainPane.setHeight(mainHeight);
-          supportPane.setHeight(supportHeight);
-          const width = containerRef.current?.clientWidth;
-          if (width) {
-            chart.resize(width, chartHeight, true);
-          }
+        if (supportPaneIndex !== null && panes[0] && panes[supportPaneIndex]) {
+          applyPaneHeightTargets(
+            chart,
+            panes,
+            chartHeight,
+            containerRef.current?.clientWidth,
+            [
+              { paneIndex: 0, ratio: 0.8 },
+              { paneIndex: supportPaneIndex, ratio: 0.2, minHeight: SUPPORT_PANE_MIN_HEIGHT },
+            ],
+          );
           return;
         }
       }
 
       if (showCandleSeries && referenceCandlePaneIndex !== null) {
         if (!showOrderFlowSeries) {
-          stretchFactors[referenceCandlePaneIndex] = supportingPaneCount ? 0.8 : 1;
+          paneTargets.push({
+            paneIndex: referenceCandlePaneIndex,
+            ratio: supportingPaneCount ? 0.8 : 1,
+          });
         } else if (referencePanePlacement === 'bottom') {
-          stretchFactors[referenceCandlePaneIndex] = supportingPaneCount ? 0.22 : 0.3;
+          paneTargets.push({
+            paneIndex: referenceCandlePaneIndex,
+            ratio: supportingPaneCount ? 0.22 : 0.3,
+          });
         } else {
-          stretchFactors[referenceCandlePaneIndex] = 0.18;
+          paneTargets.push({ paneIndex: referenceCandlePaneIndex, ratio: 0.18 });
         }
       }
 
       if (showOrderFlowSeries && orderFlowPaneIndex !== null) {
         if (usesDeltaSummaryOnlySupportingPane) {
-          const mainPane = panes[0];
-          const deltaPane = panes[1];
-
-          if (mainPane && deltaPane) {
-            const combinedHeight = mainPane.getHeight() + deltaPane.getHeight();
-            const deltaHeight = Math.max(
-              Math.round(combinedHeight * resolvedDeltaSummaryPaneHeightRatio),
-              80,
-            );
-            const mainHeight = Math.max(combinedHeight - deltaHeight, 0);
-
-            mainPane.setHeight(mainHeight);
-            deltaPane.setHeight(deltaHeight);
-            const width = containerRef.current?.clientWidth;
-            if (width) {
-              chart.resize(width, chartHeight, true);
-            }
-            return;
-          }
-
-          stretchFactors[orderFlowPaneIndex] = 0.8;
+          paneTargets.push({
+            paneIndex: orderFlowPaneIndex,
+            ratio: 1 - resolvedDeltaSummaryPaneHeightRatio,
+          });
         } else {
-          stretchFactors[orderFlowPaneIndex] =
-            showCandleSeries && referencePanePlacement === 'bottom'
-              ? supportingPaneCount
-                ? 0.5
-                : 0.7
-              : showCandleSeries
+          paneTargets.push({
+            paneIndex: orderFlowPaneIndex,
+            ratio:
+              showCandleSeries && referencePanePlacement === 'bottom'
                 ? supportingPaneCount
                   ? 0.5
-                  : 0.82
-                : supportingPaneCount
-                  ? 0.68
-                  : 1;
+                  : 0.7
+                : showCandleSeries
+                  ? supportingPaneCount
+                    ? 0.5
+                    : 0.82
+                  : supportingPaneCount
+                    ? 0.68
+                    : 1,
+          });
         }
       }
 
       if (showVolumePane && volumePaneIndex !== null) {
-        stretchFactors[volumePaneIndex] = 0.14;
+        paneTargets.push({
+          paneIndex: volumePaneIndex,
+          ratio: 0.14,
+          minHeight: SUPPORT_PANE_MIN_HEIGHT,
+        });
       }
 
       if (showVolumeDeltaPivot && volumeDeltaPivotPaneIndex !== null) {
-        stretchFactors[volumeDeltaPivotPaneIndex] = 0.2;
+        paneTargets.push({
+          paneIndex: volumeDeltaPivotPaneIndex,
+          ratio: 0.2,
+          minHeight: SUPPORT_PANE_MIN_HEIGHT,
+        });
       }
 
       if (showDeltaSummary && deltaSummaryPaneIndex !== null) {
-        stretchFactors[deltaSummaryPaneIndex] =
-          usesDeltaSummaryOnlySupportingPane
+        paneTargets.push({
+          paneIndex: deltaSummaryPaneIndex,
+          ratio: usesDeltaSummaryOnlySupportingPane
             ? resolvedDeltaSummaryPaneHeightRatio
             : showVolumePane || showVolumeDeltaPivot
               ? 0.2
-              : 0.26;
+              : 0.26,
+          minHeight: SUPPORT_PANE_MIN_HEIGHT,
+        });
       }
 
-      for (let index = 0; index < stretchFactors.length; index += 1) {
-        const stretchFactor = stretchFactors[index];
-        if (stretchFactor !== null) {
-          panes[index]?.setStretchFactor(stretchFactor);
-        }
-      }
-
-      const width = containerRef.current?.clientWidth;
-      if (width) {
-        chart.resize(width, chartHeight, true);
-      }
+      applyPaneHeightTargets(
+        chart,
+        panes,
+        chartHeight,
+        containerRef.current?.clientWidth,
+        paneTargets,
+      );
     };
     const frame = window.requestAnimationFrame(() => {
       applyStretchFactors();
@@ -1428,6 +1519,7 @@ export function OrderFlowChart({
         {showVwap ? <VwapSeries chart={chart} data={bars} paneIndex={mainPricePaneIndex} /> : null}
         {showDeltaSummary && deltaSummaryPaneIndex !== null ? (
           <DeltaSummarySeries
+            key={`delta-summary-${deltaSummaryPaneIndex}`}
             chart={chart}
             data={bars}
             options={deltaSummaryOptions}
