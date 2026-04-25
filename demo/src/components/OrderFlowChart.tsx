@@ -829,12 +829,33 @@ export function OrderFlowChart({
         showDeltaSummary &&
         !showVolumePane &&
         !showVolumeDeltaPivot;
+      const usesCandleOnlySingleSupportingPane =
+        showCandleSeries && !showOrderFlowSeries && supportingPaneCount === 1;
       const resolvedDeltaSummaryPaneHeightRatio = clampRatio(
         deltaSummaryPaneHeightRatio,
         0.08,
         0.5,
       );
       const stretchFactors = Array.from({ length: panes.length }, () => null as number | null);
+
+      if (usesCandleOnlySingleSupportingPane) {
+        const mainPane = panes[0];
+        const supportPane = panes[1];
+
+        if (mainPane && supportPane) {
+          const combinedHeight = mainPane.getHeight() + supportPane.getHeight();
+          const supportHeight = Math.max(Math.round(combinedHeight * 0.2), 80);
+          const mainHeight = Math.max(combinedHeight - supportHeight, 0);
+
+          mainPane.setHeight(mainHeight);
+          supportPane.setHeight(supportHeight);
+          const width = containerRef.current?.clientWidth;
+          if (width) {
+            chart.resize(width, chartHeight, true);
+          }
+          return;
+        }
+      }
 
       if (showCandleSeries && referenceCandlePaneIndex !== null) {
         if (!showOrderFlowSeries) {

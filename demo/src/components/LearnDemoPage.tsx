@@ -713,7 +713,7 @@ export function LearnDemoPage() {
 
       {bars.length ? (
         <OrderFlowChart
-          key={`learn-preset-${presetId}`}
+          key={`learn-preset-${presetId}-${themeId}`}
           bars={bars}
           chartHeight={900}
           footerText={footerText}
