@@ -5,6 +5,7 @@ import type {
 } from 'lightweight-charts';
 
 import type {
+  CandleHeatmapPartialOptions,
   DeltaSummarySeriesPartialOptions,
   FootprintSeriesPartialOptions,
   SessionVolumeProfilePartialOptions,
@@ -40,6 +41,7 @@ export interface OrderFlowThemePresetPack extends OrderFlowStylePresetPack {
   description: string;
   surface: OrderFlowSurfaceTheme;
   candleSeries?: CandlestickSeriesPartialOptions;
+  candleHeatmap?: CandleHeatmapPartialOptions;
   volumeSeries?: HistogramSeriesPartialOptions;
   volumeDeltaPivotSeries?: CandlestickSeriesPartialOptions;
   volumeDeltaPivotBaseline?: LineSeriesPartialOptions;
@@ -83,6 +85,26 @@ function createVolumeSeriesOptions(
     priceLineVisible: false,
     color: upColor,
     base: 0,
+  };
+}
+
+function createCandleHeatmapOptions(
+  upColor: string,
+  downColor: string,
+  overrides: CandleHeatmapPartialOptions = {},
+): CandleHeatmapPartialOptions {
+  return {
+    minColor: downColor,
+    maxColor: upColor,
+    downColor,
+    upColor,
+    wickDownColor: overrides.wickDownColor ?? downColor,
+    wickUpColor: overrides.wickUpColor ?? upColor,
+    borderDownColor: overrides.borderDownColor ?? downColor,
+    borderUpColor: overrides.borderUpColor ?? upColor,
+    borderVisible: overrides.borderVisible ?? true,
+    shadeWicks: overrides.shadeWicks ?? false,
+    ...overrides,
   };
 }
 
@@ -489,6 +511,12 @@ export const ORDER_FLOW_THEME_PRESETS = {
       rowStyles: CLASSIC_REFERENCE_DELTA_SUMMARY_OPTIONS.rowStyles,
     },
     candleSeries: createCandleSeriesOptions('#16a34a', '#ef4444'),
+    candleHeatmap: createCandleHeatmapOptions('#16a34a', '#ef4444', {
+      wickUpColor: '#15803d',
+      wickDownColor: '#b91c1c',
+      borderUpColor: '#15803d',
+      borderDownColor: '#b91c1c',
+    }),
     volumeSeries: createVolumeSeriesOptions('rgba(22, 163, 74, 0.46)', 'rgba(239, 68, 68, 0.46)'),
     volumeDeltaPivotSeries: createCandleSeriesOptions('#16a34a', '#ef4444', true),
   },
@@ -574,6 +602,12 @@ export const ORDER_FLOW_THEME_PRESETS = {
       wickDownColor: '#c9cdd4',
     }),
     volumeSeries: createVolumeSeriesOptions('rgba(8, 153, 129, 0.55)', 'rgba(242, 54, 69, 0.55)'),
+    candleHeatmap: createCandleHeatmapOptions('#089981', '#f23645', {
+      wickUpColor: '#c9cdd4',
+      wickDownColor: '#c9cdd4',
+      borderUpColor: '#089981',
+      borderDownColor: '#f23645',
+    }),
     volumeDeltaPivotSeries: createCandleSeriesOptions('#089981', '#f23645', true),
     volumeDeltaPivotBaseline: {
       color: 'rgba(120, 123, 134, 0.72)',
@@ -716,6 +750,16 @@ export const ORDER_FLOW_THEME_PRESETS = {
       rowStyles: DARK_REFERENCE_DELTA_SUMMARY_OPTIONS.rowStyles,
     },
     candleSeries: createCandleSeriesOptions('#cbd5e1', '#f87171'),
+    candleHeatmap: createCandleHeatmapOptions('#e5e7eb', 'transparent', {
+      minColor: 'transparent',
+      maxColor: '#e5e7eb',
+      wickDownColor: '#f87171',
+      borderDownColor: '#f87171',
+      wickUpColor: '#e5e7eb',
+      borderUpColor: '#e5e7eb',
+      borderVisible: true,
+      shadeWicks: false,
+    }),
     volumeSeries: createVolumeSeriesOptions(
       'rgba(203, 213, 225, 0.48)',
       'rgba(248, 113, 113, 0.44)',

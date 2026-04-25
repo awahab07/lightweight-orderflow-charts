@@ -108,6 +108,14 @@ export function FixtureDemoPage() {
   const [showValueUnit, setShowValueUnit] = useState(true);
   const [heatmapMinColor, setHeatmapMinColor] = useState('#dc2626');
   const [heatmapMaxColor, setHeatmapMaxColor] = useState('#2563eb');
+  const [heatmapDownColor, setHeatmapDownColor] = useState('#f23645');
+  const [heatmapUpColor, setHeatmapUpColor] = useState('#089981');
+  const [heatmapWickDownColor, setHeatmapWickDownColor] = useState('#f23645');
+  const [heatmapWickUpColor, setHeatmapWickUpColor] = useState('#089981');
+  const [heatmapBorderDownColor, setHeatmapBorderDownColor] = useState('#f23645');
+  const [heatmapBorderUpColor, setHeatmapBorderUpColor] = useState('#089981');
+  const [heatmapBorderVisible, setHeatmapBorderVisible] = useState(true);
+  const [heatmapShadeWicks, setHeatmapShadeWicks] = useState(false);
   const [heatmapNoOfShades, setHeatmapNoOfShades] = useState(1);
   const [heatmapShader, setHeatmapShader] = useState<CandleHeatmapShader>('alpha');
   const [heatmapMin, setHeatmapMin] = useState('0');
@@ -137,6 +145,22 @@ export function FixtureDemoPage() {
     setShowValueUnit(preset.footprintOptions?.style?.valueUnitVisible ?? true);
     setHeatmapMinColor(resolvedHeatmap.minColor);
     setHeatmapMaxColor(resolvedHeatmap.maxColor);
+    setHeatmapDownColor(resolvedHeatmap.downColor ?? resolvedHeatmap.minColor);
+    setHeatmapUpColor(resolvedHeatmap.upColor ?? resolvedHeatmap.maxColor);
+    setHeatmapWickDownColor(
+      resolvedHeatmap.wickDownColor ?? resolvedHeatmap.downColor ?? resolvedHeatmap.minColor,
+    );
+    setHeatmapWickUpColor(
+      resolvedHeatmap.wickUpColor ?? resolvedHeatmap.upColor ?? resolvedHeatmap.maxColor,
+    );
+    setHeatmapBorderDownColor(
+      resolvedHeatmap.borderDownColor ?? resolvedHeatmap.downColor ?? resolvedHeatmap.minColor,
+    );
+    setHeatmapBorderUpColor(
+      resolvedHeatmap.borderUpColor ?? resolvedHeatmap.upColor ?? resolvedHeatmap.maxColor,
+    );
+    setHeatmapBorderVisible(resolvedHeatmap.borderVisible);
+    setHeatmapShadeWicks(resolvedHeatmap.shadeWicks);
     setHeatmapNoOfShades(resolvedHeatmap.noOfShades);
     setHeatmapShader(resolvedHeatmap.shader);
     setHeatmapMin(String(resolvedHeatmap.range.min));
@@ -237,6 +261,15 @@ export function FixtureDemoPage() {
     () => ({
       minColor: heatmapMinColor.trim() || resolvedPresetHeatmapOptions.minColor,
       maxColor: heatmapMaxColor.trim() || resolvedPresetHeatmapOptions.maxColor,
+      downColor: heatmapDownColor.trim() || resolvedPresetHeatmapOptions.downColor,
+      upColor: heatmapUpColor.trim() || resolvedPresetHeatmapOptions.upColor,
+      wickDownColor: heatmapWickDownColor.trim() || resolvedPresetHeatmapOptions.wickDownColor,
+      wickUpColor: heatmapWickUpColor.trim() || resolvedPresetHeatmapOptions.wickUpColor,
+      borderDownColor:
+        heatmapBorderDownColor.trim() || resolvedPresetHeatmapOptions.borderDownColor,
+      borderUpColor: heatmapBorderUpColor.trim() || resolvedPresetHeatmapOptions.borderUpColor,
+      borderVisible: heatmapBorderVisible,
+      shadeWicks: heatmapShadeWicks,
       noOfShades: heatmapNoOfShades,
       shader: heatmapShader,
       range: {
@@ -254,17 +287,31 @@ export function FixtureDemoPage() {
       heatmapMax,
       heatmapMaxColor,
       heatmapMaxShadeThreshold,
+      heatmapBorderDownColor,
+      heatmapBorderUpColor,
+      heatmapBorderVisible,
+      heatmapDownColor,
       heatmapMinColor,
       heatmapThreshold,
       heatmapMin,
       heatmapMinShadeThreshold,
       heatmapNoOfShades,
+      heatmapShadeWicks,
       heatmapShader,
+      heatmapUpColor,
+      heatmapWickDownColor,
+      heatmapWickUpColor,
+      resolvedPresetHeatmapOptions.borderDownColor,
+      resolvedPresetHeatmapOptions.borderUpColor,
+      resolvedPresetHeatmapOptions.downColor,
       resolvedPresetHeatmapOptions.maxColor,
       resolvedPresetHeatmapOptions.minColor,
       resolvedPresetHeatmapOptions.range.max,
       resolvedPresetHeatmapOptions.range.threshold,
       resolvedPresetHeatmapOptions.range.min,
+      resolvedPresetHeatmapOptions.upColor,
+      resolvedPresetHeatmapOptions.wickDownColor,
+      resolvedPresetHeatmapOptions.wickUpColor,
     ],
   );
   const candleHeatmapScores = useMemo(
@@ -303,6 +350,14 @@ export function FixtureDemoPage() {
       [
         heatmapMinColor.trim(),
         heatmapMaxColor.trim(),
+        heatmapDownColor.trim(),
+        heatmapUpColor.trim(),
+        heatmapWickDownColor.trim(),
+        heatmapWickUpColor.trim(),
+        heatmapBorderDownColor.trim(),
+        heatmapBorderUpColor.trim(),
+        heatmapBorderVisible,
+        heatmapShadeWicks,
         heatmapNoOfShades,
         heatmapShader,
         heatmapMin,
@@ -313,14 +368,22 @@ export function FixtureDemoPage() {
       ].join(':'),
     [
       heatmapMax,
+      heatmapBorderDownColor,
+      heatmapBorderUpColor,
+      heatmapBorderVisible,
+      heatmapDownColor,
       heatmapMaxColor,
       heatmapMaxShadeThreshold,
       heatmapMin,
       heatmapMinColor,
       heatmapMinShadeThreshold,
       heatmapNoOfShades,
+      heatmapShadeWicks,
       heatmapShader,
       heatmapThreshold,
+      heatmapUpColor,
+      heatmapWickDownColor,
+      heatmapWickUpColor,
     ],
   );
   const footprintOptions = useMemo<FootprintSeriesPartialOptions>(() => {
@@ -627,6 +690,138 @@ export function FixtureDemoPage() {
               }}
             />
           </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Down Fill
+            <input
+              type="text"
+              value={heatmapDownColor}
+              onChange={(event) => setHeatmapDownColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 116,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Up Fill
+            <input
+              type="text"
+              value={heatmapUpColor}
+              onChange={(event) => setHeatmapUpColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 116,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Down Wick
+            <input
+              type="text"
+              value={heatmapWickDownColor}
+              onChange={(event) => setHeatmapWickDownColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 116,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Up Wick
+            <input
+              type="text"
+              value={heatmapWickUpColor}
+              onChange={(event) => setHeatmapWickUpColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 116,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Down Border
+            <input
+              type="text"
+              value={heatmapBorderDownColor}
+              onChange={(event) => setHeatmapBorderDownColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 116,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Up Border
+            <input
+              type="text"
+              value={heatmapBorderUpColor}
+              onChange={(event) => setHeatmapBorderUpColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 116,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <Toggle
+            label="Heatmap Borders"
+            checked={heatmapBorderVisible}
+            onChange={setHeatmapBorderVisible}
+          />
+        ) : null}
+
+        {showHeatmapControls ? (
+          <Toggle label="Shade Wicks" checked={heatmapShadeWicks} onChange={setHeatmapShadeWicks} />
         ) : null}
 
         {showHeatmapControls ? (

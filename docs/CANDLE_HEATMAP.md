@@ -30,8 +30,16 @@ const candleData = buildCandleHeatmapSeriesData({
       maxShadeThreshold: 0.9,
       max: 1,
     },
-    minColor: '#dc2626',
-    maxColor: '#16a34a',
+    minColor: '#f23645',
+    maxColor: '#089981',
+    downColor: '#f23645',
+    upColor: '#089981',
+    wickDownColor: '#c9cdd4',
+    wickUpColor: '#c9cdd4',
+    borderDownColor: '#f23645',
+    borderUpColor: '#089981',
+    borderVisible: true,
+    shadeWicks: false,
     noOfShades: 10,
     shader: 'alpha',
   },
@@ -67,6 +75,15 @@ These accept RGBA strings or HEXA colors. That means the caller can use:
 - fully opaque colors such as `#dc2626`
 - partially transparent colors such as `rgba(220, 38, 38, 0.18)`
 - fully transparent colors such as `#00000000`
+
+### Series-style colors
+
+`downColor` and `upColor` optionally replace `minColor` and `maxColor` as the shaded candle fill
+colors. `wickDownColor`/`wickUpColor` and `borderDownColor`/`borderUpColor` control wick and border
+colors for the lower and upper sides of the heatmap range.
+
+Set `shadeWicks: false` to keep wicks at their configured colors while only the candle body and
+border carry the metric shade. Set `borderVisible: false` to emit transparent per-bar borders.
 
 ### `noOfShades`
 

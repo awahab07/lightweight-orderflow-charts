@@ -48,6 +48,7 @@ import {
 import { readLearnDemoUrlState, writeLearnDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
+  mergeCandleHeatmapOptions,
   mergeFootprintStudyOptions,
   mergeSessionVolumeProfileStudyOptions,
   mergeVolumeProfileStudyOptions,
@@ -308,6 +309,10 @@ export function LearnDemoPage() {
   const themedDeltaSummaryOptions = useMemo(
     () => mergeDeltaSummaryStudyOptions(preset.deltaSummaryOptions, themePreset.deltaSummary),
     [preset.deltaSummaryOptions, themePreset.deltaSummary],
+  );
+  const themedCandleHeatmapOptions = useMemo(
+    () => mergeCandleHeatmapOptions(preset.candleHeatmapOptions, themePreset.candleHeatmap),
+    [preset.candleHeatmapOptions, themePreset.candleHeatmap],
   );
   const instrumentAwareFootprintOptions = useMemo(
     () =>
@@ -730,7 +735,7 @@ export function LearnDemoPage() {
           deltaSummaryOptions={themedDeltaSummaryOptions}
           volumeDeltaPivotData={volumeDeltaPivotData}
           candleSeriesOptions={themePreset.candleSeries}
-          candleHeatmapOptions={preset.candleHeatmapOptions}
+          candleHeatmapOptions={themedCandleHeatmapOptions}
           candleHeatmapAccessor={candleHeatmapAccessor}
           candleMetricData={candleMetricData}
           volumeSeriesOptions={themePreset.volumeSeries}

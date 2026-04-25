@@ -1,4 +1,6 @@
 import type {
+  CandleHeatmapPartialOptions,
+  CandleHeatmapOptions,
   DeltaSummarySeriesPartialOptions,
   DeltaSummarySeriesOptions,
   FootprintSeriesPartialOptions,
@@ -9,6 +11,7 @@ import type {
   VolumeProfilePartialOptions,
 } from 'lightweight-orderflow-charts';
 import {
+  mergeCandleHeatmapOptions as mergeResolvedCandleHeatmapOptions,
   mergeDeltaSummarySeriesOptions,
   mergeFootprintSeriesOptions,
   mergeSessionVolumeProfileOptions,
@@ -199,4 +202,24 @@ export function mergeDeltaSummaryStudyOptions(
     },
     rowStyles: mergeResolvedRowStyles(resolvedBase, overlay),
   };
+}
+
+export function mergeCandleHeatmapOptions(
+  base?: CandleHeatmapPartialOptions,
+  overlay?: CandleHeatmapPartialOptions,
+): CandleHeatmapOptions {
+  const resolvedBase = mergeResolvedCandleHeatmapOptions(base);
+
+  if (!overlay) {
+    return resolvedBase;
+  }
+
+  return mergeResolvedCandleHeatmapOptions({
+    ...resolvedBase,
+    ...overlay,
+    range: {
+      ...resolvedBase.range,
+      ...overlay.range,
+    },
+  });
 }

@@ -252,4 +252,38 @@ describe('buildCandleHeatmapSeriesData', () => {
       },
     ]);
   });
+
+  it('uses series-style fill, wick, and border colors when wick shading is disabled', () => {
+    const data = buildCandleHeatmapSeriesData({
+      bars: [
+        {
+          time: 1_700_000_400 as TimeValue,
+          open: 100,
+          high: 101,
+          low: 99,
+          close: 100.5,
+        },
+      ],
+      options: {
+        minColor: '#f23645',
+        maxColor: '#089981',
+        downColor: '#f23645',
+        upColor: '#089981',
+        wickDownColor: '#64748b',
+        wickUpColor: '#cbd5e1',
+        borderDownColor: '#b91c1c',
+        borderUpColor: '#047857',
+        shadeWicks: false,
+        noOfShades: 10,
+      },
+      backgroundColor: '#020617',
+      getValue: () => 0.7,
+    });
+
+    expect(data[0]).toMatchObject({
+      color: 'rgba(8, 153, 129, 0.69)',
+      borderColor: 'rgba(4, 120, 87, 0.69)',
+      wickColor: '#cbd5e1',
+    });
+  });
 });

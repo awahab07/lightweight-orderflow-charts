@@ -354,6 +354,14 @@ interface ResolvedCandleHeatmapOptions {
   };
   minColor: string;
   maxColor: string;
+  downColor?: string;
+  upColor?: string;
+  wickDownColor?: string;
+  wickUpColor?: string;
+  borderDownColor?: string;
+  borderUpColor?: string;
+  borderVisible: boolean;
+  shadeWicks: boolean;
   noOfShades: number;
   shader: CandleHeatmapShader;
 }
@@ -402,6 +410,14 @@ function normalizeResolvedOptions(
     },
     minColor: options.minColor,
     maxColor: options.maxColor,
+    downColor: options.downColor,
+    upColor: options.upColor,
+    wickDownColor: options.wickDownColor,
+    wickUpColor: options.wickUpColor,
+    borderDownColor: options.borderDownColor,
+    borderUpColor: options.borderUpColor,
+    borderVisible: options.borderVisible,
+    shadeWicks: options.shadeWicks,
     noOfShades: normalizeNumberOfShades(options.noOfShades),
     shader: options.shader,
   };
@@ -495,6 +511,47 @@ function resolveHeatmapColor(
   );
 }
 
+function resolveSideFillColor(side: CandleHeatmapSide, options: ResolvedCandleHeatmapOptions): string {
+  return side === 'min'
+    ? options.downColor ?? options.minColor
+    : options.upColor ?? options.maxColor;
+}
+
+function resolveSideWickColor(side: CandleHeatmapSide, options: ResolvedCandleHeatmapOptions): string {
+  return side === 'min'
+    ? options.wickDownColor ?? options.downColor ?? options.minColor
+    : options.wickUpColor ?? options.upColor ?? options.maxColor;
+}
+
+function resolveSideBorderColor(
+  side: CandleHeatmapSide,
+  options: ResolvedCandleHeatmapOptions,
+): string {
+  return side === 'min'
+    ? options.borderDownColor ?? options.downColor ?? options.minColor
+    : options.borderUpColor ?? options.upColor ?? options.maxColor;
+}
+
+function resolveShadedSideColor(
+  baseColor: string,
+  intensity: number,
+  options: ResolvedCandleHeatmapOptions,
+  backgroundColor: string,
+  darkSurface: boolean,
+): string {
+  if (intensity >= 1) {
+    return baseColor;
+  }
+
+  return resolveColorFromShade(
+    baseColor,
+    intensity,
+    options.shader,
+    backgroundColor,
+    darkSurface,
+  );
+}
+
 export function resolveCandleHeatmapColor(
   input: ResolveCandleHeatmapColorInput,
 ): CandleHeatmapColorResolution | null {
@@ -514,13 +571,7 @@ export function resolveCandleHeatmapColor(
   const intensity = quantizeIntensity(normalizedDistance, options.noOfShades);
 
   return {
-    color: resolveHeatmapColor(
-      side,
-      intensity,
-      options,
-      backgroundColor,
-      darkSurface,
-    ),
+    color: resolveHeatmapColor(side, intensity, options, backgroundColor, darkSurface),
     side,
     intensity,
   };
@@ -529,12 +580,57 @@ export function resolveCandleHeatmapColor(
 export function buildCandleHeatmapSeriesData<TBar extends CandleHeatmapBarLike>(
   input: BuildCandleHeatmapSeriesDataInput<TBar>,
 ): CandlestickData<TimeValue>[] {
+  const options = normalizeResolvedOptions(mergeCandleHeatmapOptions(input.options));
+  const backgroundColor = input.backgroundColor ?? DEFAULT_SURFACE_BACKGROUND;
+  const darkSurface = isDarkSurface(backgroundColor);
+
   return input.bars.map((bar, index, bars) => {
+    if (!options) {
+      return {
+        time: bar.time,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+      };
+    }
+
     const resolution = resolveCandleHeatmapColor({
       value: input.getValue(bar, index, bars),
-      options: input.options,
-      backgroundColor: input.backgroundColor,
+      options,
+      backgroundColor,
     });
+    const fillColor = resolution
+      ? resolveShadedSideColor(
+          resolveSideFillColor(resolution.side, options),
+          resolution.intensity,
+          options,
+          backgroundColor,
+          darkSurface,
+        )
+      : undefined;
+    const wickColor = resolution
+      ? options.shadeWicks
+        ? resolveShadedSideColor(
+            resolveSideWickColor(resolution.side, options),
+            resolution.intensity,
+            options,
+            backgroundColor,
+            darkSurface,
+          )
+        : resolveSideWickColor(resolution.side, options)
+      : undefined;
+    const borderColor = resolution
+      ? options.borderVisible
+        ? resolveShadedSideColor(
+            resolveSideBorderColor(resolution.side, options),
+            resolution.intensity,
+            options,
+            backgroundColor,
+            darkSurface,
+          )
+        : 'transparent'
+      : undefined;
 
     return {
       time: bar.time,
@@ -542,11 +638,11 @@ export function buildCandleHeatmapSeriesData<TBar extends CandleHeatmapBarLike>(
       high: bar.high,
       low: bar.low,
       close: bar.close,
-      ...(resolution
+      ...(fillColor
         ? {
-            color: resolution.color,
-            borderColor: resolution.color,
-            wickColor: resolution.color,
+            color: fillColor,
+            borderColor: borderColor ?? fillColor,
+            wickColor: wickColor ?? fillColor,
           }
         : {}),
     };

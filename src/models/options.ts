@@ -139,6 +139,14 @@ export interface CandleHeatmapOptions {
   range: CandleHeatmapRangeOptions;
   minColor: string;
   maxColor: string;
+  downColor?: string;
+  upColor?: string;
+  wickDownColor?: string;
+  wickUpColor?: string;
+  borderDownColor?: string;
+  borderUpColor?: string;
+  borderVisible: boolean;
+  shadeWicks: boolean;
   noOfShades: number;
   shader: CandleHeatmapShader;
 }
@@ -889,6 +897,14 @@ export const DEFAULT_CANDLE_HEATMAP_OPTIONS: CandleHeatmapOptions = {
   },
   minColor: '#dc2626',
   maxColor: '#2563eb',
+  downColor: undefined,
+  upColor: undefined,
+  wickDownColor: undefined,
+  wickUpColor: undefined,
+  borderDownColor: undefined,
+  borderUpColor: undefined,
+  borderVisible: true,
+  shadeWicks: true,
   noOfShades: 1,
   shader: 'alpha',
 };
