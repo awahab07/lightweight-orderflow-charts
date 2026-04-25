@@ -30,8 +30,6 @@ const candleData = buildCandleHeatmapSeriesData({
       maxShadeThreshold: 0.9,
       max: 1,
     },
-    minColor: '#f23645',
-    maxColor: '#089981',
     downColor: '#f23645',
     upColor: '#089981',
     wickDownColor: '#c9cdd4',
@@ -55,20 +53,20 @@ const candleData = buildCandleHeatmapSeriesData({
 The heatmap uses a diverging range:
 
 - `min`
-  Lowest supported metric value. This edge resolves to `minColor`.
+  Lowest supported metric value. This edge resolves to `downColor`.
 - `threshold`
-  Split between the low and high halves of the range. Values below it use the min side, and values
-  at or above it use the max side.
+  Split between the low and high halves of the range. Values below it use the down side, and values
+  at or above it use the up side.
 - `max`
-  Highest supported metric value. This edge resolves to `maxColor`.
+  Highest supported metric value. This edge resolves to `upColor`.
 - `minShadeThreshold`
-  Optional lower solid zone. Values from `min` through this threshold render as the exact `minColor`
+  Optional lower solid zone. Values from `min` through this threshold render as the exact `downColor`
   without shading.
 - `maxShadeThreshold`
-  Optional upper solid zone. Values from this threshold through `max` render as the exact `maxColor`
+  Optional upper solid zone. Values from this threshold through `max` render as the exact `upColor`
   without shading.
 
-### `minColor` and `maxColor`
+### `downColor` and `upColor`
 
 These accept RGBA strings or HEXA colors. That means the caller can use:
 
@@ -78,9 +76,9 @@ These accept RGBA strings or HEXA colors. That means the caller can use:
 
 ### Series-style colors
 
-`downColor` and `upColor` optionally replace `minColor` and `maxColor` as the shaded candle fill
-colors. `wickDownColor`/`wickUpColor` and `borderDownColor`/`borderUpColor` control wick and border
-colors for the lower and upper sides of the heatmap range.
+`downColor` and `upColor` control the shaded candle fill colors. `wickDownColor`/`wickUpColor` and
+`borderDownColor`/`borderUpColor` control wick and border colors for the lower and upper sides of
+the heatmap range.
 
 Set `shadeWicks: false` to keep wicks at their configured colors while only the candle body and
 border carry the metric shade. Set `borderVisible: false` to emit transparent per-bar borders.

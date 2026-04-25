@@ -106,8 +106,6 @@ export function FixtureDemoPage() {
   const [candlePosition, setCandlePosition] = useState<FootprintCandlePosition>('middle');
   const [mintick, setMintick] = useState<number | null>(0.1);
   const [showValueUnit, setShowValueUnit] = useState(true);
-  const [heatmapMinColor, setHeatmapMinColor] = useState('#dc2626');
-  const [heatmapMaxColor, setHeatmapMaxColor] = useState('#2563eb');
   const [heatmapDownColor, setHeatmapDownColor] = useState('#f23645');
   const [heatmapUpColor, setHeatmapUpColor] = useState('#089981');
   const [heatmapWickDownColor, setHeatmapWickDownColor] = useState('#f23645');
@@ -143,22 +141,12 @@ export function FixtureDemoPage() {
     setShowWicks(preset.showWicks);
     setCandlePosition(preset.candlePosition);
     setShowValueUnit(preset.footprintOptions?.style?.valueUnitVisible ?? true);
-    setHeatmapMinColor(resolvedHeatmap.minColor);
-    setHeatmapMaxColor(resolvedHeatmap.maxColor);
-    setHeatmapDownColor(resolvedHeatmap.downColor ?? resolvedHeatmap.minColor);
-    setHeatmapUpColor(resolvedHeatmap.upColor ?? resolvedHeatmap.maxColor);
-    setHeatmapWickDownColor(
-      resolvedHeatmap.wickDownColor ?? resolvedHeatmap.downColor ?? resolvedHeatmap.minColor,
-    );
-    setHeatmapWickUpColor(
-      resolvedHeatmap.wickUpColor ?? resolvedHeatmap.upColor ?? resolvedHeatmap.maxColor,
-    );
-    setHeatmapBorderDownColor(
-      resolvedHeatmap.borderDownColor ?? resolvedHeatmap.downColor ?? resolvedHeatmap.minColor,
-    );
-    setHeatmapBorderUpColor(
-      resolvedHeatmap.borderUpColor ?? resolvedHeatmap.upColor ?? resolvedHeatmap.maxColor,
-    );
+    setHeatmapDownColor(resolvedHeatmap.downColor);
+    setHeatmapUpColor(resolvedHeatmap.upColor);
+    setHeatmapWickDownColor(resolvedHeatmap.wickDownColor ?? resolvedHeatmap.downColor);
+    setHeatmapWickUpColor(resolvedHeatmap.wickUpColor ?? resolvedHeatmap.upColor);
+    setHeatmapBorderDownColor(resolvedHeatmap.borderDownColor ?? resolvedHeatmap.downColor);
+    setHeatmapBorderUpColor(resolvedHeatmap.borderUpColor ?? resolvedHeatmap.upColor);
     setHeatmapBorderVisible(resolvedHeatmap.borderVisible);
     setHeatmapShadeWicks(resolvedHeatmap.shadeWicks);
     setHeatmapNoOfShades(resolvedHeatmap.noOfShades);
@@ -259,8 +247,6 @@ export function FixtureDemoPage() {
   );
   const candleHeatmapOptions = useMemo<CandleHeatmapPartialOptions>(
     () => ({
-      minColor: heatmapMinColor.trim() || resolvedPresetHeatmapOptions.minColor,
-      maxColor: heatmapMaxColor.trim() || resolvedPresetHeatmapOptions.maxColor,
       downColor: heatmapDownColor.trim() || resolvedPresetHeatmapOptions.downColor,
       upColor: heatmapUpColor.trim() || resolvedPresetHeatmapOptions.upColor,
       wickDownColor: heatmapWickDownColor.trim() || resolvedPresetHeatmapOptions.wickDownColor,
@@ -285,13 +271,11 @@ export function FixtureDemoPage() {
     }),
     [
       heatmapMax,
-      heatmapMaxColor,
       heatmapMaxShadeThreshold,
       heatmapBorderDownColor,
       heatmapBorderUpColor,
       heatmapBorderVisible,
       heatmapDownColor,
-      heatmapMinColor,
       heatmapThreshold,
       heatmapMin,
       heatmapMinShadeThreshold,
@@ -304,8 +288,6 @@ export function FixtureDemoPage() {
       resolvedPresetHeatmapOptions.borderDownColor,
       resolvedPresetHeatmapOptions.borderUpColor,
       resolvedPresetHeatmapOptions.downColor,
-      resolvedPresetHeatmapOptions.maxColor,
-      resolvedPresetHeatmapOptions.minColor,
       resolvedPresetHeatmapOptions.range.max,
       resolvedPresetHeatmapOptions.range.threshold,
       resolvedPresetHeatmapOptions.range.min,
@@ -348,8 +330,6 @@ export function FixtureDemoPage() {
   const heatmapRenderKey = useMemo(
     () =>
       [
-        heatmapMinColor.trim(),
-        heatmapMaxColor.trim(),
         heatmapDownColor.trim(),
         heatmapUpColor.trim(),
         heatmapWickDownColor.trim(),
@@ -372,10 +352,8 @@ export function FixtureDemoPage() {
       heatmapBorderUpColor,
       heatmapBorderVisible,
       heatmapDownColor,
-      heatmapMaxColor,
       heatmapMaxShadeThreshold,
       heatmapMin,
-      heatmapMinColor,
       heatmapMinShadeThreshold,
       heatmapNoOfShades,
       heatmapShadeWicks,
@@ -640,46 +618,6 @@ export function FixtureDemoPage() {
             ))}
           </select>
         </label>
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Min Color
-            <input
-              type="text"
-              value={heatmapMinColor}
-              onChange={(event) => setHeatmapMinColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 136,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
-
-        {showHeatmapControls ? (
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Max Color
-            <input
-              type="text"
-              value={heatmapMaxColor}
-              onChange={(event) => setHeatmapMaxColor(event.target.value)}
-              spellCheck={false}
-              style={{
-                width: 136,
-                background: '#0f172a',
-                color: '#e2e8f0',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '6px 10px',
-              }}
-            />
-          </label>
-        ) : null}
 
         {showHeatmapControls ? (
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>

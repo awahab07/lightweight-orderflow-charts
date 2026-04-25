@@ -209,8 +209,6 @@ const candleData = buildCandleHeatmapSeriesData({
       maxShadeThreshold: 0.9,
       max: 1,
     },
-    minColor: '#f23645',
-    maxColor: '#089981',
     downColor: '#f23645',
     upColor: '#089981',
     wickDownColor: '#c9cdd4',

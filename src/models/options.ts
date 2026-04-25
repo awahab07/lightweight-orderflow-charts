@@ -116,8 +116,8 @@ export type ColorScalePartialOptions = Omit<Partial<ColorScaleOptions>, 'range' 
 /**
  * Diverging range used by the candle heatmap helper.
  *
- * The range is split around `threshold`. Values near `min` resolve toward `minColor`, while values
- * near `max` resolve toward `maxColor`.
+ * The range is split around `threshold`. Values near `min` resolve toward `downColor`, while values
+ * near `max` resolve toward `upColor`.
  */
 export interface CandleHeatmapRangeOptions {
   min: number;
@@ -137,10 +137,8 @@ export type CandleHeatmapShader = 'alpha' | 'hue';
  */
 export interface CandleHeatmapOptions {
   range: CandleHeatmapRangeOptions;
-  minColor: string;
-  maxColor: string;
-  downColor?: string;
-  upColor?: string;
+  downColor: string;
+  upColor: string;
   wickDownColor?: string;
   wickUpColor?: string;
   borderDownColor?: string;
@@ -895,10 +893,8 @@ export const DEFAULT_CANDLE_HEATMAP_OPTIONS: CandleHeatmapOptions = {
     maxShadeThreshold: 0.9,
     max: 1,
   },
-  minColor: '#dc2626',
-  maxColor: '#2563eb',
-  downColor: undefined,
-  upColor: undefined,
+  downColor: '#dc2626',
+  upColor: '#2563eb',
   wickDownColor: undefined,
   wickUpColor: undefined,
   borderDownColor: undefined,

@@ -94,8 +94,6 @@ function createCandleHeatmapOptions(
   overrides: CandleHeatmapPartialOptions = {},
 ): CandleHeatmapPartialOptions {
   return {
-    minColor: downColor,
-    maxColor: upColor,
     downColor,
     upColor,
     wickDownColor: overrides.wickDownColor ?? downColor,
@@ -751,8 +749,6 @@ export const ORDER_FLOW_THEME_PRESETS = {
     },
     candleSeries: createCandleSeriesOptions('#cbd5e1', '#f87171'),
     candleHeatmap: createCandleHeatmapOptions('#e5e7eb', 'transparent', {
-      minColor: 'transparent',
-      maxColor: '#e5e7eb',
       wickDownColor: '#f87171',
       borderDownColor: '#f87171',
       wickUpColor: '#e5e7eb',

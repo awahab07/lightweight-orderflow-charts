@@ -95,8 +95,8 @@ describe('resolveCandleHeatmapColor', () => {
     const low = resolveCandleHeatmapColor({
       value: 0.25,
       options: {
-        minColor: '#dc2626',
-        maxColor: '#16a34a',
+        downColor: '#dc2626',
+        upColor: '#16a34a',
         noOfShades: 10,
         range: {
           min: 0,
@@ -110,8 +110,8 @@ describe('resolveCandleHeatmapColor', () => {
     const high = resolveCandleHeatmapColor({
       value: 0.7,
       options: {
-        minColor: '#dc2626',
-        maxColor: '#16a34a',
+        downColor: '#dc2626',
+        upColor: '#16a34a',
         noOfShades: 10,
         range: {
           min: 0,
@@ -140,8 +140,8 @@ describe('resolveCandleHeatmapColor', () => {
     const low = resolveCandleHeatmapColor({
       value: 0.2,
       options: {
-        minColor: '#00000000',
-        maxColor: '#2563eb',
+        downColor: '#00000000',
+        upColor: '#2563eb',
         noOfShades: 10,
         range: {
           min: 0,
@@ -155,8 +155,8 @@ describe('resolveCandleHeatmapColor', () => {
     const high = resolveCandleHeatmapColor({
       value: 0.7,
       options: {
-        minColor: '#00000000',
-        maxColor: '#2563eb',
+        downColor: '#00000000',
+        upColor: '#2563eb',
         noOfShades: 10,
         range: {
           min: 0,
@@ -181,8 +181,8 @@ describe('resolveCandleHeatmapColor', () => {
     const dark = resolveCandleHeatmapColor({
       value: 0.6,
       options: {
-        minColor: '#dc262680',
-        maxColor: '#2563eb80',
+        downColor: '#dc262680',
+        upColor: '#2563eb80',
         noOfShades: 0,
         shader: 'hue',
       },
@@ -191,8 +191,8 @@ describe('resolveCandleHeatmapColor', () => {
     const light = resolveCandleHeatmapColor({
       value: 0.6,
       options: {
-        minColor: '#dc262680',
-        maxColor: '#2563eb80',
+        downColor: '#dc262680',
+        upColor: '#2563eb80',
         noOfShades: 0,
         shader: 'hue',
       },
@@ -265,8 +265,6 @@ describe('buildCandleHeatmapSeriesData', () => {
         },
       ],
       options: {
-        minColor: '#f23645',
-        maxColor: '#089981',
         downColor: '#f23645',
         upColor: '#089981',
         wickDownColor: '#64748b',

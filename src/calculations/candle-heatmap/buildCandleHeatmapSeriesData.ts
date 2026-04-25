@@ -352,10 +352,8 @@ interface ResolvedCandleHeatmapOptions {
     maxShadeThreshold: number;
     max: number;
   };
-  minColor: string;
-  maxColor: string;
-  downColor?: string;
-  upColor?: string;
+  downColor: string;
+  upColor: string;
   wickDownColor?: string;
   wickUpColor?: string;
   borderDownColor?: string;
@@ -408,8 +406,6 @@ function normalizeResolvedOptions(
       ),
       max: range.max,
     },
-    minColor: options.minColor,
-    maxColor: options.maxColor,
     downColor: options.downColor,
     upColor: options.upColor,
     wickDownColor: options.wickDownColor,
@@ -496,7 +492,7 @@ function resolveHeatmapColor(
   backgroundColor: string,
   darkSurface: boolean,
 ): string {
-  const edgeColor = side === 'min' ? options.minColor : options.maxColor;
+  const edgeColor = side === 'min' ? options.downColor : options.upColor;
 
   if (intensity >= 1) {
     return edgeColor;
@@ -512,15 +508,13 @@ function resolveHeatmapColor(
 }
 
 function resolveSideFillColor(side: CandleHeatmapSide, options: ResolvedCandleHeatmapOptions): string {
-  return side === 'min'
-    ? options.downColor ?? options.minColor
-    : options.upColor ?? options.maxColor;
+  return side === 'min' ? options.downColor : options.upColor;
 }
 
 function resolveSideWickColor(side: CandleHeatmapSide, options: ResolvedCandleHeatmapOptions): string {
   return side === 'min'
-    ? options.wickDownColor ?? options.downColor ?? options.minColor
-    : options.wickUpColor ?? options.upColor ?? options.maxColor;
+    ? options.wickDownColor ?? options.downColor
+    : options.wickUpColor ?? options.upColor;
 }
 
 function resolveSideBorderColor(
@@ -528,8 +522,8 @@ function resolveSideBorderColor(
   options: ResolvedCandleHeatmapOptions,
 ): string {
   return side === 'min'
-    ? options.borderDownColor ?? options.downColor ?? options.minColor
-    : options.borderUpColor ?? options.upColor ?? options.maxColor;
+    ? options.borderDownColor ?? options.downColor
+    : options.borderUpColor ?? options.upColor;
 }
 
 function resolveShadedSideColor(
