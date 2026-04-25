@@ -203,16 +203,16 @@ const VOLUME_PROFILE_SHAPE_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
 const SESSION_MAP_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
   version: 1,
   timeRange: {
-    from: 4.944122692718288,
-    to: 12.82425732391448,
+    from: 5.6236817466998374,
+    to: 15.169124959463417,
   },
   panes: [
     {
       paneIndex: 0,
       priceScaleId: 'right',
       priceRange: {
-        from: 383.21752780573865,
-        to: 394.10606813864524,
+        from: 382.535136327078,
+        to: 384.8847153377899,
       },
     },
     {

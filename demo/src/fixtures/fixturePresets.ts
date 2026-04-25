@@ -15,6 +15,7 @@ import {
   SHADED_REFERENCE_VOLUME_PROFILE_OPTIONS,
   VOLUME_FOOTPRINT_REFERENCE_OPTIONS,
   type CandleHeatmapPartialOptions,
+  type ChartViewStateSnapshot,
   type DeltaSummarySeriesPartialOptions,
   type FootprintCandlePosition,
   type FootprintSeriesPartialOptions,
@@ -42,6 +43,7 @@ export interface FixturePresetDefinition {
   chartHeight: number;
   seriesMode: SeriesMode;
   theme: OrderFlowChartTheme;
+  initialViewState?: ChartViewStateSnapshot;
   allowsPatches?: boolean;
   showVisibleProfile: boolean;
   showSessionProfiles: boolean;
@@ -92,6 +94,84 @@ export const DARK_REFERENCE_THEME: OrderFlowChartTheme = {
   panelBorder: '1px solid rgba(148, 163, 184, 0.12)',
 };
 
+const FOOTPRINT_BASIC_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -0.45,
+    to: 6.45,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 373.7,
+        to: 380.3,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 6,
+      },
+    },
+  ],
+};
+
+const FOOTPRINT_WICKS_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -0.45,
+    to: 6.45,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 433.7,
+        to: 439.3,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 6,
+      },
+    },
+  ],
+};
+
+const FOOTPRINT_SHADES_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -0.45,
+    to: 9.45,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 1.08405,
+        to: 1.08695,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 6,
+      },
+    },
+  ],
+};
+
 export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> = {
   'modern-dark': {
     id: 'modern-dark',
@@ -114,11 +194,12 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
   },
   'fp-candle-001': {
     id: 'fp-candle-001',
-    label: 'FP Candle 001',
+    label: 'Footprint Basic',
     bars: classicBars,
     chartHeight: 920,
     seriesMode: 'footprint',
     theme: CLASSIC_THEME,
+    initialViewState: FOOTPRINT_BASIC_VIEW_STATE,
     showVisibleProfile: false,
     showSessionProfiles: false,
     showVwap: false,
@@ -143,11 +224,12 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
   },
   'footprint-corn-candles': {
     id: 'footprint-corn-candles',
-    label: 'Footprint Corn Candles',
+    label: 'Footprint Wicks',
     bars: cornBars,
     chartHeight: 900,
     seriesMode: 'footprint',
     theme: DARK_REFERENCE_THEME,
+    initialViewState: FOOTPRINT_WICKS_VIEW_STATE,
     showVisibleProfile: false,
     showSessionProfiles: false,
     showVwap: false,
@@ -186,6 +268,7 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
     chartHeight: 860,
     seriesMode: 'footprint',
     theme: DARK_REFERENCE_THEME,
+    initialViewState: FOOTPRINT_SHADES_VIEW_STATE,
     showVisibleProfile: true,
     showSessionProfiles: false,
     showVwap: false,

@@ -845,6 +845,7 @@ export function FixtureDemoPage() {
           candleHeatmapOptions={candleHeatmapOptions}
           candleHeatmapAccessor={candleHeatmapAccessor}
           volumeSeriesOptions={preset.volumeSeriesOptions}
+          initialViewState={preset.initialViewState}
           autoFitRequestKey={autoFitRequestKey}
           dataSourceKey={`${preset.id}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
         />
