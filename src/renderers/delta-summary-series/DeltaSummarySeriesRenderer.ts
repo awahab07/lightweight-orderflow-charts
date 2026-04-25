@@ -34,13 +34,15 @@ interface SummaryColumnBounds {
   width: number;
 }
 
-function resolveNumericTime(time: TimeValue): number | null {
-  return typeof time === 'number' && Number.isFinite(time) ? time : null;
+function resolveLogicalTime(column: RenderableDeltaSummaryColumn): number | null {
+  return typeof column.item.time === 'number' && Number.isFinite(column.item.time)
+    ? column.item.time
+    : null;
 }
 
 function resolveMinimumTimeSpacing(columns: RenderableDeltaSummaryColumn[]): number | null {
   const times = columns
-    .map((entry) => resolveNumericTime(entry.item.originalData.time))
+    .map(resolveLogicalTime)
     .filter((time): time is number => time !== null)
     .sort((a, b) => a - b);
 
@@ -66,8 +68,8 @@ function areAdjacentSummaryColumns(
     return false;
   }
 
-  const currentTime = resolveNumericTime(current.item.originalData.time);
-  const neighborTime = resolveNumericTime(neighbor.item.originalData.time);
+  const currentTime = resolveLogicalTime(current);
+  const neighborTime = resolveLogicalTime(neighbor);
 
   if (currentTime === null || neighborTime === null) {
     return false;
@@ -113,20 +115,73 @@ function resolveSummaryColumnBounds(
 function resolveVisibleSummaryColumns(
   columns: RenderableDeltaSummaryColumn[],
 ): RenderableDeltaSummaryColumn[] {
-  const sortedColumns = [...columns].sort((a, b) => a.item.x - b.item.x);
-  const resolvedColumns: RenderableDeltaSummaryColumn[] = [];
+  const sortedColumns = [...columns].sort((left, right) => {
+    const deltaX = left.item.x - right.item.x;
+    if (Math.abs(deltaX) > 0.5) {
+      return deltaX;
+    }
 
-  for (const column of sortedColumns) {
-    const previousColumn = resolvedColumns[resolvedColumns.length - 1];
+    return (resolveLogicalTime(left) ?? 0) - (resolveLogicalTime(right) ?? 0);
+  });
+  const tolerance = 0.5;
+  const lengths = sortedColumns.map(() => 1);
+  const timeSums = sortedColumns.map((column) => resolveLogicalTime(column) ?? 0);
+  const previousIndices = sortedColumns.map(() => -1);
 
-    if (previousColumn && Math.abs(column.item.x - previousColumn.item.x) <= 0.5) {
+  for (let columnIndex = 0; columnIndex < sortedColumns.length; columnIndex += 1) {
+    const currentColumn = sortedColumns[columnIndex];
+    const currentTime = resolveLogicalTime(currentColumn);
+
+    if (currentTime === null) {
       continue;
     }
 
-    resolvedColumns.push(column);
+    for (let previousIndex = 0; previousIndex < columnIndex; previousIndex += 1) {
+      const previousColumn = sortedColumns[previousIndex];
+      const previousTime = resolveLogicalTime(previousColumn);
+
+      if (
+        previousTime === null ||
+        currentTime <= previousTime ||
+        currentColumn.item.x - previousColumn.item.x <= tolerance
+      ) {
+        continue;
+      }
+
+      const candidateLength = lengths[previousIndex] + 1;
+      const candidateTimeSum = timeSums[previousIndex] + currentTime;
+
+      if (
+        candidateLength > lengths[columnIndex] ||
+        (candidateLength === lengths[columnIndex] && candidateTimeSum > timeSums[columnIndex])
+      ) {
+        lengths[columnIndex] = candidateLength;
+        timeSums[columnIndex] = candidateTimeSum;
+        previousIndices[columnIndex] = previousIndex;
+      }
+    }
   }
 
-  return resolvedColumns;
+  let bestIndex = -1;
+
+  for (let columnIndex = 0; columnIndex < sortedColumns.length; columnIndex += 1) {
+    if (
+      bestIndex === -1 ||
+      lengths[columnIndex] > lengths[bestIndex] ||
+      (lengths[columnIndex] === lengths[bestIndex] && timeSums[columnIndex] > timeSums[bestIndex])
+    ) {
+      bestIndex = columnIndex;
+    }
+  }
+
+  const resolvedColumns: RenderableDeltaSummaryColumn[] = [];
+
+  while (bestIndex !== -1) {
+    resolvedColumns.push(sortedColumns[bestIndex]);
+    bestIndex = previousIndices[bestIndex];
+  }
+
+  return resolvedColumns.reverse();
 }
 
 function formatMetricValue(metric: DeltaSummaryColumnKey, value: number): string {
