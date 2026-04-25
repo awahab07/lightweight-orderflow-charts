@@ -196,23 +196,22 @@ The published presets now include:
 
 ```ts
 import {
-  DEFAULT_FOOTPRINT_STYLE,
   buildCandleHeatmapSeriesData,
 } from 'lightweight-orderflow-charts';
 
 const candleData = buildCandleHeatmapSeriesData({
   bars,
-  metricStyles: DEFAULT_FOOTPRINT_STYLE.metricStyles,
   options: {
-    domain: {
+    range: {
       min: 0,
-      minThreshold: 0.1,
+      minShadeThreshold: 0.1,
       threshold: 0.5,
-      maxThreshold: 0.9,
+      maxShadeThreshold: 0.9,
       max: 1,
     },
-    metricStyleKey: 'metric0',
-    shadeCount: 10,
+    minColor: '#dc2626',
+    maxColor: '#16a34a',
+    noOfShades: 10,
     shader: 'alpha',
   },
   backgroundColor: '#020617',

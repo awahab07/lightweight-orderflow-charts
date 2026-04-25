@@ -2,15 +2,17 @@ import type { CandlestickData } from 'lightweight-charts';
 
 import type { TimeValue } from '../../models/contracts';
 import type {
+  CandleHeatmapRangeOptions,
+  CandleHeatmapShader,
   CandleHeatmapOptions,
   CandleHeatmapPartialOptions,
-  MetricStylePalette,
-  MetricStyleVariant,
 } from '../../models/options';
-import { mergeCandleHeatmapOptions } from '../../models/options';
+import {
+  DEFAULT_CANDLE_HEATMAP_OPTIONS,
+  mergeCandleHeatmapOptions,
+} from '../../models/options';
 import { clamp } from '../../utils/math';
 import type { OhlcLike } from '../../utils/mintick';
-import { resolveMetricStyleToken } from '../../utils/metricStylePalette';
 import { withAlpha } from '../../utils/color';
 
 const DEFAULT_SURFACE_BACKGROUND = '#020617';
@@ -33,22 +35,22 @@ export interface CandleHeatmapBarLike extends OhlcLike {
   time: TimeValue;
 }
 
+export type CandleHeatmapSide = 'min' | 'max';
+
 export interface CandleHeatmapColorResolution {
   color: string;
-  variant: MetricStyleVariant;
+  side: CandleHeatmapSide;
   intensity: number;
 }
 
 export interface ResolveCandleHeatmapColorInput {
   value: number | null | undefined;
-  metricStyles: MetricStylePalette;
   options?: CandleHeatmapPartialOptions;
   backgroundColor?: string;
 }
 
 export interface BuildCandleHeatmapSeriesDataInput<TBar extends CandleHeatmapBarLike> {
   bars: readonly TBar[];
-  metricStyles: MetricStylePalette;
   options?: CandleHeatmapPartialOptions;
   backgroundColor?: string;
   getValue: (bar: TBar, index: number, bars: readonly TBar[]) => number | null | undefined;
@@ -70,12 +72,32 @@ function parseHexColor(color: string): RgbaColor | null {
     };
   }
 
+  if (normalized.length === 4) {
+    const [r, g, b, a] = normalized.split('');
+
+    return {
+      r: Number.parseInt(`${r}${r}`, 16),
+      g: Number.parseInt(`${g}${g}`, 16),
+      b: Number.parseInt(`${b}${b}`, 16),
+      a: Number.parseInt(`${a}${a}`, 16) / 255,
+    };
+  }
+
   if (normalized.length === 6) {
     return {
       r: Number.parseInt(normalized.slice(0, 2), 16),
       g: Number.parseInt(normalized.slice(2, 4), 16),
       b: Number.parseInt(normalized.slice(4, 6), 16),
       a: 1,
+    };
+  }
+
+  if (normalized.length === 8) {
+    return {
+      r: Number.parseInt(normalized.slice(0, 2), 16),
+      g: Number.parseInt(normalized.slice(2, 4), 16),
+      b: Number.parseInt(normalized.slice(4, 6), 16),
+      a: Number.parseInt(normalized.slice(6, 8), 16) / 255,
     };
   }
 
@@ -104,6 +126,15 @@ function parseRgbColor(color: string): RgbaColor | null {
 }
 
 function parseColor(color: string): RgbaColor | null {
+  if (color.trim().toLowerCase() === 'transparent') {
+    return {
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 0,
+    };
+  }
+
   if (color.startsWith('#')) {
     return parseHexColor(color);
   }
@@ -256,45 +287,17 @@ function isDarkSurface(color: string): boolean {
   return parsed ? relativeLuminance(parsed) < 0.4 : true;
 }
 
-function normalizeShadeCount(shadeCount: number): number {
-  if (!Number.isFinite(shadeCount) || shadeCount < 0) {
+function normalizeNumberOfShades(noOfShades: number): number {
+  if (!Number.isFinite(noOfShades) || noOfShades < 0) {
     return 1;
   }
 
-  return Math.floor(shadeCount);
+  return Math.floor(noOfShades);
 }
 
-function validateOptions(options: CandleHeatmapOptions): void {
-  const {
-    min,
-    minThreshold,
-    threshold,
-    maxThreshold,
-    max,
-  } = options.domain;
-
-  if (!(min < threshold && threshold < max)) {
-    throw new Error('Candle heatmap domain must satisfy min < threshold < max.');
-  }
-
-  if (
-    minThreshold !== undefined &&
-    !(min <= minThreshold && minThreshold <= threshold)
-  ) {
-    throw new Error('Candle heatmap minThreshold must satisfy min <= minThreshold <= threshold.');
-  }
-
-  if (
-    maxThreshold !== undefined &&
-    !(threshold <= maxThreshold && maxThreshold <= max)
-  ) {
-    throw new Error('Candle heatmap maxThreshold must satisfy threshold <= maxThreshold <= max.');
-  }
-}
-
-function quantizeIntensity(normalizedDistance: number, shadeCount: number): number {
+function quantizeIntensity(normalizedDistance: number, noOfShades: number): number {
   const clampedDistance = clamp(normalizedDistance, 0, 1);
-  const steps = shadeCount === 0 ? CONTINUOUS_SHADE_STEPS : Math.max(shadeCount, 1);
+  const steps = noOfShades === 0 ? CONTINUOUS_SHADE_STEPS : Math.max(noOfShades, 1);
 
   if (steps === 1) {
     return 1;
@@ -312,92 +315,184 @@ function resolveNeutralHueBase(backgroundColor: string, darkSurface: boolean): s
   );
 }
 
-function resolveColorFromEdge(
-  edgeColor: string,
+function resolveColorFromShade(
+  color: string,
   intensity: number,
-  shader: CandleHeatmapOptions['shader'],
+  shader: CandleHeatmapShader,
   backgroundColor: string,
   darkSurface: boolean,
 ): string {
-  if (shader === 'alpha') {
-    const minAlpha = darkSurface ? DARK_THEME_MIN_ALPHA : LIGHT_THEME_MIN_ALPHA;
-    const alpha = minAlpha + (1 - minAlpha) * clamp(intensity, 0, 1);
-    return withAlpha(edgeColor, alpha);
+  const parsed = parseColor(color);
+
+  if (!parsed) {
+    return color;
   }
 
-  return mixHslColors(
-    resolveNeutralHueBase(backgroundColor, darkSurface),
-    edgeColor,
-    clamp(intensity, 0, 1),
+  if (shader === 'alpha') {
+    const floorRatio = darkSurface ? DARK_THEME_MIN_ALPHA : LIGHT_THEME_MIN_ALPHA;
+    const alpha = parsed.a * (floorRatio + (1 - floorRatio) * clamp(intensity, 0, 1));
+    return withAlpha(color, alpha);
+  }
+
+  return withAlpha(
+    mixHslColors(
+      resolveNeutralHueBase(backgroundColor, darkSurface),
+      withAlpha(color, 1),
+      clamp(intensity, 0, 1),
+    ),
+    parsed.a,
   );
 }
 
-function resolveVariantDistance(
-  value: number,
+interface ResolvedCandleHeatmapOptions {
+  range: {
+    min: number;
+    minShadeThreshold: number;
+    threshold: number;
+    maxShadeThreshold: number;
+    max: number;
+  };
+  minColor: string;
+  maxColor: string;
+  noOfShades: number;
+  shader: CandleHeatmapShader;
+}
+
+function resolveFiniteNumber(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeResolvedOptions(
   options: CandleHeatmapOptions,
-): { variant: MetricStyleVariant; normalizedDistance: number } {
+): ResolvedCandleHeatmapOptions | null {
+  const range: CandleHeatmapRangeOptions = {
+    min: resolveFiniteNumber(options.range.min, DEFAULT_CANDLE_HEATMAP_OPTIONS.range.min),
+    minShadeThreshold: Number.isFinite(options.range.minShadeThreshold)
+      ? options.range.minShadeThreshold
+      : undefined,
+    threshold: resolveFiniteNumber(
+      options.range.threshold,
+      DEFAULT_CANDLE_HEATMAP_OPTIONS.range.threshold,
+    ),
+    maxShadeThreshold: Number.isFinite(options.range.maxShadeThreshold)
+      ? options.range.maxShadeThreshold
+      : undefined,
+    max: resolveFiniteNumber(options.range.max, DEFAULT_CANDLE_HEATMAP_OPTIONS.range.max),
+  };
+
+  if (!(range.min < range.threshold && range.threshold < range.max)) {
+    return null;
+  }
+
+  return {
+    range: {
+      min: range.min,
+      minShadeThreshold: clamp(
+        range.minShadeThreshold ?? range.min,
+        range.min,
+        range.threshold,
+      ),
+      threshold: range.threshold,
+      maxShadeThreshold: clamp(
+        range.maxShadeThreshold ?? range.max,
+        range.threshold,
+        range.max,
+      ),
+      max: range.max,
+    },
+    minColor: options.minColor,
+    maxColor: options.maxColor,
+    noOfShades: normalizeNumberOfShades(options.noOfShades),
+    shader: options.shader,
+  };
+}
+
+function resolveSideDistance(
+  value: number,
+  options: ResolvedCandleHeatmapOptions,
+): { side: CandleHeatmapSide; normalizedDistance: number } {
   const {
     min,
-    minThreshold,
+    minShadeThreshold,
     threshold,
-    maxThreshold,
+    maxShadeThreshold,
     max,
-  } = options.domain;
+  } = options.range;
   const clampedValue = clamp(value, min, max);
 
   if (clampedValue <= min) {
     return {
-      variant: 'secondary',
+      side: 'min',
       normalizedDistance: 1,
     };
   }
 
   if (clampedValue >= max) {
     return {
-      variant: 'primary',
+      side: 'max',
       normalizedDistance: 1,
     };
   }
 
-  if (options.shadeCount === 1) {
+  if (options.noOfShades === 1) {
     return {
-      variant: clampedValue < threshold ? 'secondary' : 'primary',
+      side: clampedValue < threshold ? 'min' : 'max',
       normalizedDistance: 1,
     };
   }
 
   if (clampedValue < threshold) {
-    if (minThreshold !== undefined && clampedValue <= minThreshold) {
+    if (minShadeThreshold >= threshold || clampedValue <= minShadeThreshold) {
       return {
-        variant: 'secondary',
+        side: 'min',
         normalizedDistance: 1,
       };
     }
 
-    const lowerEdge = minThreshold ?? min;
-    const span = threshold - lowerEdge;
+    const span = threshold - minShadeThreshold;
 
     return {
-      variant: 'secondary',
+      side: 'min',
       normalizedDistance:
-        span <= 0 ? 1 : clamp(1 - (clampedValue - lowerEdge) / span, 0, 1),
+        span <= 0 ? 1 : clamp(1 - (clampedValue - minShadeThreshold) / span, 0, 1),
     };
   }
 
-  if (maxThreshold !== undefined && clampedValue >= maxThreshold) {
+  if (maxShadeThreshold <= threshold || clampedValue >= maxShadeThreshold) {
     return {
-      variant: 'primary',
+      side: 'max',
       normalizedDistance: 1,
     };
   }
 
-  const upperEdge = maxThreshold ?? max;
-  const span = upperEdge - threshold;
+  const span = maxShadeThreshold - threshold;
 
   return {
-    variant: 'primary',
+    side: 'max',
     normalizedDistance: span <= 0 ? 1 : clamp((clampedValue - threshold) / span, 0, 1),
   };
+}
+
+function resolveHeatmapColor(
+  side: CandleHeatmapSide,
+  intensity: number,
+  options: ResolvedCandleHeatmapOptions,
+  backgroundColor: string,
+  darkSurface: boolean,
+): string {
+  const edgeColor = side === 'min' ? options.minColor : options.maxColor;
+
+  if (intensity >= 1) {
+    return edgeColor;
+  }
+
+  return resolveColorFromShade(
+    edgeColor,
+    intensity,
+    options.shader,
+    backgroundColor,
+    darkSurface,
+  );
 }
 
 export function resolveCandleHeatmapColor(
@@ -407,28 +502,26 @@ export function resolveCandleHeatmapColor(
     return null;
   }
 
-  const options = mergeCandleHeatmapOptions(input.options);
-  validateOptions(options);
+  const options = normalizeResolvedOptions(mergeCandleHeatmapOptions(input.options));
+
+  if (!options) {
+    return null;
+  }
 
   const backgroundColor = input.backgroundColor ?? DEFAULT_SURFACE_BACKGROUND;
   const darkSurface = isDarkSurface(backgroundColor);
-  const { variant, normalizedDistance } = resolveVariantDistance(input.value as number, options);
-  const intensity = quantizeIntensity(normalizedDistance, normalizeShadeCount(options.shadeCount));
-  const edgeColor = resolveMetricStyleToken(
-    input.metricStyles,
-    options.metricStyleKey,
-    variant,
-  ).color;
+  const { side, normalizedDistance } = resolveSideDistance(input.value as number, options);
+  const intensity = quantizeIntensity(normalizedDistance, options.noOfShades);
 
   return {
-    color: resolveColorFromEdge(
-      edgeColor,
+    color: resolveHeatmapColor(
+      side,
       intensity,
-      options.shader,
+      options,
       backgroundColor,
       darkSurface,
     ),
-    variant,
+    side,
     intensity,
   };
 }
@@ -439,7 +532,6 @@ export function buildCandleHeatmapSeriesData<TBar extends CandleHeatmapBarLike>(
   return input.bars.map((bar, index, bars) => {
     const resolution = resolveCandleHeatmapColor({
       value: input.getValue(bar, index, bars),
-      metricStyles: input.metricStyles,
       options: input.options,
       backgroundColor: input.backgroundColor,
     });

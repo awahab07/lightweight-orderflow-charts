@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type CandlestickData,
   CandlestickSeries,
@@ -37,7 +37,6 @@ import {
   VwapSeries,
 } from 'lightweight-orderflow-charts/react';
 import {
-  DEFAULT_FOOTPRINT_STYLE,
   buildCandleHeatmapSeriesData,
   captureChartViewState,
   createSeriesMetricPrimitive,
@@ -82,6 +81,7 @@ interface OrderFlowChartProps {
   showSessionProfiles?: boolean;
   showVwap?: boolean;
   showReferenceCandles?: boolean;
+  referencePanePlacement?: 'top' | 'bottom';
   showVolumePane?: boolean;
   showVolumeDeltaPivot?: boolean;
   showDeltaSummary?: boolean;
@@ -186,6 +186,7 @@ export function OrderFlowChart({
   showSessionProfiles = true,
   showVwap = true,
   showReferenceCandles = true,
+  referencePanePlacement = 'top',
   showVolumePane = true,
   showVolumeDeltaPivot = false,
   showDeltaSummary = false,
@@ -217,6 +218,7 @@ export function OrderFlowChart({
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram', TimeValue> | null>(null);
   const volumeDeltaPivotSeriesRef = useRef<ISeriesApi<'Candlestick', TimeValue> | null>(null);
   const volumeDeltaPivotBaselineRef = useRef<ISeriesApi<'Line', TimeValue> | null>(null);
+  const restoredMainViewSignatureRef = useRef<string | null>(null);
   const restoredViewSignatureRef = useRef<string | null>(null);
   const seriesRemountSignatureRef = useRef<string | null>(null);
   const pendingPaneRestoreSignatureRef = useRef<string | null>(null);
@@ -231,10 +233,15 @@ export function OrderFlowChart({
   const autoFitEnabledRef = useRef(defaultAutoFitEnabled);
   const restoreRedrawFrameRef = useRef<number | null>(null);
   const restoreFreezeFrameRef = useRef<number | null>(null);
+  const seriesDataSourceKeyRef = useRef<string | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
   const [series, setSeries] = useState<ISeriesApi<'Custom', TimeValue> | null>(null);
+  const [seriesDataSourceKey, setSeriesDataSourceKey] = useState<string | null>(null);
   const [seriesRenderKey, setSeriesRenderKey] = useState(0);
   const [referenceCandleReady, setReferenceCandleReady] = useState(false);
+  const [deltaSummaryReady, setDeltaSummaryReady] = useState(false);
+  const [volumePaneReady, setVolumePaneReady] = useState(false);
+  const [volumeDeltaPivotReady, setVolumeDeltaPivotReady] = useState(false);
   const [autoFitEnabled, setAutoFitEnabled] = useState(defaultAutoFitEnabled);
   const [priceScaleContextMenu, setPriceScaleContextMenu] =
     useState<PriceScaleContextMenuState | null>(null);
@@ -247,20 +254,56 @@ export function OrderFlowChart({
   );
   const showCandleSeries = seriesMode === 'candle-heatmap' || showReferenceCandles;
   const showOrderFlowSeries = showOrderFlowPane && seriesMode !== 'candle-heatmap';
-  const orderFlowPaneIndex = showOrderFlowSeries ? (showCandleSeries ? 1 : 0) : null;
-  let nextStudyPaneIndex = showCandleSeries ? 1 : 0;
-  if (orderFlowPaneIndex !== null) {
-    nextStudyPaneIndex = orderFlowPaneIndex + 1;
-  }
+  const referenceCandlePaneIndex = showCandleSeries
+    ? showOrderFlowSeries && referencePanePlacement === 'bottom'
+      ? 1
+      : 0
+    : null;
+  const orderFlowPaneIndex = showOrderFlowSeries
+    ? showCandleSeries
+      ? referencePanePlacement === 'bottom'
+        ? 0
+        : 1
+      : 0
+    : null;
+  let nextStudyPaneIndex = Math.max(referenceCandlePaneIndex ?? -1, orderFlowPaneIndex ?? -1) + 1;
   const volumePaneIndex = showVolumePane ? nextStudyPaneIndex++ : null;
   const volumeDeltaPivotPaneIndex = showVolumeDeltaPivot ? nextStudyPaneIndex++ : null;
   const deltaSummaryPaneIndex = showDeltaSummary ? nextStudyPaneIndex++ : null;
-  const mainPricePaneIndex = 0;
+  const mainPricePaneIndex = referenceCandlePaneIndex ?? orderFlowPaneIndex ?? 0;
+  const resolvedDataSourceKey = dataSourceKey ?? 'default';
+  const orderFlowSeriesReady = Boolean(series) && seriesDataSourceKey === resolvedDataSourceKey;
+  const handleOrderFlowSeriesReady = useCallback(
+    (nextSeries: ISeriesApi<'Custom', TimeValue> | null) => {
+      if (nextSeries) {
+        setSeries(nextSeries);
+        setSeriesDataSourceKey(resolvedDataSourceKey);
+        return;
+      }
+
+      if (seriesDataSourceKeyRef.current !== resolvedDataSourceKey) {
+        return;
+      }
+
+      setSeries(null);
+      setSeriesDataSourceKey(null);
+    },
+    [resolvedDataSourceKey],
+  );
+  const handleDeltaSummaryReady = useCallback(() => {
+    setDeltaSummaryReady(true);
+  }, []);
   const primaryPaneReady = showOrderFlowSeries
-    ? Boolean(series)
+    ? orderFlowSeriesReady
     : showCandleSeries
       ? referenceCandleReady
       : Boolean(chart);
+  const restorablePaneStateReady =
+    primaryPaneReady &&
+    (!showCandleSeries || referenceCandleReady) &&
+    (!showVolumePane || volumePaneReady) &&
+    (!showVolumeDeltaPivot || volumeDeltaPivotReady) &&
+    (!showDeltaSummary || deltaSummaryReady);
 
   const cancelScheduledAutoFit = () => {
     if (autoFitTimeoutRef.current !== null) {
@@ -389,10 +432,6 @@ export function OrderFlowChart({
     if (seriesMode === 'candle-heatmap' && candleHeatmapAccessor) {
       return buildCandleHeatmapSeriesData({
         bars,
-        metricStyles:
-          footprintOptions?.style?.metricStyles ??
-          volumeFootprintOptions?.style?.metricStyles ??
-          DEFAULT_FOOTPRINT_STYLE.metricStyles,
         options: candleHeatmapOptions,
         backgroundColor: resolvedTheme.backgroundColor,
         getValue: candleHeatmapAccessor,
@@ -410,10 +449,8 @@ export function OrderFlowChart({
     bars,
     candleHeatmapAccessor,
     candleHeatmapOptions,
-    footprintOptions?.style?.metricStyles,
     resolvedTheme.backgroundColor,
     seriesMode,
-    volumeFootprintOptions?.style?.metricStyles,
   ]);
 
   const volumeData = useMemo(
@@ -478,8 +515,9 @@ export function OrderFlowChart({
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      nextChart.remove();
-      setChart(null);
+      window.setTimeout(() => {
+        nextChart.remove();
+      }, 0);
     };
   }, []);
 
@@ -538,7 +576,11 @@ export function OrderFlowChart({
   ]);
 
   useEffect(() => {
-    if (!chart || !showCandleSeries) {
+    if (
+      !chart ||
+      !showCandleSeries ||
+      (showOrderFlowSeries && referencePanePlacement === 'bottom' && !orderFlowSeriesReady)
+    ) {
       return;
     }
 
@@ -554,7 +596,7 @@ export function OrderFlowChart({
         priceLineVisible: false,
         ...candleSeriesOptions,
       },
-      0,
+      referenceCandlePaneIndex ?? 0,
     );
 
     candleSeries.setData(candleData);
@@ -573,16 +615,36 @@ export function OrderFlowChart({
       candleSeriesRef.current = null;
       setReferenceCandleReady(false);
     };
-  }, [candleData, candleMetricData, candleSeriesOptions, chart, showCandleSeries]);
+  }, [
+    candleData,
+    candleMetricData,
+    candleSeriesOptions,
+    chart,
+    orderFlowSeriesReady,
+    referenceCandlePaneIndex,
+    referencePanePlacement,
+    showCandleSeries,
+    showOrderFlowSeries,
+  ]);
+
+  useEffect(() => {
+    seriesDataSourceKeyRef.current = seriesDataSourceKey;
+  }, [seriesDataSourceKey]);
 
   useEffect(() => {
     if (!showOrderFlowSeries) {
       setSeries(null);
+      setSeriesDataSourceKey(null);
     }
   }, [showOrderFlowSeries]);
 
   useEffect(() => {
-    if (!chart || !showVolumePane || volumePaneIndex === null) {
+    if (
+      !chart ||
+      !showVolumePane ||
+      volumePaneIndex === null ||
+      (showOrderFlowSeries && !orderFlowSeriesReady)
+    ) {
       return;
     }
 
@@ -599,12 +661,22 @@ export function OrderFlowChart({
 
     volumeSeries.setData(volumeData);
     volumeSeriesRef.current = volumeSeries;
+    setVolumePaneReady(true);
 
     return () => {
       safeRemoveSeries(chart, volumeSeries);
       volumeSeriesRef.current = null;
+      setVolumePaneReady(false);
     };
-  }, [chart, showVolumePane, volumeData, volumePaneIndex, volumeSeriesOptions]);
+  }, [
+    chart,
+    orderFlowSeriesReady,
+    showOrderFlowSeries,
+    showVolumePane,
+    volumeData,
+    volumePaneIndex,
+    volumeSeriesOptions,
+  ]);
 
   useEffect(() => {
     candleSeriesRef.current?.setData(candleData);
@@ -641,6 +713,7 @@ export function OrderFlowChart({
 
     pivotSeries.setData(volumeDeltaPivotData ?? []);
     volumeDeltaPivotSeriesRef.current = pivotSeries;
+    setVolumeDeltaPivotReady(true);
     const baselineSeries = chart.addSeries(
       LineSeries,
       {
@@ -667,6 +740,7 @@ export function OrderFlowChart({
       volumeDeltaPivotBaselineRef.current = null;
       safeRemoveSeries(chart, pivotSeries);
       volumeDeltaPivotSeriesRef.current = null;
+      setVolumeDeltaPivotReady(false);
     };
   }, [
     chart,
@@ -713,71 +787,186 @@ export function OrderFlowChart({
   ]);
 
   useEffect(() => {
+    setDeltaSummaryReady(false);
+  }, [dataSourceKey, showDeltaSummary]);
+
+  useEffect(() => {
+    setVolumePaneReady(false);
+  }, [dataSourceKey, showVolumePane]);
+
+  useEffect(() => {
+    setVolumeDeltaPivotReady(false);
+  }, [dataSourceKey, showVolumeDeltaPivot]);
+
+  useEffect(() => {
     if (!chart) {
       return;
     }
 
-    const frame = window.requestAnimationFrame(() => {
+    let settleFrame: number | null = null;
+    let lateTimeout: number | null = null;
+    let finalTimeout: number | null = null;
+    const applyStretchFactors = () => {
       const panes = chart.panes();
       const supportingPaneCount = [showVolumePane, showVolumeDeltaPivot, showDeltaSummary].filter(
         Boolean,
       ).length;
-      const stretchFactors: number[] = [];
+      const usesDeltaSummaryOnlySupportingPane =
+        showOrderFlowSeries &&
+        !showCandleSeries &&
+        showDeltaSummary &&
+        !showVolumePane &&
+        !showVolumeDeltaPivot;
+      const stretchFactors = Array.from({ length: panes.length }, () => null as number | null);
 
-      if (showCandleSeries) {
+      if (showCandleSeries && referenceCandlePaneIndex !== null) {
         if (!showOrderFlowSeries) {
-          stretchFactors.push(supportingPaneCount ? 0.8 : 1);
+          stretchFactors[referenceCandlePaneIndex] = supportingPaneCount ? 0.8 : 1;
+        } else if (referencePanePlacement === 'bottom') {
+          stretchFactors[referenceCandlePaneIndex] = supportingPaneCount ? 0.22 : 0.3;
         } else {
-          stretchFactors.push(0.18);
+          stretchFactors[referenceCandlePaneIndex] = 0.18;
         }
       }
 
-      if (showOrderFlowSeries) {
-        stretchFactors.push(
-          showCandleSeries
-            ? supportingPaneCount
-              ? 0.5
-              : 0.82
-            : supportingPaneCount
-              ? 0.68
-              : 1,
-        );
+      if (showOrderFlowSeries && orderFlowPaneIndex !== null) {
+        if (usesDeltaSummaryOnlySupportingPane) {
+          const mainPane = panes[0];
+          const deltaPane = panes[1];
+
+          if (mainPane && deltaPane) {
+            const combinedHeight = mainPane.getHeight() + deltaPane.getHeight();
+            const deltaHeight = Math.max(Math.round(combinedHeight * 0.2), 120);
+            const mainHeight = Math.max(combinedHeight - deltaHeight, 0);
+
+            mainPane.setHeight(mainHeight);
+            deltaPane.setHeight(deltaHeight);
+            const width = containerRef.current?.clientWidth;
+            if (width) {
+              chart.resize(width, chartHeight, true);
+            }
+            return;
+          }
+
+          stretchFactors[orderFlowPaneIndex] = 0.8;
+        } else {
+          stretchFactors[orderFlowPaneIndex] =
+            showCandleSeries && referencePanePlacement === 'bottom'
+              ? supportingPaneCount
+                ? 0.5
+                : 0.7
+              : showCandleSeries
+                ? supportingPaneCount
+                  ? 0.5
+                  : 0.82
+                : supportingPaneCount
+                  ? 0.68
+                  : 1;
+        }
       }
 
-      if (showVolumePane) {
-        stretchFactors.push(0.14);
+      if (showVolumePane && volumePaneIndex !== null) {
+        stretchFactors[volumePaneIndex] = 0.14;
       }
 
-      if (showVolumeDeltaPivot) {
-        stretchFactors.push(0.2);
+      if (showVolumeDeltaPivot && volumeDeltaPivotPaneIndex !== null) {
+        stretchFactors[volumeDeltaPivotPaneIndex] = 0.2;
       }
 
-      if (showDeltaSummary) {
-        stretchFactors.push(0.2);
+      if (showDeltaSummary && deltaSummaryPaneIndex !== null) {
+        stretchFactors[deltaSummaryPaneIndex] =
+          usesDeltaSummaryOnlySupportingPane ? 0.2 : showVolumePane || showVolumeDeltaPivot ? 0.2 : 0.26;
       }
 
       for (let index = 0; index < stretchFactors.length; index += 1) {
-        panes[index]?.setStretchFactor(stretchFactors[index]);
+        const stretchFactor = stretchFactors[index];
+        if (stretchFactor !== null) {
+          panes[index]?.setStretchFactor(stretchFactor);
+        }
       }
+
+      const width = containerRef.current?.clientWidth;
+      if (width) {
+        chart.resize(width, chartHeight, true);
+      }
+    };
+    const frame = window.requestAnimationFrame(() => {
+      applyStretchFactors();
+      settleFrame = window.requestAnimationFrame(() => {
+        settleFrame = null;
+        applyStretchFactors();
+      });
+      lateTimeout = window.setTimeout(() => {
+        lateTimeout = null;
+        applyStretchFactors();
+      }, 80);
+      finalTimeout = window.setTimeout(() => {
+        finalTimeout = null;
+        applyStretchFactors();
+      }, 220);
     });
 
     return () => {
       window.cancelAnimationFrame(frame);
+      if (settleFrame !== null) {
+        window.cancelAnimationFrame(settleFrame);
+      }
+      if (lateTimeout !== null) {
+        window.clearTimeout(lateTimeout);
+      }
+      if (finalTimeout !== null) {
+        window.clearTimeout(finalTimeout);
+      }
     };
   }, [
     chart,
+    chartHeight,
     dataSourceKey,
+    deltaSummaryPaneIndex,
+    deltaSummaryReady,
+    referenceCandlePaneIndex,
+    referencePanePlacement,
     referenceCandleReady,
+    orderFlowPaneIndex,
     series,
     showDeltaSummary,
     showCandleSeries,
     showOrderFlowSeries,
     showVolumeDeltaPivot,
     showVolumePane,
+    volumeDeltaPivotPaneIndex,
+    volumeDeltaPivotReady,
+    volumePaneIndex,
+    volumePaneReady,
   ]);
 
   useEffect(() => {
     if (!chart || !bars.length || !initialViewState || !primaryPaneReady) {
+      return;
+    }
+
+    const baseSnapshot: ChartViewStateSnapshot = {
+      ...initialViewState,
+      panes: initialViewState.panes.filter((pane) => pane.paneIndex === 0),
+    };
+    const signature = JSON.stringify(baseSnapshot);
+
+    if (restoredMainViewSignatureRef.current === signature) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      restoreChartViewState(chart, baseSnapshot);
+      restoredMainViewSignatureRef.current = signature;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [bars.length, chart, initialViewState, primaryPaneReady]);
+
+  useEffect(() => {
+    if (!chart || !bars.length || !initialViewState || !restorablePaneStateReady) {
       return;
     }
 
@@ -803,6 +992,8 @@ export function OrderFlowChart({
 
         if (
           showOrderFlowSeries &&
+          !showDeltaSummary &&
+          referencePanePlacement !== 'bottom' &&
           hasExplicitPanePriceRange(initialViewState) &&
           seriesRemountSignatureRef.current !== signature
         ) {
@@ -836,7 +1027,7 @@ export function OrderFlowChart({
     autoFitEnabled,
     chart,
     initialViewState,
-    primaryPaneReady,
+    restorablePaneStateReady,
     series,
     showDeltaSummary,
     showCandleSeries,
@@ -846,7 +1037,7 @@ export function OrderFlowChart({
   ]);
 
   useEffect(() => {
-    if (!chart || !series || !showOrderFlowSeries || !initialViewState) {
+    if (!chart || !orderFlowSeriesReady || !series || !showOrderFlowSeries || !initialViewState) {
       return;
     }
 
@@ -865,9 +1056,10 @@ export function OrderFlowChart({
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [bars, chart, initialViewState, series, seriesRenderKey, showOrderFlowSeries]);
+  }, [bars, chart, initialViewState, orderFlowSeriesReady, series, seriesRenderKey, showOrderFlowSeries]);
 
   useEffect(() => {
+    restoredMainViewSignatureRef.current = null;
     restoredViewSignatureRef.current = null;
     seriesRemountSignatureRef.current = null;
     pendingPaneRestoreSignatureRef.current = null;
@@ -890,13 +1082,6 @@ export function OrderFlowChart({
     emitResumeTimeoutRef.current = window.setTimeout(() => {
       emitResumeTimeoutRef.current = null;
       blockViewStateEmitRef.current = false;
-
-      if (!chart || !onViewStateChange) {
-        return;
-      }
-
-      const paneIndices = chart.panes().map((_, index) => index);
-      onViewStateChange(captureChartViewState(chart, { paneIndices }));
     }, 260);
 
     return () => {
@@ -1171,7 +1356,7 @@ export function OrderFlowChart({
               data={bars}
               options={footprintOptions}
               paneIndex={orderFlowPaneIndex ?? undefined}
-              onReady={setSeries}
+              onReady={handleOrderFlowSeriesReady}
             />
           ) : (
             <VolumeFootprint
@@ -1180,14 +1365,14 @@ export function OrderFlowChart({
               data={bars}
               options={volumeFootprintOptions}
               paneIndex={orderFlowPaneIndex ?? undefined}
-              onReady={setSeries}
+              onReady={handleOrderFlowSeriesReady}
             />
           )
         ) : null}
-        {showOrderFlowSeries && showVisibleProfile ? (
+        {showOrderFlowSeries && showVisibleProfile && orderFlowSeriesReady ? (
           <VolumeProfile series={series} data={bars} options={volumeProfileOptions} />
         ) : null}
-        {showOrderFlowSeries && showSessionProfiles ? (
+        {showOrderFlowSeries && showSessionProfiles && orderFlowSeriesReady ? (
           <SessionVolumeProfiles
             series={series}
             data={bars}
@@ -1201,6 +1386,7 @@ export function OrderFlowChart({
             data={bars}
             options={deltaSummaryOptions}
             paneIndex={deltaSummaryPaneIndex}
+            onReady={handleDeltaSummaryReady}
           />
         ) : null}
       </ChartProvider>

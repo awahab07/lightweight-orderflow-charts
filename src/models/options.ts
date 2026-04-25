@@ -114,16 +114,16 @@ export type ColorScalePartialOptions = Omit<Partial<ColorScaleOptions>, 'range' 
 };
 
 /**
- * Diverging metric domain used by the candle heatmap helper.
+ * Diverging range used by the candle heatmap helper.
  *
- * The domain is split around `threshold`. Values near `min` resolve toward the selected metric
- * palette's secondary color, while values near `max` resolve toward the primary color.
+ * The range is split around `threshold`. Values near `min` resolve toward `minColor`, while values
+ * near `max` resolve toward `maxColor`.
  */
-export interface CandleHeatmapDomainOptions {
+export interface CandleHeatmapRangeOptions {
   min: number;
-  minThreshold?: number;
+  minShadeThreshold?: number;
   threshold: number;
-  maxThreshold?: number;
+  maxShadeThreshold?: number;
   max: number;
 }
 
@@ -132,18 +132,19 @@ export type CandleHeatmapShader = 'alpha' | 'hue';
 /**
  * Configures metric-driven candle coloring for a standard candlestick series.
  *
- * `shadeCount: 1` collapses the mapping to two solid colors split by `threshold`.
- * `shadeCount: 0` uses a continuous mapping with 256 internal steps.
+ * `noOfShades: 1` collapses the mapping to two solid colors split by `threshold`.
+ * `noOfShades: 0` uses a continuous mapping with 256 internal steps.
  */
 export interface CandleHeatmapOptions {
-  domain: CandleHeatmapDomainOptions;
-  metricStyleKey: MetricStyleKey;
-  shadeCount: number;
+  range: CandleHeatmapRangeOptions;
+  minColor: string;
+  maxColor: string;
+  noOfShades: number;
   shader: CandleHeatmapShader;
 }
 
-export type CandleHeatmapPartialOptions = Omit<Partial<CandleHeatmapOptions>, 'domain'> & {
-  domain?: Partial<CandleHeatmapDomainOptions>;
+export type CandleHeatmapPartialOptions = Omit<Partial<CandleHeatmapOptions>, 'range'> & {
+  range?: Partial<CandleHeatmapRangeOptions>;
 };
 
 export interface FootprintStyleOptions {
@@ -879,15 +880,16 @@ export const DEFAULT_VWAP_OPTIONS: VwapOptions = {
 };
 
 export const DEFAULT_CANDLE_HEATMAP_OPTIONS: CandleHeatmapOptions = {
-  domain: {
+  range: {
     min: 0,
-    minThreshold: 0.1,
+    minShadeThreshold: 0.1,
     threshold: 0.5,
-    maxThreshold: 0.9,
+    maxShadeThreshold: 0.9,
     max: 1,
   },
-  metricStyleKey: 'metric0',
-  shadeCount: 1,
+  minColor: '#dc2626',
+  maxColor: '#2563eb',
+  noOfShades: 1,
   shader: 'alpha',
 };
 
@@ -1061,9 +1063,9 @@ export function mergeCandleHeatmapOptions(
   return {
     ...DEFAULT_CANDLE_HEATMAP_OPTIONS,
     ...options,
-    domain: {
-      ...DEFAULT_CANDLE_HEATMAP_OPTIONS.domain,
-      ...options?.domain,
+    range: {
+      ...DEFAULT_CANDLE_HEATMAP_OPTIONS.range,
+      ...options?.range,
     },
   };
 }

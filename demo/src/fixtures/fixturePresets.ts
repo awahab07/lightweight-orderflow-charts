@@ -217,15 +217,16 @@ export const FIXTURE_PRESETS: Record<FixturePresetId, FixturePresetDefinition> =
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
     candleHeatmapOptions: {
-      domain: {
+      range: {
         min: 0,
-        minThreshold: 0.1,
+        minShadeThreshold: 0.1,
         threshold: 0.5,
-        maxThreshold: 0.9,
+        maxShadeThreshold: 0.9,
         max: 1,
       },
-      metricStyleKey: 'metric0',
-      shadeCount: 10,
+      minColor: '#dc2626',
+      maxColor: '#2563eb',
+      noOfShades: 10,
       shader: 'alpha',
     },
   },

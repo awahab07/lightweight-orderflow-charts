@@ -120,7 +120,7 @@ export class VolumeProfilePrimitive implements ISeriesPrimitive<TimeValue> {
       () => this.attachedParam,
     );
     this.paneView = {
-      zOrder: () => 'bottom',
+      zOrder: () => 'top',
       renderer: () => this.paneRenderer,
     };
   }

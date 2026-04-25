@@ -17,23 +17,22 @@ Use `buildCandleHeatmapSeriesData()` to transform any OHLC-like bars plus a metr
 
 ```ts
 import {
-  DEFAULT_FOOTPRINT_STYLE,
   buildCandleHeatmapSeriesData,
 } from 'lightweight-orderflow-charts';
 
 const candleData = buildCandleHeatmapSeriesData({
   bars,
-  metricStyles: DEFAULT_FOOTPRINT_STYLE.metricStyles,
   options: {
-    domain: {
+    range: {
       min: 0,
-      minThreshold: 0.1,
+      minShadeThreshold: 0.1,
       threshold: 0.5,
-      maxThreshold: 0.9,
+      maxShadeThreshold: 0.9,
       max: 1,
     },
-    metricStyleKey: 'metric0',
-    shadeCount: 10,
+    minColor: '#dc2626',
+    maxColor: '#16a34a',
+    noOfShades: 10,
     shader: 'alpha',
   },
   backgroundColor: '#020617',
@@ -43,33 +42,33 @@ const candleData = buildCandleHeatmapSeriesData({
 
 ## Options
 
-### `domain`
+### `range`
 
-The heatmap uses a diverging domain:
+The heatmap uses a diverging range:
 
 - `min`
-  Lowest supported metric value. This edge resolves to the selected metric style's secondary color.
+  Lowest supported metric value. This edge resolves to `minColor`.
 - `threshold`
-  Split between the low and high halves of the domain. Values below it use the secondary side, and
-  values at or above it use the primary side.
+  Split between the low and high halves of the range. Values below it use the min side, and values
+  at or above it use the max side.
 - `max`
-  Highest supported metric value. This edge resolves to the selected metric style's primary color.
-- `minThreshold`
-  Optional lower solid zone. Values from `min` through this threshold render as the fully saturated
-  secondary color.
-- `maxThreshold`
-  Optional upper solid zone. Values from this threshold through `max` render as the fully saturated
-  primary color.
+  Highest supported metric value. This edge resolves to `maxColor`.
+- `minShadeThreshold`
+  Optional lower solid zone. Values from `min` through this threshold render as the exact `minColor`
+  without shading.
+- `maxShadeThreshold`
+  Optional upper solid zone. Values from this threshold through `max` render as the exact `maxColor`
+  without shading.
 
-### `metricStyleKey`
+### `minColor` and `maxColor`
 
-Selects the diverging palette from the existing metric-style slots such as `metric0` or `metric1`.
-The helper resolves:
+These accept RGBA strings or HEXA colors. That means the caller can use:
 
-- `metricX.secondary.color` for the low side
-- `metricX.primary.color` for the high side
+- fully opaque colors such as `#dc2626`
+- partially transparent colors such as `rgba(220, 38, 38, 0.18)`
+- fully transparent colors such as `#00000000`
 
-### `shadeCount`
+### `noOfShades`
 
 - `1`
   Two solid colors split at the threshold
@@ -81,10 +80,10 @@ The helper resolves:
 ### `shader`
 
 - `alpha`
-  Keeps the edge hue fixed and varies opacity toward the threshold. The helper raises the minimum
-  alpha on dark surfaces so low-intensity candles stay visible.
+  Keeps the edge hue fixed and varies opacity toward the threshold. The helper preserves the input
+  color's alpha ceiling and still raises the minimum visibility floor on dark surfaces.
 - `hue`
-  Keeps candles opaque and blends each edge hue back toward a theme-aware neutral tone.
+  Keeps the configured alpha and blends each edge hue back toward a theme-aware neutral tone.
 
 ## Data Requirements
 
@@ -105,3 +104,5 @@ data plus a strategy output but do not need ladder-level rendering for that view
 - The helper only changes candle colors. Candle geometry still comes from the original OHLC values.
 - When a metric value is `null` or not finite, the helper leaves per-bar candle colors unset so the
   series-level up/down defaults can render normally.
+- If the caller temporarily supplies an invalid required range while editing a UI, the helper leaves
+  per-bar candle colors unset instead of throwing.

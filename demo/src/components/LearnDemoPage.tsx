@@ -416,6 +416,10 @@ export function LearnDemoPage() {
     let cancelled = false;
     setDataStatus('loading');
     setDataError(null);
+    setLoadedBars([]);
+    setLoadedChartBars([]);
+    setLoadedLowerOrderFlowBars([]);
+    setStreamBars([]);
 
     Promise.all([
       loadOrderFlowBars(symbol, sessionDate, interval),
@@ -704,6 +708,7 @@ export function LearnDemoPage() {
 
       {bars.length ? (
         <OrderFlowChart
+          key={`learn-preset-${presetId}`}
           bars={bars}
           chartHeight={900}
           footerText={footerText}
@@ -713,6 +718,7 @@ export function LearnDemoPage() {
           showSessionProfiles={preset.showSessionProfiles}
           showVwap={preset.showVwap}
           showReferenceCandles={preset.showReferenceCandles}
+          referencePanePlacement={preset.referencePanePlacement}
           showOrderFlowPane={preset.showOrderFlowPane ?? true}
           showVolumePane={preset.showVolumePane}
           showVolumeDeltaPivot={preset.showVolumeDeltaPivot}

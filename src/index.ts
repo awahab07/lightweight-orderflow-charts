@@ -19,9 +19,9 @@ export type {
   VwapPoint,
 } from './models/contracts';
 export type {
-  CandleHeatmapDomainOptions,
   CandleHeatmapOptions,
   CandleHeatmapPartialOptions,
+  CandleHeatmapRangeOptions,
   CandleHeatmapShader,
   ColorScaleOptions,
   ColorScalePartialOptions,
@@ -141,6 +141,7 @@ export type {
   BuildCandleHeatmapSeriesDataInput,
   CandleHeatmapBarLike,
   CandleHeatmapColorResolution,
+  CandleHeatmapSide,
   ResolveCandleHeatmapColorInput,
 } from './calculations/candle-heatmap/buildCandleHeatmapSeriesData';
 export {

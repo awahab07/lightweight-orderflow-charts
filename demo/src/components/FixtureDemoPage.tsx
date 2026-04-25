@@ -9,7 +9,6 @@ import {
   type FootprintCandlePosition,
   type FootprintSeriesPartialOptions,
   inferPricePrecision,
-  type MetricStyleKey,
   normalizeMintick,
   type OrderFlowBar,
   type VolumeFootprintPartialOptions,
@@ -67,19 +66,23 @@ function formatOptionalNumber(value: number | undefined): string {
   return value === undefined ? '' : String(value);
 }
 
-function parseNumberInput(value: string, fallback: number): number {
-  const parsed = Number.parseFloat(value);
+function normalizeDecimalInput(value: string): string {
+  return value.replace(/,/g, '.');
+}
+
+function parseDecimalInput(value: string, fallback: number): number {
+  const parsed = Number(normalizeDecimalInput(value).trim());
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function parseOptionalNumberInput(value: string): number | undefined {
-  const trimmed = value.trim();
+function parseOptionalDecimalInput(value: string): number | undefined {
+  const trimmed = normalizeDecimalInput(value).trim();
 
   if (!trimmed) {
     return undefined;
   }
 
-  const parsed = Number.parseFloat(trimmed);
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
@@ -103,13 +106,14 @@ export function FixtureDemoPage() {
   const [candlePosition, setCandlePosition] = useState<FootprintCandlePosition>('middle');
   const [mintick, setMintick] = useState<number | null>(0.1);
   const [showValueUnit, setShowValueUnit] = useState(true);
-  const [heatmapMetricStyleKey, setHeatmapMetricStyleKey] = useState<MetricStyleKey>('metric0');
-  const [heatmapShadeCount, setHeatmapShadeCount] = useState(1);
+  const [heatmapMinColor, setHeatmapMinColor] = useState('#dc2626');
+  const [heatmapMaxColor, setHeatmapMaxColor] = useState('#2563eb');
+  const [heatmapNoOfShades, setHeatmapNoOfShades] = useState(1);
   const [heatmapShader, setHeatmapShader] = useState<CandleHeatmapShader>('alpha');
   const [heatmapMin, setHeatmapMin] = useState('0');
-  const [heatmapMinThreshold, setHeatmapMinThreshold] = useState('0.1');
+  const [heatmapMinShadeThreshold, setHeatmapMinShadeThreshold] = useState('0.1');
   const [heatmapThreshold, setHeatmapThreshold] = useState('0.5');
-  const [heatmapMaxThreshold, setHeatmapMaxThreshold] = useState('0.9');
+  const [heatmapMaxShadeThreshold, setHeatmapMaxShadeThreshold] = useState('0.9');
   const [heatmapMax, setHeatmapMax] = useState('1');
   const [autoFitRequestKey, setAutoFitRequestKey] = useState(0);
   const [streamEnabled, setStreamEnabled] = useState(false);
@@ -131,14 +135,15 @@ export function FixtureDemoPage() {
     setShowWicks(preset.showWicks);
     setCandlePosition(preset.candlePosition);
     setShowValueUnit(preset.footprintOptions?.style?.valueUnitVisible ?? true);
-    setHeatmapMetricStyleKey(resolvedHeatmap.metricStyleKey);
-    setHeatmapShadeCount(resolvedHeatmap.shadeCount);
+    setHeatmapMinColor(resolvedHeatmap.minColor);
+    setHeatmapMaxColor(resolvedHeatmap.maxColor);
+    setHeatmapNoOfShades(resolvedHeatmap.noOfShades);
     setHeatmapShader(resolvedHeatmap.shader);
-    setHeatmapMin(String(resolvedHeatmap.domain.min));
-    setHeatmapMinThreshold(formatOptionalNumber(resolvedHeatmap.domain.minThreshold));
-    setHeatmapThreshold(String(resolvedHeatmap.domain.threshold));
-    setHeatmapMaxThreshold(formatOptionalNumber(resolvedHeatmap.domain.maxThreshold));
-    setHeatmapMax(String(resolvedHeatmap.domain.max));
+    setHeatmapMin(String(resolvedHeatmap.range.min));
+    setHeatmapMinShadeThreshold(formatOptionalNumber(resolvedHeatmap.range.minShadeThreshold));
+    setHeatmapThreshold(String(resolvedHeatmap.range.threshold));
+    setHeatmapMaxShadeThreshold(formatOptionalNumber(resolvedHeatmap.range.maxShadeThreshold));
+    setHeatmapMax(String(resolvedHeatmap.range.max));
     setMintick(0.1);
   }, [preset]);
 
@@ -230,32 +235,36 @@ export function FixtureDemoPage() {
   );
   const candleHeatmapOptions = useMemo<CandleHeatmapPartialOptions>(
     () => ({
-      metricStyleKey: heatmapMetricStyleKey,
-      shadeCount: heatmapShadeCount,
+      minColor: heatmapMinColor.trim() || resolvedPresetHeatmapOptions.minColor,
+      maxColor: heatmapMaxColor.trim() || resolvedPresetHeatmapOptions.maxColor,
+      noOfShades: heatmapNoOfShades,
       shader: heatmapShader,
-      domain: {
-        min: parseNumberInput(heatmapMin, resolvedPresetHeatmapOptions.domain.min),
-        minThreshold: parseOptionalNumberInput(heatmapMinThreshold),
-        threshold: parseNumberInput(
+      range: {
+        min: parseDecimalInput(heatmapMin, resolvedPresetHeatmapOptions.range.min),
+        minShadeThreshold: parseOptionalDecimalInput(heatmapMinShadeThreshold),
+        threshold: parseDecimalInput(
           heatmapThreshold,
-          resolvedPresetHeatmapOptions.domain.threshold,
+          resolvedPresetHeatmapOptions.range.threshold,
         ),
-        maxThreshold: parseOptionalNumberInput(heatmapMaxThreshold),
-        max: parseNumberInput(heatmapMax, resolvedPresetHeatmapOptions.domain.max),
+        maxShadeThreshold: parseOptionalDecimalInput(heatmapMaxShadeThreshold),
+        max: parseDecimalInput(heatmapMax, resolvedPresetHeatmapOptions.range.max),
       },
     }),
     [
       heatmapMax,
-      heatmapMaxThreshold,
-      heatmapMetricStyleKey,
+      heatmapMaxColor,
+      heatmapMaxShadeThreshold,
+      heatmapMinColor,
       heatmapThreshold,
       heatmapMin,
-      heatmapMinThreshold,
+      heatmapMinShadeThreshold,
+      heatmapNoOfShades,
       heatmapShader,
-      heatmapShadeCount,
-      resolvedPresetHeatmapOptions.domain.max,
-      resolvedPresetHeatmapOptions.domain.threshold,
-      resolvedPresetHeatmapOptions.domain.min,
+      resolvedPresetHeatmapOptions.maxColor,
+      resolvedPresetHeatmapOptions.minColor,
+      resolvedPresetHeatmapOptions.range.max,
+      resolvedPresetHeatmapOptions.range.threshold,
+      resolvedPresetHeatmapOptions.range.min,
     ],
   );
   const candleHeatmapScores = useMemo(
@@ -271,12 +280,12 @@ export function FixtureDemoPage() {
 
   const footerText = useMemo(
     () =>
-      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Source: ${streamEnabled ? 'synthetic-stream' : 'canonical aggregated data'} | ${showOrderFlowControls ? `Candle position: ${candlePosition} | ` : ''}Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode}${showHeatmapControls ? ` | Heatmap: ${heatmapShader}/${heatmapShadeCount === 0 ? 'continuous' : `${heatmapShadeCount} shades`}` : ''} | Stream: ${streamEnabled ? 'on' : 'off'}`,
+      `Preset: ${preset.label} | ${symbol} ${sessionDate} ${interval} | Bars: ${displayBars.length} | Source: ${streamEnabled ? 'synthetic-stream' : 'canonical aggregated data'} | ${showOrderFlowControls ? `Candle position: ${candlePosition} | ` : ''}Mintick: ${formatMintick(effectiveMintick)} | Delta summary: ${showDeltaSummary ? 'on' : 'off'} | Mode: ${seriesMode}${showHeatmapControls ? ` | Heatmap: ${heatmapShader}/${heatmapNoOfShades === 0 ? 'continuous' : `${heatmapNoOfShades} shades`}` : ''} | Stream: ${streamEnabled ? 'on' : 'off'}`,
     [
       candlePosition,
       displayBars.length,
       effectiveMintick,
-      heatmapShadeCount,
+      heatmapNoOfShades,
       heatmapShader,
       interval,
       preset,
@@ -289,7 +298,31 @@ export function FixtureDemoPage() {
       symbol,
     ],
   );
-
+  const heatmapRenderKey = useMemo(
+    () =>
+      [
+        heatmapMinColor.trim(),
+        heatmapMaxColor.trim(),
+        heatmapNoOfShades,
+        heatmapShader,
+        heatmapMin,
+        heatmapMinShadeThreshold,
+        heatmapThreshold,
+        heatmapMaxShadeThreshold,
+        heatmapMax,
+      ].join(':'),
+    [
+      heatmapMax,
+      heatmapMaxColor,
+      heatmapMaxShadeThreshold,
+      heatmapMin,
+      heatmapMinColor,
+      heatmapMinShadeThreshold,
+      heatmapNoOfShades,
+      heatmapShader,
+      heatmapThreshold,
+    ],
+  );
   const footprintOptions = useMemo<FootprintSeriesPartialOptions>(() => {
     const base = preset.footprintOptions ?? {};
     return {
@@ -558,21 +591,41 @@ export function FixtureDemoPage() {
 
         {showHeatmapControls ? (
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Metric Style
-            <select
-              value={heatmapMetricStyleKey}
-              onChange={(event) => setHeatmapMetricStyleKey(event.target.value as MetricStyleKey)}
+            Min Color
+            <input
+              type="text"
+              value={heatmapMinColor}
+              onChange={(event) => setHeatmapMinColor(event.target.value)}
+              spellCheck={false}
               style={{
+                width: 136,
                 background: '#0f172a',
                 color: '#e2e8f0',
                 border: '1px solid rgba(148, 163, 184, 0.2)',
                 borderRadius: 8,
                 padding: '6px 10px',
               }}
-            >
-              <option value="metric0">metric0</option>
-              <option value="metric1">metric1</option>
-            </select>
+            />
+          </label>
+        ) : null}
+
+        {showHeatmapControls ? (
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            Max Color
+            <input
+              type="text"
+              value={heatmapMaxColor}
+              onChange={(event) => setHeatmapMaxColor(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: 136,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '6px 10px',
+              }}
+            />
           </label>
         ) : null}
 
@@ -598,10 +651,10 @@ export function FixtureDemoPage() {
 
         {showHeatmapControls ? (
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Shades
+            No. of Shades
             <select
-              value={String(heatmapShadeCount)}
-              onChange={(event) => setHeatmapShadeCount(Number(event.target.value))}
+              value={String(heatmapNoOfShades)}
+              onChange={(event) => setHeatmapNoOfShades(Number(event.target.value))}
               style={{
                 background: '#0f172a',
                 color: '#e2e8f0',
@@ -624,10 +677,10 @@ export function FixtureDemoPage() {
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
             Min
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={heatmapMin}
-              onChange={(event) => setHeatmapMin(event.target.value)}
+              onChange={(event) => setHeatmapMin(normalizeDecimalInput(event.target.value))}
               style={{
                 width: 88,
                 background: '#0f172a',
@@ -642,12 +695,14 @@ export function FixtureDemoPage() {
 
         {showHeatmapControls ? (
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Min Threshold
+            Min Shade Threshold
             <input
-              type="number"
-              step="0.01"
-              value={heatmapMinThreshold}
-              onChange={(event) => setHeatmapMinThreshold(event.target.value)}
+              type="text"
+              inputMode="decimal"
+              value={heatmapMinShadeThreshold}
+              onChange={(event) =>
+                setHeatmapMinShadeThreshold(normalizeDecimalInput(event.target.value))
+              }
               placeholder="off"
               style={{
                 width: 110,
@@ -665,10 +720,10 @@ export function FixtureDemoPage() {
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
             Threshold
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={heatmapThreshold}
-              onChange={(event) => setHeatmapThreshold(event.target.value)}
+              onChange={(event) => setHeatmapThreshold(normalizeDecimalInput(event.target.value))}
               style={{
                 width: 96,
                 background: '#0f172a',
@@ -683,12 +738,14 @@ export function FixtureDemoPage() {
 
         {showHeatmapControls ? (
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            Max Threshold
+            Max Shade Threshold
             <input
-              type="number"
-              step="0.01"
-              value={heatmapMaxThreshold}
-              onChange={(event) => setHeatmapMaxThreshold(event.target.value)}
+              type="text"
+              inputMode="decimal"
+              value={heatmapMaxShadeThreshold}
+              onChange={(event) =>
+                setHeatmapMaxShadeThreshold(normalizeDecimalInput(event.target.value))
+              }
               placeholder="off"
               style={{
                 width: 110,
@@ -706,10 +763,10 @@ export function FixtureDemoPage() {
           <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
             Max
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={heatmapMax}
-              onChange={(event) => setHeatmapMax(event.target.value)}
+              onChange={(event) => setHeatmapMax(normalizeDecimalInput(event.target.value))}
               style={{
                 width: 88,
                 background: '#0f172a',
@@ -766,7 +823,7 @@ export function FixtureDemoPage() {
 
       {clusteredBars.length ? (
         <OrderFlowChart
-          key={`${preset.id}:${seriesMode}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
+          key={`${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
           bars={clusteredBars}
           seriesMode={seriesMode}
           showVisibleProfile={showVisibleProfile}

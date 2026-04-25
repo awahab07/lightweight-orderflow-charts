@@ -41,6 +41,7 @@ export interface ConceptPresetDefinition {
   showSessionProfiles: boolean;
   showVwap: boolean;
   showReferenceCandles: boolean;
+  referencePanePlacement?: 'top' | 'bottom';
   showOrderFlowPane?: boolean;
   showVolumePane: boolean;
   showDeltaSummary: boolean;
@@ -62,14 +63,235 @@ export const THEME_PRESETS: ThemePresetDefinition[] = Object.values(ORDER_FLOW_T
 const ORDER_FLOW_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
   version: 1,
   timeRange: {
-    from: 5.881740674502705,
-    to: 17.823465623398526,
+    from: 6.555367871144069,
+    to: 17.580576133411803,
   },
   panes: [
     {
       paneIndex: 0,
       priceScaleId: 'right',
-      priceRange: null,
+      priceRange: {
+        from: 400.5289068252881,
+        to: 403.52961012639156,
+      },
+    },
+  ],
+};
+
+const LADDER_FUNDAMENTALS_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: 6.769972763910813,
+    to: 18.27318988636536,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 400.8560042868159,
+        to: 402.981758960649,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 6,
+      },
+    },
+  ],
+};
+
+const DELTA_FIRST_READ_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: 6.996424184715682,
+    to: 20.41100230040486,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 179.6944813754079,
+        to: 181.1680094516906,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 6,
+      },
+    },
+  ],
+};
+
+const ABSORPTION_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: 8.14859578729117,
+    to: 20.10644594478292,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 385.3269274207384,
+        to: 387.80587874264944,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 3,
+      },
+    },
+  ],
+};
+
+const STACKED_IMBALANCES_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -1.3390310137809784,
+    to: 9.43367756267952,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 180.0476364218891,
+        to: 181.9122956928875,
+      },
+    },
+  ],
+};
+
+const VOLUME_PROFILE_SHAPE_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: 32.94747770561294,
+    to: 47.01974483632998,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 180.3324867298039,
+        to: 181.7553945179693,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 3,
+      },
+    },
+  ],
+};
+
+const SESSION_MAP_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: 4.944122692718288,
+    to: 12.82425732391448,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 383.21752780573865,
+        to: 394.10606813864524,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 380.67374409009034,
+        to: 384.84906845603956,
+      },
+    },
+  ],
+};
+
+const VOLUME_FOOTPRINT_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -0.361550786932888,
+    to: 9.105337237445028,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 182.0511887450038,
+        to: 183.45814639348762,
+      },
+    },
+  ],
+};
+
+const CANDLE_HEATMAP_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -13.957037647100066,
+    to: 65.52646001804331,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 394.2,
+        to: 402.3,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 0,
+        to: 1325645.02,
+      },
+    },
+  ],
+};
+
+const VOLUME_DELTA_PIVOT_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+  version: 1,
+  timeRange: {
+    from: -7.1186605408371975,
+    to: 58.72388561961506,
+  },
+  panes: [
+    {
+      paneIndex: 0,
+      priceScaleId: 'right',
+      priceRange: {
+        from: 386.52474775593475,
+        to: 402.33329046950263,
+      },
+    },
+    {
+      paneIndex: 1,
+      priceScaleId: 'right',
+      priceRange: {
+        from: -228122.36280000003,
+        to: 228122.36280000003,
+      },
     },
   ],
 };
@@ -108,6 +330,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-10',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: LADDER_FUNDAMENTALS_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: false,
     showSessionProfiles: false,
@@ -131,6 +354,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-02',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: DELTA_FIRST_READ_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: false,
     showSessionProfiles: false,
@@ -154,6 +378,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-03',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: ABSORPTION_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: true,
     showSessionProfiles: false,
@@ -178,6 +403,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-04',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: STACKED_IMBALANCES_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: false,
     showSessionProfiles: false,
@@ -200,6 +426,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-06',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: VOLUME_PROFILE_SHAPE_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: true,
     showSessionProfiles: false,
@@ -224,12 +451,14 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-09',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: SESSION_MAP_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: true,
     showSessionProfiles: true,
     showVwap: true,
     showReferenceCandles: true,
-    showVolumePane: true,
+    referencePanePlacement: 'bottom',
+    showVolumePane: false,
     showDeltaSummary: false,
     showCandle: true,
     showWicks: true,
@@ -246,6 +475,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-10',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: VOLUME_FOOTPRINT_DEFAULT_VIEW_STATE,
     seriesMode: 'volume-footprint',
     showVisibleProfile: true,
     showSessionProfiles: false,
@@ -270,6 +500,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-06',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: CANDLE_HEATMAP_DEFAULT_VIEW_STATE,
     seriesMode: 'candle-heatmap',
     showVisibleProfile: false,
     showSessionProfiles: false,
@@ -283,15 +514,16 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
     candleHeatmapOptions: {
-      domain: {
+      range: {
         min: 0,
-        minThreshold: 0.1,
+        minShadeThreshold: 0.1,
         threshold: 0.5,
-        maxThreshold: 0.9,
+        maxShadeThreshold: 0.9,
         max: 1,
       },
-      metricStyleKey: 'metric0',
-      shadeCount: 10,
+      minColor: '#dc2626',
+      maxColor: '#2563eb',
+      noOfShades: 10,
       shader: 'alpha',
     },
     lessonIds: ['candle-heatmap'],
@@ -305,6 +537,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     defaultDate: '2026-03-02',
     defaultInterval: '5m',
     defaultMintick: 0.1,
+    defaultViewState: VOLUME_DELTA_PIVOT_DEFAULT_VIEW_STATE,
     seriesMode: 'footprint',
     showVisibleProfile: false,
     showSessionProfiles: false,
