@@ -441,28 +441,6 @@ export function FixtureDemoPage() {
 
   return (
     <>
-      <header style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Playground</h1>
-        <p style={{ margin: '8px 0 0', color: '#94a3b8' }}>
-          Explore the lower-level chart controls, toggles, and renderer combinations.
-        </p>
-        <p style={{ margin: '8px 0 0', color: '#64748b' }}>
-          Use this view to stress the public options surface after learning the concepts on the main
-          page.
-        </p>
-        <a
-          href="#/"
-          style={{
-            display: 'inline-block',
-            marginTop: 8,
-            color: '#93c5fd',
-            textDecoration: 'none',
-          }}
-        >
-          Back to learn mode
-        </a>
-      </header>
-
       <section
         style={{
           display: 'flex',

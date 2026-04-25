@@ -1238,14 +1238,6 @@ export function ConnectPage() {
           Connect a direct vendor feed, load aggregated minute data through the local cache, and
           render the selected interval from that `1m` source.
         </p>
-        <div style={{ marginTop: 8, display: 'flex', gap: 16 }}>
-          <a href="#/" style={{ color: '#93c5fd', textDecoration: 'none', fontSize: 14 }}>
-            Open learn mode
-          </a>
-          <a href="#/playground" style={{ color: '#93c5fd', textDecoration: 'none', fontSize: 14 }}>
-            Open playground
-          </a>
-        </div>
       </header>
 
       <ConceptToolbar

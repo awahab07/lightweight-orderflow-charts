@@ -525,16 +525,6 @@ export function LearnDemoPage() {
 
   return (
     <>
-      <header style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 28 }}>{preset.label}</h2>
-        <p style={{ margin: '8px 0 0', color: '#94a3b8' }}>{preset.summary}</p>
-        <div style={{ marginTop: 8 }}>
-          <a href="#/playground" style={{ color: '#93c5fd', textDecoration: 'none', fontSize: 14 }}>
-            Open playground
-          </a>
-        </div>
-      </header>
-
       <ConceptToolbar
         presetId={presetId}
         presetOptions={CONCEPT_PRESETS.map((entry) => ({
