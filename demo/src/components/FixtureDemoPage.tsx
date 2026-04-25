@@ -440,17 +440,28 @@ export function FixtureDemoPage() {
   const deltaSummaryOptions = preset.deltaSummaryOptions;
 
   return (
-    <>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 240px',
+        gap: 16,
+        alignItems: 'start',
+      }}
+    >
       <section
         style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 16,
-          marginBottom: 16,
+          display: 'grid',
+          gap: 12,
+          gridColumn: '2 / 3',
+          gridRow: '1 / 2',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           padding: 16,
           borderRadius: 12,
           background: 'rgba(15, 23, 42, 0.85)',
           border: '1px solid rgba(148, 163, 184, 0.12)',
+          position: 'sticky',
+          top: 16,
         }}
       >
         <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
@@ -994,7 +1005,8 @@ export function FixtureDemoPage() {
         </button>
       </section>
 
-      {clusteredBars.length ? (
+      <main style={{ gridColumn: '1 / 2', gridRow: '1 / 2', minWidth: 0 }}>
+        {clusteredBars.length ? (
         <OrderFlowChart
           key={`${preset.id}:${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
           bars={clusteredBars}
@@ -1039,7 +1051,8 @@ export function FixtureDemoPage() {
               ? `Unable to load canonical aggregated data: ${dataError}`
               : 'No stored market data is available for this selection yet.'}
         </section>
-      )}
-    </>
+        )}
+      </main>
+    </div>
   );
 }
