@@ -2,10 +2,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
 
-import type {
-  AggregatedMarketBar,
-  InstrumentContext,
-} from 'lightweight-orderflow-charts';
+import type { AggregatedMarketBar, InstrumentContext } from 'lightweight-orderflow-charts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MarketDataConnectorSession } from '../../connectors/core/contracts';

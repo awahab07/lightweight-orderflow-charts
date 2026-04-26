@@ -41,7 +41,10 @@ function buildSortedEvents(trades: TradeTick[], quotes: QuoteTick[]): TickReplay
 }
 
 export function buildTickReplayFrames(config: TickReplayFrameConfig): OrderFlowTickStreamUpdate[] {
-  const frameCountPerBar = Math.max(1, Math.floor(STREAM_BAR_DURATION_MS / STREAM_STEP_INTERVAL_MS));
+  const frameCountPerBar = Math.max(
+    1,
+    Math.floor(STREAM_BAR_DURATION_MS / STREAM_STEP_INTERVAL_MS),
+  );
   const events = buildSortedEvents(config.trades, config.quotes);
 
   if (!events.length) {

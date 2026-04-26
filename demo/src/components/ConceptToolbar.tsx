@@ -55,11 +55,7 @@ function ToolbarSelect({
   return (
     <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
       {label}
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={selectStyle}
-      >
+      <select value={value} onChange={(event) => onChange(event.target.value)} style={selectStyle}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

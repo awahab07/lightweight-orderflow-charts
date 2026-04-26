@@ -177,7 +177,11 @@ function parseArgs(argv: string[]): CliOptions | null {
         printHelp();
         return null;
       case '--symbol':
-        defaults.symbols.push(String(next || '').trim().toUpperCase());
+        defaults.symbols.push(
+          String(next || '')
+            .trim()
+            .toUpperCase(),
+        );
         index += 1;
         break;
       case '--symbols':
@@ -410,7 +414,9 @@ async function main(): Promise<void> {
 
           if (validation.mismatches.length === 0) {
             // eslint-disable-next-line no-console
-            console.log(`${symbol} ${sessionDate} derived 5m bars match Polygon 5m aggregate bars.`);
+            console.log(
+              `${symbol} ${sessionDate} derived 5m bars match Polygon 5m aggregate bars.`,
+            );
           } else {
             // eslint-disable-next-line no-console
             console.warn(

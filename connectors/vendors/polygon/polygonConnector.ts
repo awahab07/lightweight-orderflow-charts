@@ -1,7 +1,4 @@
-import type {
-  AggregatedMarketBar,
-  InstrumentContext,
-} from 'lightweight-orderflow-charts';
+import type { AggregatedMarketBar, InstrumentContext } from 'lightweight-orderflow-charts';
 
 import type {
   ConnectorConfigFieldDefinition,
@@ -238,7 +235,10 @@ function isRegularSessionBar(timestampMs: number, sessionDate: string): boolean 
   }
 
   const clock = secondsFromClock(parts.time);
-  return clock >= secondsFromClock(DEFAULT_SESSION_START) && clock < secondsFromClock(DEFAULT_SESSION_END);
+  return (
+    clock >= secondsFromClock(DEFAULT_SESSION_START) &&
+    clock < secondsFromClock(DEFAULT_SESSION_END)
+  );
 }
 
 class PolygonRestConnectorSession implements MarketDataConnectorSession {
@@ -312,7 +312,9 @@ class PolygonRestConnectorSession implements MarketDataConnectorSession {
     }
 
     if (payload.status && payload.status !== 'OK') {
-      throw new Error(`Polygon REST aggregate request failed: ${extractErrorMessage(payload, payload.status)}.`);
+      throw new Error(
+        `Polygon REST aggregate request failed: ${extractErrorMessage(payload, payload.status)}.`,
+      );
     }
 
     const bars: AggregatedMarketBar[] = [];
@@ -352,7 +354,9 @@ class PolygonRestConnectorSession implements MarketDataConnectorSession {
     return bars;
   }
 
-  async *streamHistoricalTicks(_request: ConnectorGrabRequest): AsyncGenerator<VendorHistoricalTickChunk> {
+  async *streamHistoricalTicks(
+    _request: ConnectorGrabRequest,
+  ): AsyncGenerator<VendorHistoricalTickChunk> {
     throw new Error(
       'Polygon REST Basic plan does not expose historical stock trades or quotes for true order-flow capture.',
     );

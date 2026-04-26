@@ -92,7 +92,10 @@ function cloneLevel(level: PriceLevelVolume): PriceLevelVolume {
   };
 }
 
-function mergeLevel(existing: PriceLevelVolume | undefined, level: PriceLevelVolume): PriceLevelVolume {
+function mergeLevel(
+  existing: PriceLevelVolume | undefined,
+  level: PriceLevelVolume,
+): PriceLevelVolume {
   const next = cloneLevel(level);
   if (!existing) {
     return next;
@@ -146,7 +149,11 @@ function resolveLevelWeightedPriceVolume(level: PriceLevelVolume): number {
   return level.price * resolveLevelTotalVolume(level);
 }
 
-function resolveDeltaExtrema(delta: number, deltaMin?: number, deltaMax?: number): {
+function resolveDeltaExtrema(
+  delta: number,
+  deltaMin?: number,
+  deltaMax?: number,
+): {
   deltaMin: number;
   deltaMax: number;
 } {
@@ -159,9 +166,7 @@ function resolveDeltaExtrema(delta: number, deltaMin?: number, deltaMax?: number
 }
 
 export function buildAggregatedMarketBarFromOrderFlowBar(bar: OrderFlowBar): AggregatedMarketBar {
-  const levels = [...bar.levels]
-    .map(cloneLevel)
-    .sort((left, right) => left.price - right.price);
+  const levels = [...bar.levels].map(cloneLevel).sort((left, right) => left.price - right.price);
   const volume = resolveOrderFlowBarTotalVolume(bar);
   const delta = resolveOrderFlowBarDelta(bar);
   const bidVolume = resolveOrderFlowBarBidVolume(bar);
@@ -230,8 +235,7 @@ export function aggregateMarketBarsByInterval(
     const time = bucketTime(bar.time, normalizedInterval);
     const existing = states.get(time);
     const delta = typeof bar.delta === 'number' && Number.isFinite(bar.delta) ? bar.delta : null;
-    const extrema =
-      delta == null ? null : resolveDeltaExtrema(delta, bar.deltaMin, bar.deltaMax);
+    const extrema = delta == null ? null : resolveDeltaExtrema(delta, bar.deltaMin, bar.deltaMax);
     const state =
       existing ??
       ({
@@ -274,7 +278,8 @@ export function aggregateMarketBarsByInterval(
     state.bar.bidVolume = (state.bar.bidVolume ?? 0) + (bar.bidVolume ?? 0) || undefined;
     state.bar.askVolume = (state.bar.askVolume ?? 0) + (bar.askVolume ?? 0) || undefined;
     state.bar.delta =
-      (state.bar.delta ?? 0) + (typeof bar.delta === 'number' && Number.isFinite(bar.delta) ? bar.delta : 0);
+      (state.bar.delta ?? 0) +
+      (typeof bar.delta === 'number' && Number.isFinite(bar.delta) ? bar.delta : 0);
     state.sourceCount += 1;
 
     if (typeof bar.vwap === 'number' && Number.isFinite(bar.vwap)) {
@@ -295,10 +300,13 @@ export function aggregateMarketBarsByInterval(
     .map((state) => ({
       ...state.bar,
       vwap:
-        !state.hasVwapGap && state.bar.volume > 0 ? state.vwapNumerator / state.bar.volume : undefined,
+        !state.hasVwapGap && state.bar.volume > 0
+          ? state.vwapNumerator / state.bar.volume
+          : undefined,
       deltaMin: state.hasDeltaPath ? state.deltaMin : undefined,
       deltaMax: state.hasDeltaPath ? state.deltaMax : undefined,
-      tradeCount: state.bar.tradeCount && state.bar.tradeCount > 0 ? state.bar.tradeCount : undefined,
+      tradeCount:
+        state.bar.tradeCount && state.bar.tradeCount > 0 ? state.bar.tradeCount : undefined,
       bidVolume: state.bar.bidVolume && state.bar.bidVolume > 0 ? state.bar.bidVolume : undefined,
       askVolume: state.bar.askVolume && state.bar.askVolume > 0 ? state.bar.askVolume : undefined,
       pocPrice: state.sourceCount === 1 ? state.bar.pocPrice : undefined,
@@ -384,8 +392,13 @@ export function aggregateOrderFlowBarsByInterval(
   return normalizeBars(
     Array.from(states.values())
       .map((state) => {
-        const levels = Array.from(state.levels.values()).sort((left, right) => left.price - right.price);
-        const totalVolume = levels.reduce((total, level) => total + resolveLevelTotalVolume(level), 0);
+        const levels = Array.from(state.levels.values()).sort(
+          (left, right) => left.price - right.price,
+        );
+        const totalVolume = levels.reduce(
+          (total, level) => total + resolveLevelTotalVolume(level),
+          0,
+        );
         const delta = levels.reduce((total, level) => total + resolveLevelDelta(level), 0);
         const bidVolume = levels.reduce((total, level) => total + level.bidVolume, 0);
         const askVolume = levels.reduce((total, level) => total + level.askVolume, 0);

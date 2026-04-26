@@ -425,7 +425,9 @@ export function OrderFlowChart({
     candleSeriesRef.current?.setData(candleData);
 
     const visibleLogicalRange = chart.timeScale().getVisibleLogicalRange();
-    const startIndex = visibleLogicalRange ? Math.max(0, Math.floor(visibleLogicalRange.from) - 1) : 0;
+    const startIndex = visibleLogicalRange
+      ? Math.max(0, Math.floor(visibleLogicalRange.from) - 1)
+      : 0;
     const endIndex = visibleLogicalRange
       ? Math.min(bars.length - 1, Math.ceil(visibleLogicalRange.to) + 1)
       : bars.length - 1;
@@ -435,12 +437,23 @@ export function OrderFlowChart({
       return;
     }
 
-    const highestPrice = visibleBars.reduce((maximum, bar) => Math.max(maximum, bar.high), Number.NEGATIVE_INFINITY);
-    const lowestPrice = visibleBars.reduce((minimum, bar) => Math.min(minimum, bar.low), Number.POSITIVE_INFINITY);
+    const highestPrice = visibleBars.reduce(
+      (maximum, bar) => Math.max(maximum, bar.high),
+      Number.NEGATIVE_INFINITY,
+    );
+    const lowestPrice = visibleBars.reduce(
+      (minimum, bar) => Math.min(minimum, bar.low),
+      Number.POSITIVE_INFINITY,
+    );
     const inferredStep =
       inferPriceStep(visibleBars.flatMap((bar) => bar.levels)) ??
       inferPriceStep(
-        visibleBars.flatMap((bar) => [{ price: bar.open }, { price: bar.high }, { price: bar.low }, { price: bar.close }]),
+        visibleBars.flatMap((bar) => [
+          { price: bar.open },
+          { price: bar.high },
+          { price: bar.low },
+          { price: bar.close },
+        ]),
       ) ??
       0.01;
     const contentSpan = Math.max(highestPrice - lowestPrice, inferredStep);
@@ -935,16 +948,10 @@ export function OrderFlowChart({
           volumePaneIndex ?? volumeDeltaPivotPaneIndex ?? deltaSummaryPaneIndex ?? null;
 
         if (supportPaneIndex !== null && panes[0] && panes[supportPaneIndex]) {
-          applyPaneHeightTargets(
-            chart,
-            panes,
-            chartHeight,
-            containerRef.current?.clientWidth,
-            [
-              { paneIndex: 0, ratio: 0.8 },
-              { paneIndex: supportPaneIndex, ratio: 0.2, minHeight: SUPPORT_PANE_MIN_HEIGHT },
-            ],
-          );
+          applyPaneHeightTargets(chart, panes, chartHeight, containerRef.current?.clientWidth, [
+            { paneIndex: 0, ratio: 0.8 },
+            { paneIndex: supportPaneIndex, ratio: 0.2, minHeight: SUPPORT_PANE_MIN_HEIGHT },
+          ]);
           return;
         }
       }
@@ -1193,7 +1200,15 @@ export function OrderFlowChart({
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [bars, chart, initialViewState, orderFlowSeriesReady, series, seriesRenderKey, showOrderFlowSeries]);
+  }, [
+    bars,
+    chart,
+    initialViewState,
+    orderFlowSeriesReady,
+    series,
+    seriesRenderKey,
+    showOrderFlowSeries,
+  ]);
 
   useEffect(() => {
     restoredMainViewSignatureRef.current = null;
@@ -1276,9 +1291,12 @@ export function OrderFlowChart({
     };
   }, [autoFitEnabled, chart, dataSourceKey, primaryPaneReady]);
 
-  useEffect(() => () => {
-    cancelScheduledAutoFit();
-  }, []);
+  useEffect(
+    () => () => {
+      cancelScheduledAutoFit();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!chart || !containerRef.current) {

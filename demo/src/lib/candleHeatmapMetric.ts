@@ -27,9 +27,7 @@ function resolveBarDelta(bar: OrderFlowBar): number {
   );
 }
 
-export function buildDemoCandleHeatmapScores(
-  bars: readonly OrderFlowBar[],
-): Map<string, number> {
+export function buildDemoCandleHeatmapScores(bars: readonly OrderFlowBar[]): Map<string, number> {
   const scores = new Map<string, number>();
 
   for (let index = 0; index < bars.length; index += 1) {
@@ -38,10 +36,8 @@ export function buildDemoCandleHeatmapScores(
     const range = Math.max(bar.high - bar.low, 0);
     const volume = resolveBarVolume(bar);
     const delta = resolveBarDelta(bar);
-    const closeLocation =
-      range > 0 ? clamp((bar.close - bar.low) / range, 0, 1) : 0.5;
-    const deltaScore =
-      volume > 0 ? clamp((delta / volume + 1) / 2, 0, 1) : closeLocation;
+    const closeLocation = range > 0 ? clamp((bar.close - bar.low) / range, 0, 1) : 0.5;
+    const deltaScore = volume > 0 ? clamp((delta / volume + 1) / 2, 0, 1) : closeLocation;
     const momentumRange = Math.max(
       range,
       previousBar ? Math.max(previousBar.high - previousBar.low, 0) : 0,
@@ -50,11 +46,7 @@ export function buildDemoCandleHeatmapScores(
     const momentumScore = previousBar
       ? clamp((bar.close - previousBar.close) / momentumRange / 2 + 0.5, 0, 1)
       : 0.5;
-    const score = clamp(
-      0.45 * deltaScore + 0.35 * closeLocation + 0.2 * momentumScore,
-      0,
-      1,
-    );
+    const score = clamp(0.45 * deltaScore + 0.35 * closeLocation + 0.2 * momentumScore, 0, 1);
 
     scores.set(timeKey(bar.time), score);
   }

@@ -10,10 +10,7 @@ import type {
   TradeTick,
 } from 'lightweight-orderflow-charts';
 
-import type {
-  ConnectorSaveResult,
-  ConnectorStoredSessionSummary,
-} from '../core/contracts';
+import type { ConnectorSaveResult, ConnectorStoredSessionSummary } from '../core/contracts';
 
 export interface StoredTickSessionData {
   trades: TradeTick[];
@@ -228,12 +225,24 @@ export function persistStoredTickSession(
   const quotes = input.quotes ?? [];
   const sessionDirectory = resolveSessionDirectory(dataRoot, input.symbol, input.sessionDate);
   const manifestPath = resolveManifestPath(dataRoot, input.symbol, input.sessionDate);
-  const tradesPath = resolveTickFilePath(dataRoot, input.symbol, input.sessionDate, 'trades', input.complete);
+  const tradesPath = resolveTickFilePath(
+    dataRoot,
+    input.symbol,
+    input.sessionDate,
+    'trades',
+    input.complete,
+  );
   const quotesPath =
     quotes.length > 0
       ? resolveTickFilePath(dataRoot, input.symbol, input.sessionDate, 'quotes', input.complete)
       : null;
-  const staleTradePath = resolveTickFilePath(dataRoot, input.symbol, input.sessionDate, 'trades', !input.complete);
+  const staleTradePath = resolveTickFilePath(
+    dataRoot,
+    input.symbol,
+    input.sessionDate,
+    'trades',
+    !input.complete,
+  );
   const staleQuotePath =
     quotes.length > 0
       ? resolveTickFilePath(dataRoot, input.symbol, input.sessionDate, 'quotes', !input.complete)
@@ -278,7 +287,14 @@ export function persistStoredTickSession(
   const quoteFirst = quotes.length ? quotes[0].time : null;
   const quoteLast = quotes.length ? quotes[quotes.length - 1].time : null;
   const chunks = [
-    buildChunk(path.basename(tradesPath), 'trades', input.trades.length, tradeFirst, tradeLast, input.complete),
+    buildChunk(
+      path.basename(tradesPath),
+      'trades',
+      input.trades.length,
+      tradeFirst,
+      tradeLast,
+      input.complete,
+    ),
     buildChunk(
       quotesPath ? path.basename(quotesPath) : '',
       'quotes',

@@ -1,9 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
-import type {
-  AggregatedMarketBar,
-  OrderFlowBar,
-} from 'lightweight-orderflow-charts';
+import type { AggregatedMarketBar, OrderFlowBar } from 'lightweight-orderflow-charts';
 
 import type {
   ConnectorBridgeEvent,
@@ -150,7 +147,7 @@ function buildStoredSessionPayload(input: {
       : null;
   const completedMinutes = input.includeTicks
     ? summary.complete
-      ? summary.contiguousCoveredMinutes ?? 0
+      ? (summary.contiguousCoveredMinutes ?? 0)
       : Math.max((summary.contiguousCoveredMinutes ?? 0) - (currentBar ? 1 : 0), 0)
     : input.stored.marketBars.length;
 
@@ -167,7 +164,11 @@ function buildStoredSessionPayload(input: {
       intervalSeconds: input.intervalSeconds,
       includeTicks: input.includeTicks,
       includeQuotes: input.includeQuotes,
-      status: summary.complete ? 'completed' : input.stored.marketBars.length || input.stored.orderFlowBars.length ? 'paused' : 'idle',
+      status: summary.complete
+        ? 'completed'
+        : input.stored.marketBars.length || input.stored.orderFlowBars.length
+          ? 'paused'
+          : 'idle',
       cacheHit: input.stored.marketBars.length > 0 || input.stored.orderFlowBars.length > 0,
       cachedOrderFlowBars: input.stored.orderFlowBars.length,
       loadedOrderFlowBars: input.stored.orderFlowBars.length,
@@ -388,7 +389,9 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         return;
       }
 
-      const symbol = String(body.symbol || '').trim().toUpperCase();
+      const symbol = String(body.symbol || '')
+        .trim()
+        .toUpperCase();
       const sessionDate = String(body.sessionDate || '').trim();
       if (!symbol || !sessionDate || !Number.isFinite(body.intervalSeconds)) {
         writeJson(response, 400, {
@@ -584,7 +587,9 @@ export function createConnectorBridgeServer(options: ConnectorBridgeServerOption
         (body.vendorId ? getConnectorDefinition(body.vendorId) : null) ??
         activeConnector ??
         (connectionState.vendorId ? getConnectorDefinition(connectionState.vendorId) : null);
-      const symbol = String(body.symbol || '').trim().toUpperCase();
+      const symbol = String(body.symbol || '')
+        .trim()
+        .toUpperCase();
       const sessionDate = String(body.sessionDate || '').trim();
       if (!symbol || !sessionDate || !Number.isFinite(body.intervalSeconds)) {
         writeJson(response, 400, {

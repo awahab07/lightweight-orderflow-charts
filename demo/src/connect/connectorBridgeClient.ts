@@ -7,9 +7,10 @@ import type {
 } from '../../../connectors/core/contracts';
 
 const DEFAULT_BRIDGE_URL = 'http://127.0.0.1:8791';
-const bridgeBaseUrl = (
-  import.meta.env.VITE_CONNECTOR_BRIDGE_URL || DEFAULT_BRIDGE_URL
-).replace(/\/+$/, '');
+const bridgeBaseUrl = (import.meta.env.VITE_CONNECTOR_BRIDGE_URL || DEFAULT_BRIDGE_URL).replace(
+  /\/+$/,
+  '',
+);
 
 async function readJsonResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
@@ -26,10 +27,7 @@ async function readJsonResponse<T>(response: Response): Promise<T> {
   return parsed;
 }
 
-async function postJson<T>(
-  pathname: string,
-  body: Record<string, unknown> = {},
-): Promise<T> {
+async function postJson<T>(pathname: string, body: Record<string, unknown> = {}): Promise<T> {
   const response = await fetch(`${bridgeBaseUrl}${pathname}`, {
     method: 'POST',
     headers: {

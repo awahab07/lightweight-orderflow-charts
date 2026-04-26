@@ -249,7 +249,12 @@ export class CaptureProgressReporter {
     }
 
     this.log(
-      renderSnapshot(this.latestSnapshot, this.latestRuntimeStatus, this.frameIndex, this.startedAt),
+      renderSnapshot(
+        this.latestSnapshot,
+        this.latestRuntimeStatus,
+        this.frameIndex,
+        this.startedAt,
+      ),
     );
   }
 }

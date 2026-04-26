@@ -33,10 +33,7 @@ export function ibTimestampFromUnix(unixSeconds: number): string {
   return `${parts.dateCompact} ${parts.time} US/Eastern`;
 }
 
-export function ibTimestampFromSessionDate(
-  sessionDate: string,
-  time: string,
-): string {
+export function ibTimestampFromSessionDate(sessionDate: string, time: string): string {
   return `${sessionDate.replaceAll('-', '')} ${time} US/Eastern`;
 }
 

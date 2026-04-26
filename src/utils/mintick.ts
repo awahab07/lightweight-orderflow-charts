@@ -178,7 +178,8 @@ export function clusterOrderFlowBarByMintick(
   const askVolume = levels.reduce((total, level) => total + level.askVolume, 0);
   const tradeCount = levels.reduce((count, level) => count + (level.tradeCount ?? 0), 0);
   const weightedPriceVolume = levels.reduce(
-    (total, level) => total + level.price * (level.totalVolume ?? level.bidVolume + level.askVolume),
+    (total, level) =>
+      total + level.price * (level.totalVolume ?? level.bidVolume + level.askVolume),
     0,
   );
   let pocPrice: number | undefined;

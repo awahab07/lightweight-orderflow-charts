@@ -7,10 +7,7 @@ import type {
   CandleHeatmapOptions,
   CandleHeatmapPartialOptions,
 } from '../../models/options';
-import {
-  DEFAULT_CANDLE_HEATMAP_OPTIONS,
-  mergeCandleHeatmapOptions,
-} from '../../models/options';
+import { DEFAULT_CANDLE_HEATMAP_OPTIONS, mergeCandleHeatmapOptions } from '../../models/options';
 import { clamp } from '../../utils/math';
 import type { OhlcLike } from '../../utils/mintick';
 import { withAlpha } from '../../utils/color';
@@ -147,7 +144,13 @@ function parseColor(color: string): RgbaColor | null {
 }
 
 function toRgbaString(color: RgbaColor): string {
-  return `rgba(${Math.round(clamp(color.r, 0, 255))}, ${Math.round(clamp(color.g, 0, 255))}, ${Math.round(clamp(color.b, 0, 255))}, ${clamp(color.a, 0, 1).toFixed(3).replace(/\.?0+$/, '')})`;
+  return `rgba(${Math.round(clamp(color.r, 0, 255))}, ${Math.round(clamp(color.g, 0, 255))}, ${Math.round(clamp(color.b, 0, 255))}, ${clamp(
+    color.a,
+    0,
+    1,
+  )
+    .toFixed(3)
+    .replace(/\.?0+$/, '')})`;
 }
 
 function mixRgbColors(from: string, to: string, factor: number): string {
@@ -181,8 +184,7 @@ function rgbToHsl(color: RgbaColor): { h: number; s: number; l: number } {
     return { h: 0, s: 0, l: lightness };
   }
 
-  const saturation =
-    lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
 
   let hue = 0;
 
@@ -238,7 +240,7 @@ function hslToRgba(h: number, s: number, l: number): RgbaColor {
     };
   }
 
-  const normalizedHue = ((h % 360) + 360) % 360 / 360;
+  const normalizedHue = (((h % 360) + 360) % 360) / 360;
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
   const p = 2 * l - q;
 
@@ -274,9 +276,7 @@ function mixHslColors(from: string, to: string, factor: number): string {
 function relativeLuminance(color: RgbaColor): number {
   const channels = [color.r, color.g, color.b].map((value) => {
     const normalized = value / 255;
-    return normalized <= 0.03928
-      ? normalized / 12.92
-      : ((normalized + 0.055) / 1.055) ** 2.4;
+    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
   });
 
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
@@ -393,17 +393,9 @@ function normalizeResolvedOptions(
   return {
     range: {
       min: range.min,
-      minShadeThreshold: clamp(
-        range.minShadeThreshold ?? range.min,
-        range.min,
-        range.threshold,
-      ),
+      minShadeThreshold: clamp(range.minShadeThreshold ?? range.min, range.min, range.threshold),
       threshold: range.threshold,
-      maxShadeThreshold: clamp(
-        range.maxShadeThreshold ?? range.max,
-        range.threshold,
-        range.max,
-      ),
+      maxShadeThreshold: clamp(range.maxShadeThreshold ?? range.max, range.threshold, range.max),
       max: range.max,
     },
     downColor: options.downColor,
@@ -423,13 +415,7 @@ function resolveSideDistance(
   value: number,
   options: ResolvedCandleHeatmapOptions,
 ): { side: CandleHeatmapSide; normalizedDistance: number } {
-  const {
-    min,
-    minShadeThreshold,
-    threshold,
-    maxShadeThreshold,
-    max,
-  } = options.range;
+  const { min, minShadeThreshold, threshold, maxShadeThreshold, max } = options.range;
   const clampedValue = clamp(value, min, max);
 
   if (clampedValue <= min) {
@@ -498,23 +484,23 @@ function resolveHeatmapColor(
     return edgeColor;
   }
 
-  return resolveColorFromShade(
-    edgeColor,
-    intensity,
-    options.shader,
-    backgroundColor,
-    darkSurface,
-  );
+  return resolveColorFromShade(edgeColor, intensity, options.shader, backgroundColor, darkSurface);
 }
 
-function resolveSideFillColor(side: CandleHeatmapSide, options: ResolvedCandleHeatmapOptions): string {
+function resolveSideFillColor(
+  side: CandleHeatmapSide,
+  options: ResolvedCandleHeatmapOptions,
+): string {
   return side === 'min' ? options.downColor : options.upColor;
 }
 
-function resolveSideWickColor(side: CandleHeatmapSide, options: ResolvedCandleHeatmapOptions): string {
+function resolveSideWickColor(
+  side: CandleHeatmapSide,
+  options: ResolvedCandleHeatmapOptions,
+): string {
   return side === 'min'
-    ? options.wickDownColor ?? options.downColor
-    : options.wickUpColor ?? options.upColor;
+    ? (options.wickDownColor ?? options.downColor)
+    : (options.wickUpColor ?? options.upColor);
 }
 
 function resolveSideBorderColor(
@@ -522,8 +508,8 @@ function resolveSideBorderColor(
   options: ResolvedCandleHeatmapOptions,
 ): string {
   return side === 'min'
-    ? options.borderDownColor ?? options.downColor
-    : options.borderUpColor ?? options.upColor;
+    ? (options.borderDownColor ?? options.downColor)
+    : (options.borderUpColor ?? options.upColor);
 }
 
 function resolveShadedSideColor(
@@ -537,13 +523,7 @@ function resolveShadedSideColor(
     return baseColor;
   }
 
-  return resolveColorFromShade(
-    baseColor,
-    intensity,
-    options.shader,
-    backgroundColor,
-    darkSurface,
-  );
+  return resolveColorFromShade(baseColor, intensity, options.shader, backgroundColor, darkSurface);
 }
 
 export function resolveCandleHeatmapColor(

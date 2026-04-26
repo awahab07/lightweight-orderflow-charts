@@ -144,9 +144,7 @@ export function ExploreDemoPage() {
   const sourceBars = streamEnabled ? streamBars : loadedBars;
   const sourceChartBars = useMemo(
     () =>
-      streamEnabled
-        ? buildAggregatedMarketBarsFromOrderFlowBars(streamBars)
-        : loadedChartBars,
+      streamEnabled ? buildAggregatedMarketBarsFromOrderFlowBars(streamBars) : loadedChartBars,
     [loadedChartBars, streamBars, streamEnabled],
   );
   const lowerOrderFlowSourceBars = useMemo(() => {
@@ -607,7 +605,6 @@ export function ExploreDemoPage() {
               : 'No stored market data is available for this selection yet.'}
         </section>
       )}
-
     </>
   );
 }

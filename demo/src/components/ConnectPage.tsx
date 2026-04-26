@@ -95,10 +95,7 @@ function formatMintick(value: number): string {
   return value.toFixed(Math.max(2, inferPricePrecision(value)));
 }
 
-function fingerprintConfig(
-  vendorId: string,
-  config: Record<string, ConnectorConfigValue>,
-): string {
+function fingerprintConfig(vendorId: string, config: Record<string, ConnectorConfigValue>): string {
   const sortedEntries = Object.entries(config).sort(([left], [right]) => left.localeCompare(right));
   return JSON.stringify([vendorId, sortedEntries]);
 }
@@ -119,7 +116,14 @@ function buttonBaseStyle(enabled: boolean): CSSProperties {
 
 function renderPlugIcon(): ReactNode {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       <path d="M8 7V3" />
       <path d="M16 7V3" />
       <path d="M7 10h10v2a5 5 0 0 1-5 5v4" />
@@ -130,7 +134,14 @@ function renderPlugIcon(): ReactNode {
 
 function renderStreamIcon(): ReactNode {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       <path d="M4 12a8 8 0 0 1 8-8" />
       <path d="M4 12a8 8 0 0 0 8 8" />
       <path d="M12 4a8 8 0 0 1 8 8" />
@@ -400,7 +411,13 @@ function ToolbarCoverageBar({
           }}
         >
           <span>{Math.round(visual.pct)}%</span>
-          <span>{progress?.status === 'loading-vendor' ? 'streaming' : progress?.complete ? 'ready' : 'cache'}</span>
+          <span>
+            {progress?.status === 'loading-vendor'
+              ? 'streaming'
+              : progress?.complete
+                ? 'ready'
+                : 'cache'}
+          </span>
         </div>
       </div>
     </div>
@@ -670,7 +687,8 @@ export function ConnectPage() {
       : initialPreset.defaultSymbol,
   );
   const [interval, setInterval] = useState<BarInterval>(() =>
-    initialUrlState?.interval && AVAILABLE_INTERVALS.includes(initialUrlState.interval as BarInterval)
+    initialUrlState?.interval &&
+    AVAILABLE_INTERVALS.includes(initialUrlState.interval as BarInterval)
       ? (initialUrlState.interval as BarInterval)
       : initialPreset.defaultInterval,
   );
@@ -701,9 +719,9 @@ export function ConnectPage() {
   const [liveBars, setLiveBars] = useState<OrderFlowBar[] | null>(null);
   const [liveDataMode, setLiveDataMode] = useState<'footprint' | 'bar-backed' | null>(null);
   const [selectionProgress, setSelectionProgress] = useState<ConnectorGrabProgress | null>(null);
-  const [selectionSource, setSelectionSource] = useState<ConnectorSessionDataPayload['source'] | null>(
-    null,
-  );
+  const [selectionSource, setSelectionSource] = useState<
+    ConnectorSessionDataPayload['source'] | null
+  >(null);
   const [cacheSummaryLoading, setCacheSummaryLoading] = useState(false);
 
   const preset = useMemo(() => getConceptPreset(presetId), [presetId]);
@@ -734,13 +752,15 @@ export function ConnectPage() {
     bridgeState?.activeGrab?.vendorId === selectedVendorId &&
     bridgeState?.activeGrab?.symbol === symbol &&
     bridgeState?.activeGrab?.sessionDate === sessionDate;
-  const currentProgress = activeGrabMatchesSelection ? bridgeState?.activeGrab ?? null : selectionProgress;
+  const currentProgress = activeGrabMatchesSelection
+    ? (bridgeState?.activeGrab ?? null)
+    : selectionProgress;
   const directModeActive = Boolean(
     liveBarsForInterval &&
-      currentProgress &&
-      ['idle', 'loading-cache', 'loading-vendor', 'paused', 'completed'].includes(
-        currentProgress.status,
-      ),
+    currentProgress &&
+    ['idle', 'loading-cache', 'loading-vendor', 'paused', 'completed'].includes(
+      currentProgress.status,
+    ),
   );
   const activeSourceBars = liveBarsForInterval ?? [];
   const clusteredBars = useMemo(
@@ -876,7 +896,12 @@ export function ConnectPage() {
         ],
       };
     });
-  }, [clusteredBars, instrumentAwareFootprintOptions?.style, preset.showVolumeDeltaPivot, volumeDeltaPivotData]);
+  }, [
+    clusteredBars,
+    instrumentAwareFootprintOptions?.style,
+    preset.showVolumeDeltaPivot,
+    volumeDeltaPivotData,
+  ]);
   const effectiveRestoredViewState = useMemo(() => {
     if (!restoredViewState) {
       return null;
@@ -926,27 +951,27 @@ export function ConnectPage() {
 
   const canTestConnection = Boolean(
     selectedVendor &&
-      selectedVendor.configFields.every((field) => {
-        if (!field.required) {
-          return true;
-        }
+    selectedVendor.configFields.every((field) => {
+      if (!field.required) {
+        return true;
+      }
 
-        const value = connectorConfig[field.id];
-        if (field.kind === 'number') {
-          return Number.isFinite(Number(value)) && Number(value) > 0;
-        }
+      const value = connectorConfig[field.id];
+      if (field.kind === 'number') {
+        return Number.isFinite(Number(value)) && Number(value) > 0;
+      }
 
-        return String(value ?? '').trim().length > 0;
-      }),
+      return String(value ?? '').trim().length > 0;
+    }),
   );
   const currentConfigFingerprint = selectedVendor
     ? fingerprintConfig(selectedVendor.id, connectorConfig)
     : null;
   const canConnect = Boolean(
     selectedVendor &&
-      bridgeState &&
-      testedConfigFingerprint &&
-      currentConfigFingerprint === testedConfigFingerprint,
+    bridgeState &&
+    testedConfigFingerprint &&
+    currentConfigFingerprint === testedConfigFingerprint,
   );
 
   const applySessionPayload = useCallback(
@@ -997,7 +1022,10 @@ export function ConnectPage() {
 
         setBridgeState(state);
         setBridgeError(null);
-        if (state.vendors.length && !state.vendors.some((vendor) => vendor.id === selectedVendorId)) {
+        if (
+          state.vendors.length &&
+          !state.vendors.some((vendor) => vendor.id === selectedVendorId)
+        ) {
           setSelectedVendorId(state.vendors[0].id);
         }
       })
@@ -1212,12 +1240,12 @@ export function ConnectPage() {
   };
   const loadEnabled = Boolean(
     bridgeState &&
-      selectedVendor &&
-      !connectingConnector &&
-      !(
-        activeGrabMatchesSelection &&
-        ['loading-cache', 'loading-vendor'].includes(bridgeState.activeGrab?.status ?? '')
-      ),
+    selectedVendor &&
+    !connectingConnector &&
+    !(
+      activeGrabMatchesSelection &&
+      ['loading-cache', 'loading-vendor'].includes(bridgeState.activeGrab?.status ?? '')
+    ),
   );
   const loadInProgress =
     activeGrabMatchesSelection &&
@@ -1297,7 +1325,9 @@ export function ConnectPage() {
           setRestoredViewState(nextViewState);
           setViewState(nextViewState);
         }}
-        statusContent={<ToolbarCoverageBar progress={currentProgress} loading={cacheSummaryLoading} />}
+        statusContent={
+          <ToolbarCoverageBar progress={currentProgress} loading={cacheSummaryLoading} />
+        }
         rightActions={
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
@@ -1331,7 +1361,9 @@ export function ConnectPage() {
                 color: connectVisual.color,
                 borderColor: connectVisual.borderColor,
                 background: connectVisual.background,
-                animation: connectVisual.pulse ? 'connectPulse 1.2s ease-in-out infinite' : undefined,
+                animation: connectVisual.pulse
+                  ? 'connectPulse 1.2s ease-in-out infinite'
+                  : undefined,
               }}
             >
               {renderPlugIcon()}

@@ -316,7 +316,10 @@ function waitForConnected(api: IBApiNext, timeoutMs: number): Promise<void> {
 
 class IbkrConnectorSession implements MarketDataConnectorSession {
   private readonly requestLog: RequestLogEntry[] = [];
-  private readonly contractCache = new Map<string, Promise<{ contract: IbkrContract; instrument: InstrumentContext }>>();
+  private readonly contractCache = new Map<
+    string,
+    Promise<{ contract: IbkrContract; instrument: InstrumentContext }>
+  >();
 
   constructor(
     private readonly api: IBApiNext,
@@ -336,9 +339,9 @@ class IbkrConnectorSession implements MarketDataConnectorSession {
     request: ConnectorHistoricalBarsRequest,
   ): Promise<AggregatedMarketBar[]> {
     const resolved = await this.resolveContract(request.symbol);
-    const barSize = resolveHistoricalBarSize(
-      request.intervalSeconds,
-    ) as Parameters<IBApiNext['getHistoricalData']>[3];
+    const barSize = resolveHistoricalBarSize(request.intervalSeconds) as Parameters<
+      IBApiNext['getHistoricalData']
+    >[3];
     const endDateTime = ibTimestampFromSessionDate(request.sessionDate, DEFAULT_SESSION_END);
     const bars = await this.requestWithPacing(
       `${request.symbol}:bars:${request.sessionDate}:${barSize}`,
@@ -379,10 +382,11 @@ class IbkrConnectorSession implements MarketDataConnectorSession {
         low: Number(bar.low),
         close: Number(bar.close),
         volume: Number(bar.volume ?? 0),
-        vwap:
-          typeof bar.WAP === 'number' && Number.isFinite(bar.WAP) ? Number(bar.WAP) : undefined,
+        vwap: typeof bar.WAP === 'number' && Number.isFinite(bar.WAP) ? Number(bar.WAP) : undefined,
         tradeCount:
-          typeof bar.count === 'number' && Number.isFinite(bar.count) ? Number(bar.count) : undefined,
+          typeof bar.count === 'number' && Number.isFinite(bar.count)
+            ? Number(bar.count)
+            : undefined,
       }))
       .filter((bar) => formatEasternParts(Number(bar.time)).date === request.sessionDate);
   }
@@ -450,7 +454,12 @@ class IbkrConnectorSession implements MarketDataConnectorSession {
       }
 
       if (request.includeQuotes && !quoteComplete) {
-        if (tradeComplete && lastTradeTime != null && quoteNextTime != null && quoteNextTime > lastTradeTime) {
+        if (
+          tradeComplete &&
+          lastTradeTime != null &&
+          quoteNextTime != null &&
+          quoteNextTime > lastTradeTime
+        ) {
           quoteComplete = true;
           continue;
         }
@@ -597,13 +606,7 @@ class IbkrConnectorSession implements MarketDataConnectorSession {
       runtimeContext,
       () =>
         lastValueFrom(
-          this.api.getHistoricalTicksLast(
-            contract,
-            startTime,
-            '',
-            DEFAULT_CHUNK_SIZE,
-            true,
-          ),
+          this.api.getHistoricalTicksLast(contract, startTime, '', DEFAULT_CHUNK_SIZE, true),
         ),
     );
 

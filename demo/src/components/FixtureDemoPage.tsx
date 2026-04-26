@@ -57,8 +57,7 @@ const SIDEBAR_SURFACE_STYLE: CSSProperties = {
   overflowX: 'hidden',
   padding: 12,
   borderRadius: 16,
-  background:
-    'linear-gradient(180deg, rgba(11, 18, 32, 0.98) 0%, rgba(10, 16, 30, 0.98) 100%)',
+  background: 'linear-gradient(180deg, rgba(11, 18, 32, 0.98) 0%, rgba(10, 16, 30, 0.98) 100%)',
   border: '1px solid rgba(148, 163, 184, 0.12)',
   boxShadow: '0 20px 48px rgba(2, 6, 23, 0.36)',
   position: 'sticky',
@@ -125,8 +124,7 @@ const SIDEBAR_COLOR_TEXT_STYLE: CSSProperties = {
   ...SIDEBAR_CONTROL_STYLE,
   minWidth: 0,
   width: 70,
-  fontFamily:
-    'ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+  fontFamily: 'ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   fontSize: 12,
 };
 
@@ -173,7 +171,9 @@ function normalizeColorPickerValue(value: string, fallback = '#000000'): string 
 
   if (rgbMatch) {
     const toHex = (raw: string) =>
-      Math.max(0, Math.min(255, Math.round(Number(raw) || 0))).toString(16).padStart(2, '0');
+      Math.max(0, Math.min(255, Math.round(Number(raw) || 0)))
+        .toString(16)
+        .padStart(2, '0');
 
     return `#${toHex(rgbMatch[1] ?? '0')}${toHex(rgbMatch[2] ?? '0')}${toHex(rgbMatch[3] ?? '0')}`;
   }
@@ -231,13 +231,7 @@ function TextControl(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...rest} style={{ ...SIDEBAR_CONTROL_STYLE, ...style }} />;
 }
 
-function ColorControl({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (next: string) => void;
-}) {
+function ColorControl({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <input
@@ -396,7 +390,9 @@ export function FixtureDemoPage() {
 
   useEffect(() => {
     if (availableDates.length && !availableDates.includes(sessionDate)) {
-      setSessionDate(preferredTickDateForSymbol(symbol) ?? availableDates[availableDates.length - 1]);
+      setSessionDate(
+        preferredTickDateForSymbol(symbol) ?? availableDates[availableDates.length - 1],
+      );
     }
   }, [availableDates, sessionDate, symbol]);
 
@@ -828,7 +824,11 @@ export function FixtureDemoPage() {
               checked={heatmapBorderVisible}
               onChange={setHeatmapBorderVisible}
             />
-            <Toggle label="Shade Wicks" checked={heatmapShadeWicks} onChange={setHeatmapShadeWicks} />
+            <Toggle
+              label="Shade Wicks"
+              checked={heatmapShadeWicks}
+              onChange={setHeatmapShadeWicks}
+            />
 
             <FieldRow label="Shader" labelTone="default">
               <SelectControl
@@ -957,50 +957,50 @@ export function FixtureDemoPage() {
 
       <main style={{ gridColumn: '1 / 2', gridRow: '1 / 2', minWidth: 0 }}>
         {clusteredBars.length ? (
-        <OrderFlowChart
-          key={`${preset.id}:${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
-          bars={clusteredBars}
-          seriesMode={seriesMode}
-          showVisibleProfile={showVisibleProfile}
-          showSessionProfiles={showSessionProfiles}
-          showVwap={showVwap}
-          showReferenceCandles={showReferenceCandles}
-          showOrderFlowPane={showOrderFlowControls}
-          showVolumePane={showVolumePane}
-          showDeltaSummary={showDeltaSummary}
-          deltaSummaryPaneHeightRatio={preset.deltaSummaryPaneHeightRatio}
-          chartHeight={chartHeight}
-          footerText={footerText}
-          theme={theme}
-          footprintOptions={footprintOptions}
-          volumeFootprintOptions={volumeFootprintOptions}
-          volumeProfileOptions={volumeProfileOptions}
-          sessionVolumeProfileOptions={sessionVolumeProfileOptions}
-          deltaSummaryOptions={deltaSummaryOptions}
-          candleSeriesOptions={preset.candleSeriesOptions}
-          candleHeatmapOptions={candleHeatmapOptions}
-          candleHeatmapAccessor={candleHeatmapAccessor}
-          volumeSeriesOptions={preset.volumeSeriesOptions}
-          initialViewState={preset.initialViewState}
-          autoFitRequestKey={autoFitRequestKey}
-          dataSourceKey={`${preset.id}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
-        />
-      ) : (
-        <section
-          style={{
-            padding: 24,
-            borderRadius: 16,
-            background: 'rgba(15, 23, 42, 0.75)',
-            border: '1px solid rgba(148, 163, 184, 0.12)',
-            color: '#cbd5e1',
-          }}
-        >
-          {dataStatus === 'loading'
-            ? 'Loading canonical aggregated data for this selection.'
-            : dataError
-              ? `Unable to load canonical aggregated data: ${dataError}`
-              : 'No stored market data is available for this selection yet.'}
-        </section>
+          <OrderFlowChart
+            key={`${preset.id}:${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
+            bars={clusteredBars}
+            seriesMode={seriesMode}
+            showVisibleProfile={showVisibleProfile}
+            showSessionProfiles={showSessionProfiles}
+            showVwap={showVwap}
+            showReferenceCandles={showReferenceCandles}
+            showOrderFlowPane={showOrderFlowControls}
+            showVolumePane={showVolumePane}
+            showDeltaSummary={showDeltaSummary}
+            deltaSummaryPaneHeightRatio={preset.deltaSummaryPaneHeightRatio}
+            chartHeight={chartHeight}
+            footerText={footerText}
+            theme={theme}
+            footprintOptions={footprintOptions}
+            volumeFootprintOptions={volumeFootprintOptions}
+            volumeProfileOptions={volumeProfileOptions}
+            sessionVolumeProfileOptions={sessionVolumeProfileOptions}
+            deltaSummaryOptions={deltaSummaryOptions}
+            candleSeriesOptions={preset.candleSeriesOptions}
+            candleHeatmapOptions={candleHeatmapOptions}
+            candleHeatmapAccessor={candleHeatmapAccessor}
+            volumeSeriesOptions={preset.volumeSeriesOptions}
+            initialViewState={preset.initialViewState}
+            autoFitRequestKey={autoFitRequestKey}
+            dataSourceKey={`${preset.id}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
+          />
+        ) : (
+          <section
+            style={{
+              padding: 24,
+              borderRadius: 16,
+              background: 'rgba(15, 23, 42, 0.75)',
+              border: '1px solid rgba(148, 163, 184, 0.12)',
+              color: '#cbd5e1',
+            }}
+          >
+            {dataStatus === 'loading'
+              ? 'Loading canonical aggregated data for this selection.'
+              : dataError
+                ? `Unable to load canonical aggregated data: ${dataError}`
+                : 'No stored market data is available for this selection yet.'}
+          </section>
         )}
       </main>
     </div>

@@ -16,9 +16,7 @@ Use `buildCandleHeatmapSeriesData()` to transform any OHLC-like bars plus a metr
 `lightweight-charts` candlestick data with per-bar colors.
 
 ```ts
-import {
-  buildCandleHeatmapSeriesData,
-} from 'lightweight-orderflow-charts';
+import { buildCandleHeatmapSeriesData } from 'lightweight-orderflow-charts';
 
 const candleData = buildCandleHeatmapSeriesData({
   bars,

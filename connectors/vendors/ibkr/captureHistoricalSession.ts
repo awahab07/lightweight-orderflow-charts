@@ -103,7 +103,9 @@ function buildProgress(input: {
   message: string;
   coverage: MinuteCoverageAssessment;
 }): ConnectorGrabProgress {
-  const currentBar = input.orderFlowBars.length ? input.orderFlowBars[input.orderFlowBars.length - 1] : null;
+  const currentBar = input.orderFlowBars.length
+    ? input.orderFlowBars[input.orderFlowBars.length - 1]
+    : null;
   const completedMinutes = input.includeTicks
     ? input.complete
       ? input.coverage.contiguousCoveredMinuteCount
@@ -136,7 +138,9 @@ function buildProgress(input: {
     },
     progressPct: sessionProgressPct(input.lastObservedTime),
     requiredMinutes: input.includeTicks ? input.coverage.requiredMinuteCount : null,
-    coveredMinutes: input.includeTicks ? input.coverage.coveredMinuteCount : input.marketBars.length,
+    coveredMinutes: input.includeTicks
+      ? input.coverage.coveredMinuteCount
+      : input.marketBars.length,
     contiguousCoveredMinutes: input.includeTicks
       ? input.coverage.contiguousCoveredMinuteCount
       : input.marketBars.length,
@@ -147,7 +151,7 @@ function buildProgress(input: {
     rawTradeTicksFetchedCurrentRun: input.rawTradeTicksFetchedCurrentRun,
     rawQuoteTicksFetchedCurrentRun: input.rawQuoteTicksFetchedCurrentRun,
     completedMinutes,
-    currentMinutePriceLevels: input.complete ? 0 : currentBar?.levels.length ?? 0,
+    currentMinutePriceLevels: input.complete ? 0 : (currentBar?.levels.length ?? 0),
     message: input.message,
   };
 }
@@ -242,13 +246,7 @@ function compareFiveMinuteBars(
       }
 
       const tolerance =
-        field === 'vwap'
-          ? 1e-3
-          : field === 'tradeCount'
-            ? 0
-            : field === 'volume'
-              ? 1e-6
-              : 1e-6;
+        field === 'vwap' ? 1e-3 : field === 'tradeCount' ? 0 : field === 'volume' ? 1e-6 : 1e-6;
 
       if (Math.abs(expected - actual) > tolerance) {
         mismatches.push({
@@ -294,7 +292,11 @@ export async function* captureHistoricalSession(
   const cacheHit = stored.marketBars.length > 0 || stored.orderFlowBars.length > 0;
   const instrument = await options.session.getInstrumentContext(options.symbol);
   const coverageOptions = resolveCoverageOptions(instrument);
-  const storedCoverage = assessMinuteCoverage(stored.marketBars, stored.orderFlowBars, coverageOptions);
+  const storedCoverage = assessMinuteCoverage(
+    stored.marketBars,
+    stored.orderFlowBars,
+    coverageOptions,
+  );
   const completeForRequestedMode = options.includeTicks
     ? stored.summary.complete && stored.summary.footprintAvailable && storedCoverage.isComplete
     : stored.summary.complete && stored.marketBars.length > 0;
@@ -327,7 +329,9 @@ export async function* captureHistoricalSession(
       message: completeForRequestedMode
         ? 'Loaded a complete vendor cache session.'
         : options.includeTicks
-          ? stored.summary.complete && stored.summary.footprintAvailable && !storedCoverage.isComplete
+          ? stored.summary.complete &&
+            stored.summary.footprintAvailable &&
+            !storedCoverage.isComplete
             ? 'Stored cache claims completion, but validated minute coverage is incomplete. Rebuilding from the earliest invalid minute.'
             : stored.summary.complete
               ? 'Loaded candle summaries. Refreshing from the vendor because footprint levels are missing.'
@@ -434,7 +438,11 @@ export async function* captureHistoricalSession(
       marketBars: persisted.marketBars,
       orderFlowBars: persisted.orderFlowBars,
       patches: [],
-      coverage: assessMinuteCoverage(persisted.marketBars, persisted.orderFlowBars, coverageOptions),
+      coverage: assessMinuteCoverage(
+        persisted.marketBars,
+        persisted.orderFlowBars,
+        coverageOptions,
+      ),
       progress,
       storedSummary: summaryFromStored(persisted),
       source: cacheHit ? 'cache+vendor' : 'vendor',

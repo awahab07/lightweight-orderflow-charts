@@ -7,7 +7,11 @@ export const STREAM_FRAMES_PER_BAR = Math.max(
   Math.floor(STREAM_BAR_DURATION_MS / STREAM_STEP_INTERVAL_MS),
 );
 
-function scaleNumber(value: number | undefined, progress: number, decimals = 2): number | undefined {
+function scaleNumber(
+  value: number | undefined,
+  progress: number,
+  decimals = 2,
+): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return undefined;
   }
@@ -27,7 +31,10 @@ function buildPartialBar(bar: OrderFlowBar, progress: number): OrderFlowBar {
         const totalVolume =
           scaleNumber(level.totalVolume ?? level.bidVolume + level.askVolume, boundedProgress) ??
           bidVolume + askVolume;
-        const delta = scaleNumber(level.delta ?? level.askVolume - level.bidVolume, boundedProgress);
+        const delta = scaleNumber(
+          level.delta ?? level.askVolume - level.bidVolume,
+          boundedProgress,
+        );
 
         return {
           ...level,
@@ -64,7 +71,10 @@ export function buildSyntheticStreamBars(
   }
 
   const boundedFrameIndex = Math.max(frameIndex, 0);
-  const completedBars = Math.min(Math.floor(boundedFrameIndex / STREAM_FRAMES_PER_BAR), bars.length);
+  const completedBars = Math.min(
+    Math.floor(boundedFrameIndex / STREAM_FRAMES_PER_BAR),
+    bars.length,
+  );
   const partialBarIndex = completedBars;
   const partialFrameProgress =
     partialBarIndex < bars.length

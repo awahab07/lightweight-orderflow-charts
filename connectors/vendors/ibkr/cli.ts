@@ -148,7 +148,8 @@ function buildFinalStatsBlock(params: {
       : progress.complete
         ? coverage.contiguousCoveredMinuteCount
         : Math.max(
-            coverage.contiguousCoveredMinuteCount - (params.snapshot.orderFlowBars.length > 0 ? 1 : 0),
+            coverage.contiguousCoveredMinuteCount -
+              (params.snapshot.orderFlowBars.length > 0 ? 1 : 0),
             0,
           );
   const resultLabel =
@@ -208,7 +209,11 @@ function parseArgs(argv: string[]): CliOptions | null {
         index += 1;
         break;
       case '--symbol':
-        defaults.symbols.push(String(next || '').trim().toUpperCase());
+        defaults.symbols.push(
+          String(next || '')
+            .trim()
+            .toUpperCase(),
+        );
         index += 1;
         break;
       case '--client-id':
@@ -289,7 +294,9 @@ function parseArgs(argv: string[]): CliOptions | null {
 
   if (
     defaults.clientId != null &&
-    (!Number.isFinite(defaults.clientId) || defaults.clientId < 0 || !Number.isInteger(defaults.clientId))
+    (!Number.isFinite(defaults.clientId) ||
+      defaults.clientId < 0 ||
+      !Number.isInteger(defaults.clientId))
   ) {
     throw new Error('A valid non-negative integer --client-id value is required.');
   }

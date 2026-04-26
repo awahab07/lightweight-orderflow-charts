@@ -38,9 +38,7 @@ function resolveRequiredMinuteTimes(marketBars: readonly AggregatedMarketBar[]):
   }
 
   return uniqueSortedTimes(
-    marketBars
-      .map((bar) => normalizeTime(bar.time))
-      .filter((time): time is number => time != null),
+    marketBars.map((bar) => normalizeTime(bar.time)).filter((time): time is number => time != null),
   );
 }
 
@@ -133,7 +131,7 @@ export function assessMinuteCoverage(
     lastCoveredTime,
     resumeRewriteTime:
       contiguousCoveredMinuteCount > 0
-        ? requiredMinuteTimes[Math.max(contiguousCoveredMinuteCount - 1, 0)] ?? null
+        ? (requiredMinuteTimes[Math.max(contiguousCoveredMinuteCount - 1, 0)] ?? null)
         : null,
     isComplete:
       requiredMinuteCount === 0 ||

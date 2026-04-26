@@ -82,7 +82,9 @@ function resolveLastBarTime(
   orderFlowBars: OrderFlowBar[],
 ): number | null {
   const marketBarTime = marketBars.length ? Number(marketBars[marketBars.length - 1].time) : null;
-  const orderFlowBarTime = orderFlowBars.length ? Number(orderFlowBars[orderFlowBars.length - 1].time) : null;
+  const orderFlowBarTime = orderFlowBars.length
+    ? Number(orderFlowBars[orderFlowBars.length - 1].time)
+    : null;
 
   if (marketBarTime == null) {
     return orderFlowBarTime;
@@ -155,7 +157,11 @@ export function persistAggregatedSession(
   const sessionDirectory = resolveSessionDirectory(input.dataRoot, input.symbol, input.sessionDate);
   const manifestPath = resolveManifestPath(input.dataRoot, input.symbol, input.sessionDate);
   const marketBarsPath = resolveMarketBarsPath(input.dataRoot, input.symbol, input.sessionDate);
-  const orderFlowBarsPath = resolveOrderFlowBarsPath(input.dataRoot, input.symbol, input.sessionDate);
+  const orderFlowBarsPath = resolveOrderFlowBarsPath(
+    input.dataRoot,
+    input.symbol,
+    input.sessionDate,
+  );
   const orderFlowBars = input.orderFlowBars ?? [];
   const lastBarTime = resolveLastBarTime(input.marketBars, orderFlowBars);
 
@@ -226,7 +232,13 @@ export function persistAggregatedSession(
   return {
     marketBars: input.marketBars,
     orderFlowBars,
-    summary: summarizeSession(input.symbol, input.sessionDate, input.marketBars, orderFlowBars, manifest),
+    summary: summarizeSession(
+      input.symbol,
+      input.sessionDate,
+      input.marketBars,
+      orderFlowBars,
+      manifest,
+    ),
     sessionDirectory,
   };
 }
