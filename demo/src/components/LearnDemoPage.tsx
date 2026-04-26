@@ -45,7 +45,7 @@ import {
   buildDemoCandleHeatmapScores,
   resolveDemoCandleHeatmapScore,
 } from '../lib/candleHeatmapMetric';
-import { readLearnDemoUrlState, writeLearnDemoUrlState } from '../lib/learnDemoUrlState';
+import { readExploreDemoUrlState, writeExploreDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
   mergeCandleHeatmapOptions,
@@ -124,9 +124,9 @@ function MarkdownView({ markdown }: { markdown: string }) {
   );
 }
 
-export function LearnDemoPage() {
+export function ExploreDemoPage() {
   const initialUrlState = useMemo(
-    () => (typeof window === 'undefined' ? null : readLearnDemoUrlState(window.location.hash)),
+    () => (typeof window === 'undefined' ? null : readExploreDemoUrlState(window.location.hash)),
     [],
   );
   const initialPreset = useMemo(
@@ -490,7 +490,7 @@ export function LearnDemoPage() {
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      writeLearnDemoUrlState({
+      writeExploreDemoUrlState({
         presetId,
         themeId,
         symbol,
@@ -703,7 +703,7 @@ export function LearnDemoPage() {
 
       {bars.length ? (
         <OrderFlowChart
-          key={`learn-preset-${presetId}-${themeId}`}
+          key={`explore-preset-${presetId}-${themeId}`}
           bars={bars}
           chartHeight={900}
           footerText={footerText}

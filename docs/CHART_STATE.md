@@ -90,5 +90,5 @@ If a host wants TradingView-style vertical refitting after restore, pair restore
 after the restore settles. That keeps the persistence layer reusable while leaving auto-fit policy
 under the host application's control.
 
-The learn-mode demo in this repository keeps chart-state persistence separate from the auto-fit mode
+The Explore demo in this repository keeps chart-state persistence separate from the auto-fit mode
 for exactly that reason.

@@ -93,7 +93,7 @@ The React layer should remain deliberately small:
 Owns product education and validation surfaces:
 
 - `demo/src/content`
-  Learn-mode concept presets and lesson content
+  Explore presets and lesson content
 - `demo/src/fixtures`
   Playground-oriented fixture data and historical styling references
 - `demo/src/lib`
@@ -116,7 +116,7 @@ When adding a new study:
    Keep rendering concerns isolated from data-fetch concerns.
 5. Publish a preset if the feature needs a strong starting point.
 6. Add tests close to the logic that changed.
-7. Add learn-mode coverage only if the feature benefits from explanation or visual validation.
+7. Add Explore coverage only if the feature benefits from explanation or visual validation.
 
 ## Design Principles
 

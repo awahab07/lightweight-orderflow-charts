@@ -62,7 +62,7 @@ import {
   buildDemoCandleHeatmapScores,
   resolveDemoCandleHeatmapScore,
 } from '../lib/candleHeatmapMetric';
-import { readLearnDemoUrlState } from '../lib/learnDemoUrlState';
+import { readExploreDemoUrlState } from '../lib/learnDemoUrlState';
 import {
   mergeDeltaSummaryStudyOptions,
   mergeFootprintStudyOptions,
@@ -646,7 +646,7 @@ function ConnectDialog({
 
 export function ConnectPage() {
   const initialUrlState = useMemo(
-    () => (typeof window === 'undefined' ? null : readLearnDemoUrlState(window.location.hash)),
+    () => (typeof window === 'undefined' ? null : readExploreDemoUrlState(window.location.hash)),
     [],
   );
   const initialPreset = useMemo(

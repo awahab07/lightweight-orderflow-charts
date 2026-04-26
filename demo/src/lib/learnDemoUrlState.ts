@@ -3,16 +3,6 @@ import {
   type ChartViewStateSnapshot,
 } from 'lightweight-orderflow-charts';
 
-export interface LearnDemoUrlState {
-  presetId?: string;
-  themeId?: string;
-  symbol?: string;
-  sessionDate?: string;
-  interval?: string;
-  mintick?: number;
-  chartView?: ChartViewStateSnapshot | null;
-}
-
 function readHashSearchParams(hash: string): URLSearchParams {
   const normalized = hash.replace(/^#/, '');
   const [, search = ''] = normalized.split('?');
@@ -42,7 +32,17 @@ function decodeBase64Url(value: string): string | null {
   }
 }
 
-export function readLearnDemoUrlState(hash: string): LearnDemoUrlState {
+export interface ExploreDemoUrlState {
+  presetId?: string;
+  themeId?: string;
+  symbol?: string;
+  sessionDate?: string;
+  interval?: string;
+  mintick?: number;
+  chartView?: ChartViewStateSnapshot | null;
+}
+
+export function readExploreDemoUrlState(hash: string): ExploreDemoUrlState {
   const params = readHashSearchParams(hash);
   const viewValue = params.get('view');
   let chartView: ChartViewStateSnapshot | null = null;
@@ -73,7 +73,7 @@ export function readLearnDemoUrlState(hash: string): LearnDemoUrlState {
   };
 }
 
-export function writeLearnDemoUrlState(state: LearnDemoUrlState): void {
+export function writeExploreDemoUrlState(state: ExploreDemoUrlState): void {
   if (typeof window === 'undefined') {
     return;
   }
@@ -108,7 +108,7 @@ export function writeLearnDemoUrlState(state: LearnDemoUrlState): void {
     params.set('view', encodeBase64Url(JSON.stringify(state.chartView)));
   }
 
-  const nextHash = params.toString() ? `#/?${params.toString()}` : '#/';
+  const nextHash = params.toString() ? `#/explore?${params.toString()}` : '#/explore';
   const nextUrl = `${window.location.pathname}${window.location.search}${nextHash}`;
   window.history.replaceState(null, '', nextUrl);
 }

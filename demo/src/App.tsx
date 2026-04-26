@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 import { ConnectPage } from './components/ConnectPage';
-import { LearnDemoPage } from './components/LearnDemoPage';
+import { ExploreDemoPage } from './components/LearnDemoPage';
 import { PlaygroundPage } from './components/PlaygroundPage';
 
-type DemoRoute = 'learn' | 'playground' | 'connect';
+type DemoRoute = 'explore' | 'playground' | 'connect';
 
 function parseRoute(hash: string): DemoRoute {
   const normalized = hash.replace(/^#\/?/, '').split('?')[0].trim().toLowerCase();
@@ -16,12 +16,12 @@ function parseRoute(hash: string): DemoRoute {
     return 'connect';
   }
 
-  return 'learn';
+  return 'explore';
 }
 
 export function App() {
   const [route, setRoute] = useState<DemoRoute>(() =>
-    typeof window === 'undefined' ? 'learn' : parseRoute(window.location.hash),
+    typeof window === 'undefined' ? 'explore' : parseRoute(window.location.hash),
   );
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function App() {
     }
 
     if (!window.location.hash) {
-      window.location.hash = '/';
+      window.location.hash = '/explore';
     }
 
     const handleHashChange = () => {
@@ -61,8 +61,11 @@ export function App() {
             Reusable order-flow charts and studies for React and lightweight-charts.
           </p>
           <nav style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-            <a href="#/" style={{ color: route === 'learn' ? '#f8fafc' : '#93c5fd', textDecoration: 'none' }}>
-              Learn
+            <a
+              href="#/explore"
+              style={{ color: route === 'explore' ? '#f8fafc' : '#93c5fd', textDecoration: 'none' }}
+            >
+              Explore
             </a>
             <a
               href="#/connect"
@@ -87,7 +90,7 @@ export function App() {
         ) : route === 'connect' ? (
           <ConnectPage />
         ) : (
-          <LearnDemoPage />
+          <ExploreDemoPage />
         )}
       </div>
     </div>

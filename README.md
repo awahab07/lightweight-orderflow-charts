@@ -463,7 +463,7 @@ function OrderFlowPane({ bars, chart }: { bars: OrderFlowBar[]; chart: IChartApi
 
 The repo contains three demo entry points:
 
-- Learn mode at `#/`
+- Explore at `#/explore`
   Educational kitchen sink with six controls: `Preset`, `Theme`, `Date`, `Symbol`, `Interval`,
   and `Lessons`
 - Connect at `#/connect`
@@ -472,7 +472,7 @@ The repo contains three demo entry points:
 - Playground at `#/playground`
   Advanced view for trying lower-level fixtures and renderer combinations
 
-Learn mode is built around conceptual presets such as:
+Explore is built around conceptual presets such as:
 
 - `Ladder Fundamentals`
 - `Delta-First Read`
@@ -505,7 +505,7 @@ be re-skinned without changing the underlying study composition.
 - `src/react`
   Thin lifecycle wrappers around the core renderers
 - `demo/src/content`
-  Learn-mode concept presets, lessons, and educational mappings
+  Explore presets, lessons, and educational mappings
 - `demo/src/fixtures`
   Playground and test-oriented fixture data
 - `connectors/`
@@ -537,7 +537,7 @@ When adding a new study or enhancing an existing one:
 4. Publish a reusable preset under `src/presets`
 5. Expose the API from `src/index.ts` and `src/react.ts` when needed
 6. Add a focused test under `tests/unit` or `tests/integration`
-7. Add a learn-mode concept or lesson only when it meaningfully teaches the feature
+7. Add an Explore preset or lesson only when it meaningfully teaches the feature
 
 ## Development
 
