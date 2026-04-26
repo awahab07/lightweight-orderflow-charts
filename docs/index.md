@@ -31,6 +31,8 @@ This `docs/` tree is intentionally plain Markdown so it can be:
   Concept notes derived from the research material maintained outside the publishable repo
 - `ATTRIBUTION.md`
   TradingView attribution requirements inherited from `lightweight-charts`
+- `RELEASING.md`
+  GitHub Pages, semver tagging, npm provenance, and first-publish guidance
 
 ## Publishing Notes
 

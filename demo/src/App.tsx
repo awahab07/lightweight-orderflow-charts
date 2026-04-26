@@ -5,6 +5,7 @@ import { ExploreDemoPage } from './components/LearnDemoPage';
 import { PlaygroundPage } from './components/PlaygroundPage';
 
 type DemoRoute = 'explore' | 'playground' | 'connect';
+const CONNECT_ROUTE_ENABLED = import.meta.env.VITE_DEMO_ENABLE_CONNECT !== 'false';
 
 function parseRoute(hash: string): DemoRoute {
   const normalized = hash.replace(/^#\/?/, '').split('?')[0].trim().toLowerCase();
@@ -12,7 +13,7 @@ function parseRoute(hash: string): DemoRoute {
     return 'playground';
   }
 
-  if (normalized === 'connect') {
+  if (normalized === 'connect' && CONNECT_ROUTE_ENABLED) {
     return 'connect';
   }
 
@@ -67,12 +68,17 @@ export function App() {
             >
               Explore
             </a>
-            <a
-              href="#/connect"
-              style={{ color: route === 'connect' ? '#f8fafc' : '#93c5fd', textDecoration: 'none' }}
-            >
-              Connect
-            </a>
+            {CONNECT_ROUTE_ENABLED ? (
+              <a
+                href="#/connect"
+                style={{
+                  color: route === 'connect' ? '#f8fafc' : '#93c5fd',
+                  textDecoration: 'none',
+                }}
+              >
+                Connect
+              </a>
+            ) : null}
             <a
               href="#/playground"
               style={{

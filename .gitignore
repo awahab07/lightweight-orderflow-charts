@@ -1,11 +1,15 @@
 node_modules/
 dist/
 demo-dist/
+docs-dist/
+site/
+.site-tmp/
 .DS_Store
 .agent/
 coverage/
 .vite/
 .cache/
+.playwright-cli/
 *.log
 *.tsbuildinfo
 .env
@@ -17,3 +21,6 @@ test-results/
 data/**/*.partial
 data/**/trades-meta.json
 connectors/vendors/**/data/
+
+*storybook.log
+storybook-static

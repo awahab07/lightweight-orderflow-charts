@@ -2,6 +2,14 @@
   "name": "lightweight-orderflow-charts",
   "version": "0.1.0",
   "description": "Reusable order-flow charts and studies for lightweight-charts and React.",
+  "homepage": "https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/awahab07/lightweight-orderflow-charts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/awahab07/lightweight-orderflow-charts/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -37,11 +45,19 @@
     "demo": "vite --config demo/vite.config.ts",
     "demo:build": "vite build --config demo/vite.config.ts",
     "demo:preview": "vite preview --config demo/vite.config.ts",
+    "docs": "vite --config docs-site/vite.config.ts",
+    "docs:build": "vite build --config docs-site/vite.config.ts",
+    "docs:preview": "vite preview --config docs-site/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run format:check && npm run typecheck && npm run test && npm run build",
-    "ci": "npm run check && npm run demo:build"
+    "ci": "npm run check && npm run docs:build && npm run build-storybook && npm run demo:build",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "site:build": "node scripts/build-pages.mjs",
+    "package:dry-run": "npm pack --dry-run",
+    "release:check": "npm run ci && npm run package:dry-run"
   },
   "keywords": [
     "footprint",
@@ -89,6 +105,10 @@
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.2",
+    "storybook": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
+    "@storybook/addon-a11y": "^10.3.5",
+    "@storybook/addon-docs": "^10.3.5"
   }
 }

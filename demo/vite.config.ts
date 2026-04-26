@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   root: fileURLToPath(new URL('./', import.meta.url)),
+  base: process.env.VITE_DEMO_BASE_PATH ?? '/',
   plugins: [react()],
   resolve: {
     alias: [

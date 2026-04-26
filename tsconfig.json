@@ -20,6 +20,17 @@
     },
     "types": ["node", "vite/client", "vitest/globals"]
   },
-  "include": ["src", "demo", "connectors", "tests", "tsup.config.ts", "vitest.config.ts"],
+  "include": [
+    ".storybook",
+    "src",
+    "stories",
+    "docs-site",
+    "demo",
+    "connectors",
+    "scripts",
+    "tests",
+    "tsup.config.ts",
+    "vitest.config.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }

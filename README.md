@@ -28,6 +28,16 @@ profiles, VWAP, and aligned order-flow subcharts.
 - Core API: `lightweight-orderflow-charts`
 - React API: `lightweight-orderflow-charts/react`
 
+## Public Links
+
+- Docs: [awahab07.github.io/lightweight-orderflow-charts/latest/docs](https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/)
+- Storybook: [awahab07.github.io/lightweight-orderflow-charts/latest/storybook](https://awahab07.github.io/lightweight-orderflow-charts/latest/storybook/)
+- Demo: [awahab07.github.io/lightweight-orderflow-charts/latest/demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
+- Demo data: [awahab07.github.io/lightweight-orderflow-charts/latest/data](https://awahab07.github.io/lightweight-orderflow-charts/latest/data/)
+
+The served fixture data is locally crafted for visualization and validation. It is not a live feed
+and may not represent complete market conditions.
+
 ## Installation
 
 ```bash
@@ -64,6 +74,16 @@ Common local commands:
   Verifies formatting without writing changes
 - `npm run ci`
   Runs the full repository verification flow used by CI
+- `npm run docs`
+  Starts the public docs landing app from `docs-site/`
+- `npm run build-storybook`
+  Builds the package-focused Storybook static output
+- `npm run site:build`
+  Builds the GitHub Pages layout under `site/latest/{docs,storybook,demo,data}`
+- `npm run package:dry-run`
+  Shows the exact npm tarball contents without publishing
+- `npm run release:check`
+  Runs the release verification bundle, including npm package dry-run output
 
 See `CONTRIBUTING.md` for the short contributor workflow.
 
@@ -94,6 +114,8 @@ See `CONTRIBUTING.md` for the short contributor workflow.
   Reusable viewport snapshot and restore helpers for URL sync or other persistence layers
 - `docs/ATTRIBUTION.md`
   TradingView attribution and notice guidance inherited from `lightweight-charts`
+- `docs/RELEASING.md`
+  GitHub Pages, npm provenance, semver tagging, and first-publish guidance
 
 ## Core Data Contract
 
@@ -163,7 +185,7 @@ ticks are requested, while Polygon.io / Massive REST on the current Basic plan o
 
 | Study                            | Best Input                           | Notes                                                                                                            |
 | -------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Candle Heatmap                   | OHLC bars plus one metric per bar    | Best when the host already has a normalized score such as probability, percentile, or model confidence          |
+| Candle Heatmap                   | OHLC bars plus one metric per bar    | Best when the host already has a normalized score such as probability, percentile, or model confidence           |
 | Footprint                        | Price-level bid/ask volume per bar   | Primary view for ladder-level order-flow analysis                                                                |
 | Volume Footprint                 | Price-level total volume per bar     | Useful when total participation matters more than aggressor side                                                 |
 | Visible / Session Volume Profile | Price-level volume across a scope    | Built from normalized bars and aggregated by price                                                               |
@@ -195,9 +217,7 @@ The published presets now include:
 ### Candle Heatmap Example
 
 ```ts
-import {
-  buildCandleHeatmapSeriesData,
-} from 'lightweight-orderflow-charts';
+import { buildCandleHeatmapSeriesData } from 'lightweight-orderflow-charts';
 
 const candleData = buildCandleHeatmapSeriesData({
   bars,
@@ -466,8 +486,8 @@ The repo contains three demo entry points:
 - Explore at `#/explore`
   Educational kitchen sink with five controls: `Preset`, `Theme`, `Date`, `Symbol`, and `Interval`
 - Connect at `#/connect`
-  Demo-only direct vendor flow with `Preset`, `Theme`, `Date`, `Symbol`, `Interval`, `Mintick`,
-  plus icon actions for save, direct retrieval, and connector status
+  Local-development-only direct vendor flow with cache-first loading, streaming progress, and
+  connector status
 - Playground at `#/playground`
   Advanced view for trying lower-level fixtures and renderer combinations
 
@@ -484,6 +504,9 @@ Explore is built around conceptual presets such as:
 
 The theme selector applies one of the published `ORDER_FLOW_THEME_PRESETS`, so the same concept can
 be re-skinned without changing the underlying study composition.
+
+The published GitHub Pages demo intentionally omits the `Connect` route because it depends on the
+local bridge process and vendor credentials.
 
 ## Source Layout
 
@@ -544,7 +567,10 @@ When adding a new study or enhancing an existing one:
 npm run typecheck
 npm run test
 npm run build
+npm run docs:build
+npm run build-storybook
 npm run demo
 npm run demo:connect-bridge
 npm run demo:build
+npm run site:build
 ```
