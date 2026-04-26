@@ -1,0 +1,5 @@
+**/instrument.json
+**/quotes-meta.json
+**/quotes.ndjson.gz
+**/ticks-manifest.json
+**/trades-meta.json

@@ -1,9 +1,14 @@
-import type { AggregatedMarketBar, InstrumentContext, OrderFlowBar } from 'lightweight-orderflow-charts';
+import type {
+  AggregatedMarketBar,
+  InstrumentContext,
+  OrderFlowBar,
+} from 'lightweight-orderflow-charts';
 import {
   aggregateMarketBarsByInterval,
   aggregateOrderFlowBarsByInterval,
   buildAggregatedMarketBarsFromOrderFlowBars,
 } from 'lightweight-orderflow-charts';
+import instrumentCatalog from '../../../data/market/instruments.json';
 
 import {
   buildSyntheticOrderFlowFromBars,
@@ -25,7 +30,6 @@ interface MarketInstrumentRecord {
   longName?: string;
 }
 
-const instrumentModules = import.meta.glob('../../../data/market/*/instrument.json', { eager: true });
 const minuteBarModules = import.meta.glob('../../../data/market/*/*/bars-1m.json');
 const minuteOrderFlowModules = import.meta.glob('../../../data/market/*/*/orderflow-1m.json');
 
@@ -37,6 +41,7 @@ const marketBars1mCache = new Map<string, Promise<AggregatedMarketBar[]>>();
 const orderFlowBars1mCache = new Map<string, Promise<OrderFlowBar[]>>();
 
 type JsonModule<T> = { default: T } | T;
+const marketInstrumentCatalog = instrumentCatalog as MarketInstrumentRecord[];
 
 export function intervalToSeconds(interval: BarInterval): number {
   switch (interval) {
@@ -62,14 +67,8 @@ function derivePricePrecision(tickSize: number): number {
   return decimals.length;
 }
 
-for (const [pathname, moduleValue] of Object.entries(instrumentModules)) {
-  const match = pathname.match(/data\/market\/([^/]+)\/instrument\.json$/);
-  if (!match) {
-    continue;
-  }
-
-  const symbol = match[1].toUpperCase() as SymbolCode;
-  instruments.set(symbol, (moduleValue as { default: MarketInstrumentRecord }).default);
+for (const instrument of marketInstrumentCatalog) {
+  instruments.set(instrument.symbol.toUpperCase() as SymbolCode, instrument);
 }
 
 for (const [pathname, moduleLoader] of Object.entries(minuteBarModules)) {
@@ -150,7 +149,10 @@ async function loadJsonModule<T>(loader: () => Promise<unknown>): Promise<T> {
   return moduleValue as T;
 }
 
-async function loadMarketBars1m(symbol: SymbolCode, sessionDate: string): Promise<AggregatedMarketBar[]> {
+async function loadMarketBars1m(
+  symbol: SymbolCode,
+  sessionDate: string,
+): Promise<AggregatedMarketBar[]> {
   const sessionKey = `${symbol}:${sessionDate}`;
   if (!marketBars1mCache.has(sessionKey)) {
     marketBars1mCache.set(
@@ -174,7 +176,10 @@ async function loadMarketBars1m(symbol: SymbolCode, sessionDate: string): Promis
   return (await marketBars1mCache.get(sessionKey)) ?? [];
 }
 
-async function loadOrderFlowBars1m(symbol: SymbolCode, sessionDate: string): Promise<OrderFlowBar[]> {
+async function loadOrderFlowBars1m(
+  symbol: SymbolCode,
+  sessionDate: string,
+): Promise<OrderFlowBar[]> {
   const sessionKey = `${symbol}:${sessionDate}`;
   if (!orderFlowBars1mCache.has(sessionKey)) {
     orderFlowBars1mCache.set(

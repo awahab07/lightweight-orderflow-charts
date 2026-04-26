@@ -9,7 +9,7 @@ broker-neutral `1m` artifacts that can drive both footprint charts and bar-based
 
 Canonical checked-in fixtures:
 
-- `data/market/<symbol>/instrument.json`
+- `data/market/instruments.json`
 - `data/market/<symbol>/<session-date>/bars-1m.json`
 - `data/market/<symbol>/<session-date>/orderflow-1m.json`
 - `data/market/<symbol>/<session-date>/session-manifest.json`
@@ -23,6 +23,11 @@ Local vendor cache:
 
 Legacy raw tick files may still exist during migration, but they are no longer the preferred
 canonical contract.
+
+The source-managed `data/` tree intentionally ignores per-session raw metadata such as
+`instrument.json`, `quotes-meta.json`, `quotes.ndjson.gz`, `ticks-manifest.json`, and
+`trades-meta.json`. Those files remain valid local cache artifacts under connector-owned vendor
+directories, but they are not part of the checked-in demo dataset.
 
 For candle-summary-only vendors, `orderflow-1m.json` is intentionally absent and the manifest records
 `orderFlowAvailable: false`.
