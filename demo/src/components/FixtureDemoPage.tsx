@@ -46,14 +46,16 @@ import {
 
 import { OrderFlowChart, type SeriesMode } from './OrderFlowChart';
 
+const PLAYGROUND_CHART_HEIGHT = 900;
+
 const SIDEBAR_SURFACE_STYLE: CSSProperties = {
   display: 'grid',
   gap: 12,
   gridColumn: '2 / 3',
   gridRow: '1 / 2',
-  maxHeight: 'calc(100vh - 32px)',
   overflowY: 'auto',
-  padding: 14,
+  overflowX: 'hidden',
+  padding: 12,
   borderRadius: 16,
   background:
     'linear-gradient(180deg, rgba(11, 18, 32, 0.98) 0%, rgba(10, 16, 30, 0.98) 100%)',
@@ -61,12 +63,13 @@ const SIDEBAR_SURFACE_STYLE: CSSProperties = {
   boxShadow: '0 20px 48px rgba(2, 6, 23, 0.36)',
   position: 'sticky',
   top: 16,
+  boxSizing: 'border-box',
 };
 
 const SIDEBAR_SECTION_STYLE: CSSProperties = {
   display: 'grid',
   gap: 10,
-  padding: 12,
+  padding: 10,
   borderRadius: 14,
   background: 'rgba(15, 23, 42, 0.52)',
   border: '1px solid rgba(148, 163, 184, 0.1)',
@@ -85,11 +88,11 @@ const SIDEBAR_FIELD_ROW_STYLE: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  gap: 8,
+  gap: 6,
 };
 
 const SIDEBAR_LABEL_STYLE: CSSProperties = {
-  flex: '0 0 70px',
+  flex: '0 0 66px',
   color: '#94a3b8',
   fontSize: 12,
   fontWeight: 700,
@@ -99,7 +102,7 @@ const SIDEBAR_LABEL_STYLE: CSSProperties = {
 };
 
 const SIDEBAR_SUBLABEL_STYLE: CSSProperties = {
-  flex: '0 0 96px',
+  flex: '0 0 72px',
   color: '#e2e8f0',
   fontSize: 14,
   fontWeight: 500,
@@ -107,7 +110,7 @@ const SIDEBAR_SUBLABEL_STYLE: CSSProperties = {
 };
 
 const SIDEBAR_CONTROL_STYLE: CSSProperties = {
-  minWidth: 102,
+  minWidth: 0,
   background: 'rgba(15, 23, 42, 0.92)',
   color: '#f8fafc',
   border: '1px solid rgba(148, 163, 184, 0.18)',
@@ -115,20 +118,21 @@ const SIDEBAR_CONTROL_STYLE: CSSProperties = {
   padding: '7px 10px',
   fontSize: 13,
   boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+  boxSizing: 'border-box',
 };
 
 const SIDEBAR_COLOR_TEXT_STYLE: CSSProperties = {
   ...SIDEBAR_CONTROL_STYLE,
   minWidth: 0,
-  width: 84,
+  width: 70,
   fontFamily:
     'ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   fontSize: 12,
 };
 
 const SIDEBAR_COLOR_SWATCH_STYLE: CSSProperties = {
-  width: 38,
-  height: 34,
+  width: 30,
+  height: 30,
   padding: 2,
   borderRadius: 10,
   border: '1px solid rgba(148, 163, 184, 0.18)',
@@ -235,7 +239,7 @@ function ColorControl({
   onChange: (next: string) => void;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <input
         type="color"
         aria-label={`${value} color picker`}
@@ -532,7 +536,6 @@ export function FixtureDemoPage() {
     [candleHeatmapScores],
   );
   const theme = preset.theme;
-  const chartHeight = preset.chartHeight;
 
   const footerText = useMemo(
     () =>
@@ -643,6 +646,15 @@ export function FixtureDemoPage() {
   const volumeProfileOptions = preset.volumeProfileOptions;
   const sessionVolumeProfileOptions = preset.sessionVolumeProfileOptions;
   const deltaSummaryOptions = preset.deltaSummaryOptions;
+  const chartHeight = PLAYGROUND_CHART_HEIGHT;
+  const sidebarStyle = useMemo<CSSProperties>(
+    () => ({
+      ...SIDEBAR_SURFACE_STYLE,
+      height: chartHeight,
+      maxHeight: chartHeight,
+    }),
+    [chartHeight],
+  );
 
   return (
     <div
@@ -653,13 +665,13 @@ export function FixtureDemoPage() {
         alignItems: 'start',
       }}
     >
-      <section style={SIDEBAR_SURFACE_STYLE}>
+      <section style={sidebarStyle}>
         <SidebarSection title="Setup">
           <FieldRow label="Preset">
             <SelectControl
               value={presetId}
               onChange={(event) => setPresetId(event.target.value as FixturePresetId)}
-              style={{ width: 138 }}
+              style={{ width: 116 }}
             >
               {Object.values(FIXTURE_PRESETS).map((entry) => (
                 <option key={entry.id} value={entry.id}>
@@ -673,7 +685,7 @@ export function FixtureDemoPage() {
             <SelectControl
               value={symbol}
               onChange={(event) => setSymbol(event.target.value as SymbolCode)}
-              style={{ width: 96 }}
+              style={{ width: 78 }}
             >
               {AVAILABLE_SYMBOLS.map((entry) => (
                 <option key={entry} value={entry}>
@@ -687,7 +699,7 @@ export function FixtureDemoPage() {
             <SelectControl
               value={sessionDate}
               onChange={(event) => setSessionDate(event.target.value)}
-              style={{ width: 132 }}
+              style={{ width: 108 }}
             >
               {availableDates.map((entry) => (
                 <option key={entry} value={entry}>
@@ -701,7 +713,7 @@ export function FixtureDemoPage() {
             <SelectControl
               value={interval}
               onChange={(event) => setInterval(event.target.value as BarInterval)}
-              style={{ width: 86 }}
+              style={{ width: 72 }}
             >
               {AVAILABLE_INTERVALS.map((entry) => (
                 <option key={entry} value={entry}>
@@ -715,7 +727,7 @@ export function FixtureDemoPage() {
             <SelectControl
               value={seriesMode}
               onChange={(event) => setSeriesMode(event.target.value as SeriesMode)}
-              style={{ width: 138 }}
+              style={{ width: 116 }}
             >
               <option value="footprint">Footprint</option>
               <option value="volume-footprint">Volume Footprint</option>
@@ -761,7 +773,7 @@ export function FixtureDemoPage() {
                 onChange={(event) =>
                   setCandlePosition(event.target.value as FootprintCandlePosition)
                 }
-                style={{ width: 96 }}
+                style={{ width: 84 }}
               >
                 <option value="left">Left</option>
                 <option value="middle">Middle</option>
@@ -774,7 +786,7 @@ export function FixtureDemoPage() {
             <SelectControl
               value={String(effectiveMintick)}
               onChange={(event) => setMintick(Number(event.target.value))}
-              style={{ width: 96 }}
+              style={{ width: 84 }}
             >
               {mintickOptions.map((entry) => (
                 <option key={entry} value={entry}>
@@ -822,7 +834,7 @@ export function FixtureDemoPage() {
               <SelectControl
                 value={heatmapShader}
                 onChange={(event) => setHeatmapShader(event.target.value as CandleHeatmapShader)}
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               >
                 <option value="alpha">Alpha</option>
                 <option value="hue">Hue</option>
@@ -833,7 +845,7 @@ export function FixtureDemoPage() {
               <SelectControl
                 value={String(heatmapNoOfShades)}
                 onChange={(event) => setHeatmapNoOfShades(Number(event.target.value))}
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               >
                 <option value="0">Continuous</option>
                 <option value="1">1</option>
@@ -850,7 +862,7 @@ export function FixtureDemoPage() {
                 inputMode="decimal"
                 value={heatmapMin}
                 onChange={(event) => setHeatmapMin(normalizeDecimalInput(event.target.value))}
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               />
             </FieldRow>
 
@@ -863,7 +875,7 @@ export function FixtureDemoPage() {
                   setHeatmapMinShadeThreshold(normalizeDecimalInput(event.target.value))
                 }
                 placeholder="off"
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               />
             </FieldRow>
 
@@ -873,7 +885,7 @@ export function FixtureDemoPage() {
                 inputMode="decimal"
                 value={heatmapThreshold}
                 onChange={(event) => setHeatmapThreshold(normalizeDecimalInput(event.target.value))}
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               />
             </FieldRow>
 
@@ -886,7 +898,7 @@ export function FixtureDemoPage() {
                   setHeatmapMaxShadeThreshold(normalizeDecimalInput(event.target.value))
                 }
                 placeholder="off"
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               />
             </FieldRow>
 
@@ -896,7 +908,7 @@ export function FixtureDemoPage() {
                 inputMode="decimal"
                 value={heatmapMax}
                 onChange={(event) => setHeatmapMax(normalizeDecimalInput(event.target.value))}
-                style={{ width: 96 }}
+                style={{ width: 82 }}
               />
             </FieldRow>
           </SidebarSection>
