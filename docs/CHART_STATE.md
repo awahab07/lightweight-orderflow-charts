@@ -38,7 +38,7 @@ The snapshot is JSON-safe, which means consumers can:
 - store it in the URL
 - write it to local storage
 - persist it in a workspace or server record
-- attach it to bug reports or shared lesson links
+- attach it to bug reports or shared Explore links
 
 ## Capture Example
 

@@ -1,6 +1,6 @@
 # Market Data Fixtures
 
-This directory stores source-managed market data used by the demo, lessons, and automated tests.
+This directory stores source-managed market data used by the demo, Explore presets, and automated tests.
 
 ## Coverage
 

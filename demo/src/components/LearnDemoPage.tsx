@@ -25,7 +25,6 @@ import {
   getThemePreset,
   THEME_PRESETS,
 } from '../content/learnCatalog';
-import { getLesson, LESSONS } from '../content/lessons';
 import {
   AVAILABLE_INTERVALS,
   AVAILABLE_SYMBOLS,
@@ -79,51 +78,6 @@ function formatMintick(value: number): string {
   return value.toFixed(Math.max(2, inferPricePrecision(value)));
 }
 
-function MarkdownView({ markdown }: { markdown: string }) {
-  const blocks = markdown
-    .split(/\n\s*\n/)
-    .map((block) => block.trim())
-    .filter(Boolean);
-
-  return (
-    <div style={{ display: 'grid', gap: 14, color: '#cbd5e1', lineHeight: 1.6 }}>
-      {blocks.map((block, index) => {
-        if (block.startsWith('# ')) {
-          return (
-            <h2 key={index} style={{ margin: 0, color: '#f8fafc', fontSize: 24 }}>
-              {block.slice(2)}
-            </h2>
-          );
-        }
-
-        if (block.startsWith('## ')) {
-          return (
-            <h3 key={index} style={{ margin: 0, color: '#f8fafc', fontSize: 18 }}>
-              {block.slice(3)}
-            </h3>
-          );
-        }
-
-        if (block.split('\n').every((line) => line.startsWith('- '))) {
-          return (
-            <ul key={index} style={{ margin: 0, paddingLeft: 20 }}>
-              {block.split('\n').map((line) => (
-                <li key={line}>{line.slice(2)}</li>
-              ))}
-            </ul>
-          );
-        }
-
-        return (
-          <p key={index} style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-            {block}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 export function ExploreDemoPage() {
   const initialUrlState = useMemo(
     () => (typeof window === 'undefined' ? null : readExploreDemoUrlState(window.location.hash)),
@@ -160,8 +114,6 @@ export function ExploreDemoPage() {
   const [mintick, setMintick] = useState<number | null>(
     initialUrlState?.mintick ?? initialPreset.defaultMintick ?? null,
   );
-  const [lessonsOpen, setLessonsOpen] = useState(false);
-  const [readingLessonId, setReadingLessonId] = useState<string | null>(null);
   const [restoredViewState, setRestoredViewState] = useState<ChartViewStateSnapshot | null>(
     initialUrlState?.chartView ?? initialPreset.defaultViewState ?? null,
   );
@@ -278,14 +230,6 @@ export function ExploreDemoPage() {
       intervalSeconds: interval === '5m' ? 300 : 60,
     });
   }, [deltaSourceBars, interval, lowerDeltaSourceBars, preset.showVolumeDeltaPivot]);
-  const visibleLessons = useMemo(
-    () =>
-      LESSONS.filter((lesson) => preset.lessonIds.includes(lesson.id)).length
-        ? LESSONS.filter((lesson) => preset.lessonIds.includes(lesson.id))
-        : LESSONS,
-    [preset.lessonIds],
-  );
-  const readingLesson = readingLessonId ? getLesson(readingLessonId) : null;
   const themedFootprintOptions = useMemo(
     () => mergeFootprintStudyOptions(preset.footprintOptions, themePreset.footprint),
     [preset.footprintOptions, themePreset.footprint],
@@ -583,121 +527,32 @@ export function ExploreDemoPage() {
           setViewState(nextViewState);
         }}
         rightActions={
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button
-              onClick={() => {
-                if (loadedBars.length > 0) {
-                  setStreamEnabled((current) => !current);
-                }
-              }}
-              disabled={!loadedBars.length}
-              style={{
-                background: !loadedBars.length
-                  ? 'rgba(71, 85, 105, 0.18)'
-                  : streamEnabled
-                    ? 'rgba(34, 197, 94, 0.2)'
-                    : 'rgba(148, 163, 184, 0.16)',
-                color: !loadedBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
-                border: !loadedBars.length
-                  ? '1px solid rgba(71, 85, 105, 0.28)'
-                  : streamEnabled
-                    ? '1px solid rgba(34, 197, 94, 0.28)'
-                    : '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: 8,
-                padding: '8px 12px',
-                cursor: loadedBars.length ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {loadedBars.length ? 'Stream' : 'Stream (data unavailable)'}
-            </button>
-
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setLessonsOpen((open) => !open)}
-                style={{
-                  background: 'rgba(37, 99, 235, 0.16)',
-                  color: '#dbeafe',
-                  border: '1px solid rgba(96, 165, 250, 0.28)',
-                  borderRadius: 8,
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                }}
-              >
-                Lessons
-              </button>
-
-              {lessonsOpen ? (
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 10px)',
-                    width: 420,
-                    zIndex: 10,
-                    borderRadius: 12,
-                    background: '#0f172a',
-                    border: '1px solid rgba(148, 163, 184, 0.16)',
-                    boxShadow: '0 18px 50px rgba(2, 6, 23, 0.45)',
-                    padding: 12,
-                    display: 'grid',
-                    gap: 10,
-                  }}
-                >
-                  {visibleLessons.map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      style={{
-                        borderRadius: 10,
-                        padding: 12,
-                        background: 'rgba(15, 23, 42, 0.65)',
-                        border: '1px solid rgba(148, 163, 184, 0.12)',
-                      }}
-                    >
-                      <div style={{ color: '#f8fafc', fontWeight: 600 }}>{lesson.title}</div>
-                      <div style={{ color: '#94a3b8', fontSize: 14, marginTop: 4 }}>
-                        {lesson.shortDescription}
-                      </div>
-                      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                        <button
-                          onClick={() => {
-                            setLessonsOpen(false);
-                            applyPresetDefaults(lesson.presetId);
-                          }}
-                          style={{
-                            background: 'rgba(34, 197, 94, 0.16)',
-                            color: '#bbf7d0',
-                            border: '1px solid rgba(34, 197, 94, 0.24)',
-                            borderRadius: 8,
-                            padding: '6px 10px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          View chart
-                        </button>
-                        <button
-                          onClick={() => {
-                            setLessonsOpen(false);
-                            setReadingLessonId(lesson.id);
-                            applyPresetDefaults(lesson.presetId);
-                          }}
-                          style={{
-                            background: 'rgba(59, 130, 246, 0.16)',
-                            color: '#bfdbfe',
-                            border: '1px solid rgba(96, 165, 250, 0.24)',
-                            borderRadius: 8,
-                            padding: '6px 10px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Read
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <button
+            onClick={() => {
+              if (loadedBars.length > 0) {
+                setStreamEnabled((current) => !current);
+              }
+            }}
+            disabled={!loadedBars.length}
+            style={{
+              background: !loadedBars.length
+                ? 'rgba(71, 85, 105, 0.18)'
+                : streamEnabled
+                  ? 'rgba(34, 197, 94, 0.2)'
+                  : 'rgba(148, 163, 184, 0.16)',
+              color: !loadedBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
+              border: !loadedBars.length
+                ? '1px solid rgba(71, 85, 105, 0.28)'
+                : streamEnabled
+                  ? '1px solid rgba(34, 197, 94, 0.28)'
+                  : '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: 8,
+              padding: '8px 12px',
+              cursor: loadedBars.length ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {loadedBars.length ? 'Stream' : 'Stream (data unavailable)'}
+          </button>
         }
       />
 
@@ -753,75 +608,6 @@ export function ExploreDemoPage() {
         </section>
       )}
 
-      {readingLesson ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(2, 6, 23, 0.72)',
-            display: 'grid',
-            placeItems: 'center',
-            padding: 24,
-            zIndex: 20,
-          }}
-        >
-          <section
-            style={{
-              width: 'min(900px, 100%)',
-              maxHeight: '85vh',
-              overflow: 'auto',
-              borderRadius: 18,
-              background: '#0f172a',
-              border: '1px solid rgba(148, 163, 184, 0.18)',
-              padding: 24,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 16,
-              }}
-            >
-              <div>
-                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: 24 }}>{readingLesson.title}</h3>
-                <p style={{ margin: '6px 0 0', color: '#94a3b8' }}>
-                  {readingLesson.shortDescription}
-                </p>
-              </div>
-              <button
-                onClick={() => setReadingLessonId(null)}
-                style={{
-                  background: 'transparent',
-                  color: '#94a3b8',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  borderRadius: 8,
-                  padding: '6px 10px',
-                  cursor: 'pointer',
-                }}
-              >
-                Close
-              </button>
-            </div>
-
-            {readingLesson.imageUrl ? (
-              <img
-                src={readingLesson.imageUrl}
-                alt={readingLesson.title}
-                style={{
-                  width: '100%',
-                  borderRadius: 12,
-                  marginBottom: 18,
-                  border: '1px solid rgba(148, 163, 184, 0.18)',
-                }}
-              />
-            ) : null}
-
-            <MarkdownView markdown={readingLesson.markdown} />
-          </section>
-        </div>
-      ) : null}
     </>
   );
 }

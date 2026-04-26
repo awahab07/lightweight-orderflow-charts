@@ -93,7 +93,7 @@ The React layer should remain deliberately small:
 Owns product education and validation surfaces:
 
 - `demo/src/content`
-  Explore presets and lesson content
+  Explore presets and educational mappings
 - `demo/src/fixtures`
   Playground-oriented fixture data and historical styling references
 - `demo/src/lib`
@@ -147,4 +147,4 @@ composition.
 - Prefer extending existing option types rather than adding parallel ad hoc objects
 - Add or update focused tests for calculations and merge behavior
 - Validate demo routes visually when renderer behavior changes
-- Keep lesson content educational and first-party
+- Keep Explore preset content educational and first-party

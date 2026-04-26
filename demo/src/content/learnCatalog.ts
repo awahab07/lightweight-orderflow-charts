@@ -55,7 +55,6 @@ export interface ConceptPresetDefinition {
   sessionVolumeProfileOptions?: SessionVolumeProfilePartialOptions;
   deltaSummaryOptions?: DeltaSummarySeriesPartialOptions;
   candleHeatmapOptions?: CandleHeatmapPartialOptions;
-  lessonIds: string[];
 }
 
 export const THEME_PRESETS: ThemePresetDefinition[] = Object.values(ORDER_FLOW_THEME_PRESETS);
@@ -319,7 +318,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showWicks: false,
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.orderFlowReference.footprint,
-    lessonIds: ['inside-the-footprint'],
   },
   {
     id: 'ladder-fundamentals',
@@ -343,7 +341,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     candlePosition: 'middle',
     footprintOptions: CLASSIC_REFERENCE_FOOTPRINT_OPTIONS,
     deltaSummaryOptions: CLASSIC_REFERENCE_DELTA_SUMMARY_OPTIONS,
-    lessonIds: ['inside-the-footprint'],
   },
   {
     id: 'delta-first-read',
@@ -367,7 +364,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     candlePosition: 'middle',
     footprintOptions: SHADED_REFERENCE_FOOTPRINT_OPTIONS,
     deltaSummaryOptions: SHADED_REFERENCE_DELTA_SUMMARY_OPTIONS,
-    lessonIds: ['delta-vs-location', 'cumulative-delta-context'],
   },
   {
     id: 'absorption',
@@ -392,7 +388,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     footprintOptions: SHADED_REFERENCE_FOOTPRINT_OPTIONS,
     volumeProfileOptions: SHADED_REFERENCE_VOLUME_PROFILE_OPTIONS,
     deltaSummaryOptions: SHADED_REFERENCE_DELTA_SUMMARY_OPTIONS,
-    lessonIds: ['absorption'],
   },
   {
     id: 'stacked-imbalances',
@@ -415,7 +410,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showWicks: true,
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
-    lessonIds: ['stacked-imbalances'],
   },
   {
     id: 'volume-profile-shape',
@@ -440,7 +434,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     footprintOptions: SHADED_REFERENCE_FOOTPRINT_OPTIONS,
     volumeProfileOptions: SHADED_REFERENCE_VOLUME_PROFILE_OPTIONS,
     deltaSummaryOptions: SHADED_REFERENCE_DELTA_SUMMARY_OPTIONS,
-    lessonIds: ['volume-profile-shape'],
   },
   {
     id: 'session-map',
@@ -464,7 +457,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showWicks: true,
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
-    lessonIds: ['sessions-and-vwap'],
   },
   {
     id: 'volume-footprint',
@@ -488,7 +480,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     candlePosition: 'left',
     volumeFootprintOptions: VOLUME_FOOTPRINT_REFERENCE_OPTIONS,
     volumeProfileOptions: LEFT_ALIGNED_REFERENCE_VOLUME_PROFILE_OPTIONS,
-    lessonIds: ['when-to-use-volume-footprint'],
   },
   {
     id: 'candle-heatmap',
@@ -532,7 +523,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
       noOfShades: 10,
       shader: 'alpha',
     },
-    lessonIds: ['candle-heatmap'],
   },
   {
     id: 'volume-delta-pivot',
@@ -557,7 +547,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showWicks: true,
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.modernDark.footprint,
-    lessonIds: ['volume-delta-pivot'],
   },
 ];
 
