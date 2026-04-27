@@ -16,12 +16,12 @@ import {
   formatCompactNumericValue,
   inferPricePrecision,
   normalizeMintick,
-  resolveMetricStyleToken,
   type ChartViewStateSnapshot,
   type OrderFlowBar,
   type SeriesMetricPrimitiveDatum,
   type TimeValue,
   type VolumeDeltaPivotPoint,
+  withAlpha,
 } from 'lightweight-orderflow-charts';
 
 import type {
@@ -864,15 +864,14 @@ export function ConnectPage() {
         ...(instrumentAwareFootprintOptions?.style?.metricStyles ?? {}),
       },
     };
+    const mutedMetricStyle = {
+      color: withAlpha(mergedStyle.textColor, themePreset.mode === 'light' ? 0.5 : 0.68),
+      font: `600 ${Math.max(10, mergedStyle.fontSize - 1)}px ${mergedStyle.fontFamily}`,
+    };
     let runningCumulativeDelta = 0;
 
     return clusteredBars.map((bar, index) => {
       runningCumulativeDelta += volumeDeltaPivotData[index]?.delta ?? 0;
-      const styleToken = resolveMetricStyleToken(
-        mergedStyle.metricStyles,
-        'metric1',
-        runningCumulativeDelta < 0 ? 'secondary' : 'primary',
-      );
 
       return {
         time: bar.time as TimeValue,
@@ -890,7 +889,7 @@ export function ConnectPage() {
             offset: 6,
             orientation: 'vertical',
             style: {
-              ...styleToken,
+              ...mutedMetricStyle,
               backgroundColor: 'transparent',
             },
           },
@@ -901,6 +900,7 @@ export function ConnectPage() {
     clusteredBars,
     instrumentAwareFootprintOptions?.style,
     preset.showVolumeDeltaPivot,
+    themePreset.mode,
     volumeDeltaPivotData,
   ]);
   const effectiveRestoredViewState = useMemo(() => {
@@ -1399,10 +1399,13 @@ export function ConnectPage() {
           showSessionProfiles={preset.showSessionProfiles}
           showVwap={preset.showVwap}
           showReferenceCandles={preset.showReferenceCandles}
+          referencePanePlacement={preset.referencePanePlacement}
+          referencePaneHeightRatio={preset.referencePaneHeightRatio}
           showOrderFlowPane={preset.showOrderFlowPane ?? true}
           showVolumePane={preset.showVolumePane}
           showVolumeDeltaPivot={preset.showVolumeDeltaPivot}
           showDeltaSummary={preset.showDeltaSummary}
+          deltaSummaryPaneHeightRatio={preset.deltaSummaryPaneHeightRatio}
           footprintOptions={instrumentAwareFootprintOptions}
           volumeFootprintOptions={instrumentAwareVolumeFootprintOptions}
           volumeProfileOptions={themedVolumeProfileOptions}

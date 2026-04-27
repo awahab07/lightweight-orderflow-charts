@@ -178,6 +178,7 @@ interface OrderFlowChartProps {
   showVwap?: boolean;
   showReferenceCandles?: boolean;
   referencePanePlacement?: 'top' | 'bottom';
+  referencePaneHeightRatio?: number;
   showVolumePane?: boolean;
   showVolumeDeltaPivot?: boolean;
   showDeltaSummary?: boolean;
@@ -284,10 +285,11 @@ export function OrderFlowChart({
   showVwap = true,
   showReferenceCandles = true,
   referencePanePlacement = 'top',
+  referencePaneHeightRatio,
   showVolumePane = true,
   showVolumeDeltaPivot = false,
   showDeltaSummary = false,
-  deltaSummaryPaneHeightRatio = 0.2,
+  deltaSummaryPaneHeightRatio,
   chartHeight = 860,
   footerText,
   theme,
@@ -936,11 +938,12 @@ export function OrderFlowChart({
         !showVolumeDeltaPivot;
       const usesCandleOnlySingleSupportingPane =
         showCandleSeries && !showOrderFlowSeries && supportingPaneCount === 1;
-      const resolvedDeltaSummaryPaneHeightRatio = clampRatio(
-        deltaSummaryPaneHeightRatio,
-        0.08,
-        0.5,
-      );
+      const resolvedDeltaSummaryPaneHeightRatio =
+        deltaSummaryPaneHeightRatio != null
+          ? clampRatio(deltaSummaryPaneHeightRatio, 0.08, 0.5)
+          : null;
+      const resolvedReferencePaneHeightRatio =
+        referencePaneHeightRatio != null ? clampRatio(referencePaneHeightRatio, 0.08, 0.5) : null;
       const paneTargets: PaneHeightTarget[] = [];
 
       if (usesCandleOnlySingleSupportingPane) {
@@ -965,7 +968,7 @@ export function OrderFlowChart({
         } else if (referencePanePlacement === 'bottom') {
           paneTargets.push({
             paneIndex: referenceCandlePaneIndex,
-            ratio: supportingPaneCount ? 0.22 : 0.3,
+            ratio: resolvedReferencePaneHeightRatio ?? (supportingPaneCount ? 0.22 : 0.3),
           });
         } else {
           paneTargets.push({ paneIndex: referenceCandlePaneIndex, ratio: 0.18 });
@@ -976,7 +979,7 @@ export function OrderFlowChart({
         if (usesDeltaSummaryOnlySupportingPane) {
           paneTargets.push({
             paneIndex: orderFlowPaneIndex,
-            ratio: 1 - resolvedDeltaSummaryPaneHeightRatio,
+            ratio: 1 - (resolvedDeltaSummaryPaneHeightRatio ?? 0.2),
           });
         } else {
           paneTargets.push({
@@ -1017,10 +1020,10 @@ export function OrderFlowChart({
         paneTargets.push({
           paneIndex: deltaSummaryPaneIndex,
           ratio: usesDeltaSummaryOnlySupportingPane
-            ? resolvedDeltaSummaryPaneHeightRatio
+            ? (resolvedDeltaSummaryPaneHeightRatio ?? 0.2)
             : showVolumePane || showVolumeDeltaPivot
-              ? 0.2
-              : 0.26,
+              ? (resolvedDeltaSummaryPaneHeightRatio ?? 0.2)
+              : (resolvedDeltaSummaryPaneHeightRatio ?? 0.26),
           minHeight: SUPPORT_PANE_MIN_HEIGHT,
         });
       }
@@ -1069,6 +1072,7 @@ export function OrderFlowChart({
     deltaSummaryPaneHeightRatio,
     deltaSummaryReady,
     referenceCandlePaneIndex,
+    referencePaneHeightRatio,
     referencePanePlacement,
     referenceCandleReady,
     orderFlowPaneIndex,

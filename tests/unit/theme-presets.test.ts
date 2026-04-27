@@ -38,6 +38,12 @@ describe('order flow theme presets', () => {
       offset: 1,
       color: 'rgba(146, 64, 14, 0.18)',
     });
+    expect(
+      ORDER_FLOW_THEME_PRESETS.ivoryTerminal.deltaSummary?.rowStyles?.delta?.positiveFillColor,
+    ).toBe('#14b8a6');
+    expect(
+      ORDER_FLOW_THEME_PRESETS.ivoryTerminal.deltaSummary?.rowStyles?.delta?.negativeFillColor,
+    ).toBe('#d97706');
   });
 
   it('styles Dark Default candles with borders and neutral wicks', () => {
@@ -45,5 +51,11 @@ describe('order flow theme presets', () => {
     expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.borderVisible).toBe(true);
     expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.wickUpColor).toBe('#c9cdd4');
     expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.wickDownColor).toBe('#c9cdd4');
+    expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.volumeDeltaPivotSeries?.borderUpColor).toBe(
+      'rgba(148, 163, 184, 0.42)',
+    );
+    expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.volumeDeltaPivotSeries?.borderDownColor).toBe(
+      'rgba(148, 163, 184, 0.42)',
+    );
   });
 });

@@ -29,4 +29,11 @@ describe('explore concept presets', () => {
     expect(preset.footprintOptions?.ladder?.bidAskFillMode).toBe('by-total-volume');
     expect(preset.footprintOptions?.shading?.bidAskMetric).toBe('volume/max');
   });
+
+  it('shrinks compact supporting panes for the targeted Explore presets', () => {
+    expect(getConceptPreset('delta-first-read').deltaSummaryPaneHeightRatio).toBe(0.13);
+    expect(getConceptPreset('absorption').deltaSummaryPaneHeightRatio).toBe(0.13);
+    expect(getConceptPreset('volume-profile-shape').deltaSummaryPaneHeightRatio).toBe(0.13);
+    expect(getConceptPreset('session-map').referencePaneHeightRatio).toBe(0.15);
+  });
 });

@@ -45,10 +45,12 @@ export interface ConceptPresetDefinition {
   showOrderFlowPane?: boolean;
   showVolumePane: boolean;
   showDeltaSummary: boolean;
+  deltaSummaryPaneHeightRatio?: number;
   showVolumeDeltaPivot?: boolean;
   showCandle: boolean;
   showWicks: boolean;
   candlePosition: FootprintCandlePosition;
+  referencePaneHeightRatio?: number;
   footprintOptions?: FootprintSeriesPartialOptions;
   volumeFootprintOptions?: VolumeFootprintPartialOptions;
   volumeProfileOptions?: VolumeProfilePartialOptions;
@@ -365,6 +367,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showReferenceCandles: false,
     showVolumePane: false,
     showDeltaSummary: true,
+    deltaSummaryPaneHeightRatio: 0.13,
     showCandle: true,
     showWicks: false,
     candlePosition: 'middle',
@@ -388,6 +391,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showReferenceCandles: false,
     showVolumePane: false,
     showDeltaSummary: true,
+    deltaSummaryPaneHeightRatio: 0.13,
     showCandle: true,
     showWicks: false,
     candlePosition: 'middle',
@@ -434,6 +438,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showReferenceCandles: false,
     showVolumePane: false,
     showDeltaSummary: true,
+    deltaSummaryPaneHeightRatio: 0.13,
     showCandle: true,
     showWicks: false,
     candlePosition: 'middle',
@@ -457,6 +462,7 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showVwap: true,
     showReferenceCandles: true,
     referencePanePlacement: 'bottom',
+    referencePaneHeightRatio: 0.15,
     showVolumePane: false,
     showDeltaSummary: false,
     showCandle: true,

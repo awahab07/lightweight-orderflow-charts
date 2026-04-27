@@ -106,6 +106,17 @@ function createCandleHeatmapOptions(
   };
 }
 
+function createVolumeDeltaPivotSeriesOptions(
+  upColor: string,
+  downColor: string,
+): CandlestickSeriesPartialOptions {
+  return createCandleSeriesOptions(upColor, downColor, {
+    borderVisible: true,
+    borderUpColor: 'rgba(148, 163, 184, 0.42)',
+    borderDownColor: 'rgba(148, 163, 184, 0.42)',
+  });
+}
+
 function createDarkVolumeFootprintTheme(
   bidFillColor: string,
   askFillColor: string,
@@ -516,7 +527,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       borderDownColor: '#b91c1c',
     }),
     volumeSeries: createVolumeSeriesOptions('rgba(22, 163, 74, 0.46)', 'rgba(239, 68, 68, 0.46)'),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#16a34a', '#ef4444', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#16a34a', '#ef4444'),
   },
   midnightTerminal: {
     id: 'midnight-terminal',
@@ -570,7 +581,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       'rgba(52, 211, 153, 0.55)',
       'rgba(248, 113, 113, 0.55)',
     ),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#34d399', '#f87171', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#34d399', '#f87171'),
   },
   chartDarkPro: {
     id: 'chart-dark-pro',
@@ -620,7 +631,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       noOfShades: 10,
       shader: 'alpha',
     }),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#089981', '#f23645', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#089981', '#f23645'),
     volumeDeltaPivotBaseline: {
       color: 'rgba(120, 123, 134, 0.72)',
       lineWidth: 1,
@@ -679,7 +690,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       'rgba(34, 211, 238, 0.55)',
       'rgba(248, 113, 113, 0.52)',
     ),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#22d3ee', '#f87171', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#22d3ee', '#f87171'),
   },
   cobaltWorkstation: {
     id: 'cobalt-workstation',
@@ -732,7 +743,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       'rgba(96, 165, 250, 0.55)',
       'rgba(248, 113, 113, 0.52)',
     ),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#60a5fa', '#f87171', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#60a5fa', '#f87171'),
   },
   obsidianMinimal: {
     id: 'obsidian-minimal',
@@ -784,7 +795,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       'rgba(203, 213, 225, 0.48)',
       'rgba(248, 113, 113, 0.44)',
     ),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#cbd5e1', '#f87171', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#cbd5e1', '#f87171'),
   },
   paperClassic: {
     id: 'paper-classic',
@@ -828,7 +839,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       shader: 'alpha',
     }),
     volumeSeries: createVolumeSeriesOptions('rgba(22, 163, 74, 0.48)', 'rgba(220, 38, 38, 0.48)'),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#16a34a', '#dc2626', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#16a34a', '#dc2626'),
   },
   clinicalHighContrast: {
     id: 'clinical-high-contrast',
@@ -877,7 +888,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
     },
     candleSeries: createCandleSeriesOptions('#000000', '#000000', true),
     volumeSeries: createVolumeSeriesOptions('rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.45)'),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#000000', '#000000', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#000000', '#000000'),
   },
   ivoryTerminal: {
     id: 'ivory-terminal',
@@ -933,7 +944,44 @@ export const ORDER_FLOW_THEME_PRESETS = {
       labelBackgroundColor: 'rgba(255, 251, 235, 0.98)',
       labelTextColor: '#44403c',
       cellBorderColor: 'rgba(146, 64, 14, 0.2)',
-      rowStyles: CLASSIC_REFERENCE_DELTA_SUMMARY_OPTIONS.rowStyles,
+      rowStyles: {
+        delta: {
+          positiveFillColor: '#14b8a6',
+          negativeFillColor: '#d97706',
+          neutralFillColor: '#d6d3d1',
+          textColor: '#44403c',
+        },
+        maxDelta: {
+          positiveFillColor: '#5eead4',
+          negativeFillColor: '#fbbf24',
+          neutralFillColor: '#e7e5e4',
+          textColor: '#44403c',
+        },
+        minDelta: {
+          positiveFillColor: '#5eead4',
+          negativeFillColor: '#fbbf24',
+          neutralFillColor: '#e7e5e4',
+          textColor: '#44403c',
+        },
+        cumulativeDelta: {
+          positiveFillColor: '#0f766e',
+          negativeFillColor: '#b45309',
+          neutralFillColor: '#d6d3d1',
+          textColor: '#44403c',
+        },
+        cumulativeDeltaToVolumeRatio: {
+          positiveFillColor: '#99f6e4',
+          negativeFillColor: '#fde68a',
+          neutralFillColor: '#e7e5e4',
+          textColor: '#44403c',
+        },
+        volume: {
+          positiveFillColor: '#a16207',
+          negativeFillColor: '#a16207',
+          neutralFillColor: '#a16207',
+          textColor: '#fffbeb',
+        },
+      },
     },
     candleSeries: createCandleSeriesOptions('#0f766e', '#b45309'),
     candleHeatmap: createCandleHeatmapOptions('#d4a73b', '#94a3b8', {
@@ -951,7 +999,7 @@ export const ORDER_FLOW_THEME_PRESETS = {
       },
     }),
     volumeSeries: createVolumeSeriesOptions('rgba(15, 118, 110, 0.44)', 'rgba(180, 83, 9, 0.44)'),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#0f766e', '#b45309', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#0f766e', '#b45309'),
   },
   frostUi: {
     id: 'frost-ui',
@@ -997,6 +1045,6 @@ export const ORDER_FLOW_THEME_PRESETS = {
     },
     candleSeries: createCandleSeriesOptions('#0284c7', '#ef4444'),
     volumeSeries: createVolumeSeriesOptions('rgba(2, 132, 199, 0.44)', 'rgba(239, 68, 68, 0.44)'),
-    volumeDeltaPivotSeries: createCandleSeriesOptions('#0284c7', '#ef4444', true),
+    volumeDeltaPivotSeries: createVolumeDeltaPivotSeriesOptions('#0284c7', '#ef4444'),
   },
 } satisfies Record<string, OrderFlowThemePresetPack>;
