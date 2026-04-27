@@ -898,6 +898,20 @@ export const ORDER_FLOW_THEME_PRESETS = {
         ladderBorderColor: 'rgba(146, 64, 14, 0.24)',
         cellBorderColor: 'rgba(146, 64, 14, 0.18)',
       },
+      shading: {
+        neutralScale: {
+          range: {
+            from: 0.12,
+            to: 1,
+            clamp: true,
+            invert: false,
+          },
+          stops: [
+            { offset: 0, color: 'rgba(146, 64, 14, 0.02)' },
+            { offset: 1, color: 'rgba(146, 64, 14, 0.18)' },
+          ],
+        },
+      },
       pointOfControl: {
         visible: true,
         ...LIGHT_POINT_OF_CONTROL,

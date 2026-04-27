@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useArgs } from 'storybook/preview-api';
+import { useArgs, useEffect, useMemo, useRef } from 'storybook/preview-api';
 import { ORDER_FLOW_STYLE_PRESETS, type OrderFlowSurfaceTheme } from 'lightweight-orderflow-charts';
 import type { CandlestickSeriesPartialOptions } from 'lightweight-charts';
 
@@ -75,7 +74,7 @@ function themeArgsMatchPreset(args: ThemingStoryArgs, presetArgs: ThemingStoryAr
   return THEME_ARG_KEYS.every((key) => args[key] === presetArgs[key]);
 }
 
-function ThemingStoryRenderer() {
+function renderThemingStory() {
   const [args, updateArgs] = useArgs<ThemingStoryArgs>();
   const lastPresetIdRef = useRef<StoryThemePresetId>(
     args.themePresetId === 'custom' ? 'chart-dark-pro' : args.themePresetId,
@@ -177,5 +176,5 @@ type Story = StoryObj<ThemingStoryArgs>;
 
 export const ThemeSurfaceAndCandles: Story = {
   name: 'Theme Surface and Candles',
-  render: () => <ThemingStoryRenderer />,
+  render: renderThemingStory,
 };

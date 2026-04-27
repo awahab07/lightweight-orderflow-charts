@@ -493,7 +493,7 @@ The repo contains three demo entry points:
 
 Explore is built around conceptual presets such as:
 
-- `Ladder Fundamentals`
+- `Order Flow Delta`
 - `Delta-First Read`
 - `Absorption`
 - `Stacked Imbalances`

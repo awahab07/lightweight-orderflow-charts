@@ -21,8 +21,10 @@ import {
 
 import {
   CONCEPT_PRESETS,
+  DEFAULT_CONCEPT_PRESET_ID,
   getConceptPreset,
   getThemePreset,
+  resolveConceptPresetId,
   THEME_PRESETS,
 } from '../content/learnCatalog';
 import {
@@ -85,10 +87,9 @@ export function ExploreDemoPage() {
   );
   const initialPreset = useMemo(
     () =>
-      initialUrlState?.presetId &&
-      CONCEPT_PRESETS.some((entry) => entry.id === initialUrlState.presetId)
-        ? getConceptPreset(initialUrlState.presetId)
-        : getConceptPreset(CONCEPT_PRESETS[0]?.id ?? 'order-flow'),
+      resolveConceptPresetId(initialUrlState?.presetId)
+        ? getConceptPreset(initialUrlState?.presetId ?? DEFAULT_CONCEPT_PRESET_ID)
+        : getConceptPreset(DEFAULT_CONCEPT_PRESET_ID),
     [initialUrlState?.presetId],
   );
   const [presetId, setPresetId] = useState(() => initialPreset.id);
@@ -450,7 +451,7 @@ export function ExploreDemoPage() {
 
   const applyPresetDefaults = (nextPresetId: string) => {
     const nextPreset = getConceptPreset(nextPresetId);
-    setPresetId(nextPresetId);
+    setPresetId(nextPreset.id);
     setThemeId(nextPreset.defaultThemeId);
     setSymbol(nextPreset.defaultSymbol);
     setInterval(nextPreset.defaultInterval);

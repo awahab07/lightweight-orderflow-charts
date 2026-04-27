@@ -26,7 +26,7 @@ export type DeltaSummaryMetric = DeltaSummaryColumnKey;
 export type FootprintMetricPlacement = 'top' | 'bottom';
 export type FootprintMetricAlignment = 'left' | 'center' | 'right';
 export type FootprintBidAskShadingMetric = 'volume/max' | 'volume/average';
-export type FootprintBidAskFillMode = 'by-side' | 'by-delta';
+export type FootprintBidAskFillMode = 'by-side' | 'by-delta' | 'by-total-volume';
 export type FootprintBidAskSeparatorMode = 'line' | 'letter' | 'none';
 export type FootprintSingleCellShadingMetric =
   | 'volume/max'

@@ -209,6 +209,32 @@ export const CLASSIC_REFERENCE_FOOTPRINT_OPTIONS: FootprintSeriesPartialOptions 
   style: classicFootprintStyle,
 };
 
+export const ORDER_FLOW_DELTA_FOOTPRINT_OPTIONS: FootprintSeriesPartialOptions = {
+  ...CLASSIC_REFERENCE_FOOTPRINT_OPTIONS,
+  ladder: {
+    ...CLASSIC_REFERENCE_FOOTPRINT_OPTIONS.ladder,
+    showHeatmap: true,
+    bidAskFillMode: 'by-total-volume',
+    minOpacity: 0.08,
+    maxOpacity: 0.28,
+  },
+  shading: {
+    bidAskMetric: 'volume/max',
+    neutralScale: {
+      range: {
+        from: 0.12,
+        to: 1,
+        clamp: true,
+        invert: false,
+      },
+      stops: [
+        { offset: 0, color: 'rgba(148, 163, 184, 0.03)' },
+        { offset: 1, color: 'rgba(148, 163, 184, 0.16)' },
+      ],
+    },
+  },
+};
+
 export const DARK_REFERENCE_FOOTPRINT_BASE_OPTIONS: FootprintSeriesPartialOptions = {
   layout: {
     barWidth: {

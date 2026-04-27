@@ -112,6 +112,15 @@ function resolveBidAskFillColors(
 
   const shadingValue = resolveBidAskShadingValue(level, options.shading.bidAskMetric);
 
+  if (options.ladder.bidAskFillMode === 'by-total-volume') {
+    const fillColor = resolveColorScale(options.shading.neutralScale, shadingValue);
+
+    return {
+      bidColor: fillColor,
+      askColor: fillColor,
+    };
+  }
+
   return {
     bidColor: resolveColorScale(options.shading.bidScale, shadingValue),
     askColor: resolveColorScale(options.shading.askScale, shadingValue),

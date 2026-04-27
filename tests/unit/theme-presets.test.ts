@@ -30,6 +30,16 @@ describe('order flow theme presets', () => {
     expect(ORDER_FLOW_THEME_PRESETS.smoothLight.footprint?.ladder?.bidAskFillMode).toBe('by-delta');
   });
 
+  it('gives Ivory Terminal a warm shared-volume shading scale', () => {
+    expect(ORDER_FLOW_THEME_PRESETS.ivoryTerminal.label).toBe('Ivory Terminal');
+    expect(
+      ORDER_FLOW_THEME_PRESETS.ivoryTerminal.footprint?.shading?.neutralScale?.stops?.[1],
+    ).toEqual({
+      offset: 1,
+      color: 'rgba(146, 64, 14, 0.18)',
+    });
+  });
+
   it('styles Dark Default candles with borders and neutral wicks', () => {
     expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.label).toBe('Dark Default');
     expect(ORDER_FLOW_THEME_PRESETS.chartDarkPro.candleSeries?.borderVisible).toBe(true);

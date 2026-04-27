@@ -11,8 +11,8 @@ import type {
 } from 'lightweight-orderflow-charts';
 import {
   CLASSIC_REFERENCE_DELTA_SUMMARY_OPTIONS,
-  CLASSIC_REFERENCE_FOOTPRINT_OPTIONS,
   LEFT_ALIGNED_REFERENCE_VOLUME_PROFILE_OPTIONS,
+  ORDER_FLOW_DELTA_FOOTPRINT_OPTIONS,
   ORDER_FLOW_STYLE_PRESETS,
   ORDER_FLOW_THEME_PRESETS,
   SHADED_REFERENCE_DELTA_SUMMARY_OPTIONS,
@@ -58,6 +58,11 @@ export interface ConceptPresetDefinition {
 }
 
 export const THEME_PRESETS: ThemePresetDefinition[] = Object.values(ORDER_FLOW_THEME_PRESETS);
+export const DEFAULT_CONCEPT_PRESET_ID = 'order-flow-delta';
+
+const LEGACY_CONCEPT_PRESET_ID_ALIASES: Record<string, string> = {
+  'ladder-fundamentals': DEFAULT_CONCEPT_PRESET_ID,
+};
 
 const ORDER_FLOW_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
   version: 1,
@@ -77,7 +82,7 @@ const ORDER_FLOW_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
   ],
 };
 
-const LADDER_FUNDAMENTALS_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
+const ORDER_FLOW_DELTA_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
   version: 1,
   timeRange: {
     from: 6.769972763910813,
@@ -297,6 +302,30 @@ const VOLUME_DELTA_PIVOT_DEFAULT_VIEW_STATE: ChartViewStateSnapshot = {
 
 export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
   {
+    id: 'order-flow-delta',
+    label: 'Order Flow Delta',
+    summary:
+      'Read the bid/ask ladder with aligned delta context and shared volume concentration shading.',
+    defaultThemeId: 'ivory-terminal',
+    defaultSymbol: 'TSLA',
+    defaultDate: '2026-03-10',
+    defaultInterval: '5m',
+    defaultMintick: 0.1,
+    defaultViewState: ORDER_FLOW_DELTA_DEFAULT_VIEW_STATE,
+    seriesMode: 'footprint',
+    showVisibleProfile: false,
+    showSessionProfiles: false,
+    showVwap: false,
+    showReferenceCandles: false,
+    showVolumePane: false,
+    showDeltaSummary: true,
+    showCandle: true,
+    showWicks: false,
+    candlePosition: 'middle',
+    footprintOptions: ORDER_FLOW_DELTA_FOOTPRINT_OPTIONS,
+    deltaSummaryOptions: CLASSIC_REFERENCE_DELTA_SUMMARY_OPTIONS,
+  },
+  {
     id: 'order-flow',
     label: 'Order Flow',
     summary:
@@ -318,29 +347,6 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
     showWicks: false,
     candlePosition: 'left',
     footprintOptions: ORDER_FLOW_STYLE_PRESETS.orderFlowReference.footprint,
-  },
-  {
-    id: 'ladder-fundamentals',
-    label: 'Ladder Fundamentals',
-    summary: 'Read the bid/ask ladder and OHLC lane with minimal distraction.',
-    defaultThemeId: 'paper-classic',
-    defaultSymbol: 'TSLA',
-    defaultDate: '2026-03-10',
-    defaultInterval: '5m',
-    defaultMintick: 0.1,
-    defaultViewState: LADDER_FUNDAMENTALS_DEFAULT_VIEW_STATE,
-    seriesMode: 'footprint',
-    showVisibleProfile: false,
-    showSessionProfiles: false,
-    showVwap: false,
-    showReferenceCandles: false,
-    showVolumePane: false,
-    showDeltaSummary: true,
-    showCandle: true,
-    showWicks: false,
-    candlePosition: 'middle',
-    footprintOptions: CLASSIC_REFERENCE_FOOTPRINT_OPTIONS,
-    deltaSummaryOptions: CLASSIC_REFERENCE_DELTA_SUMMARY_OPTIONS,
   },
   {
     id: 'delta-first-read',
@@ -550,10 +556,24 @@ export const CONCEPT_PRESETS: ConceptPresetDefinition[] = [
   },
 ];
 
+export function resolveConceptPresetId(presetId: string | null | undefined): string | undefined {
+  if (!presetId) {
+    return undefined;
+  }
+
+  return LEGACY_CONCEPT_PRESET_ID_ALIASES[presetId] ?? presetId;
+}
+
 export function getThemePreset(themeId: string): ThemePresetDefinition {
   return THEME_PRESETS.find((entry) => entry.id === themeId) ?? THEME_PRESETS[0];
 }
 
 export function getConceptPreset(presetId: string): ConceptPresetDefinition {
-  return CONCEPT_PRESETS.find((entry) => entry.id === presetId) ?? CONCEPT_PRESETS[0];
+  const resolvedPresetId = resolveConceptPresetId(presetId) ?? DEFAULT_CONCEPT_PRESET_ID;
+
+  return (
+    CONCEPT_PRESETS.find((entry) => entry.id === resolvedPresetId) ??
+    CONCEPT_PRESETS.find((entry) => entry.id === DEFAULT_CONCEPT_PRESET_ID) ??
+    CONCEPT_PRESETS[0]
+  );
 }

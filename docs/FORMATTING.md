@@ -93,6 +93,7 @@ emphasized:
 Use these options when the host wants to reproduce cleaner order-flow layouts where:
 
 - both cells in a row share the same red/green shading based on row delta
+- both cells in a row can share a neutral concentration fill based on row volume
 - bid and ask are divided by a letter such as `x` instead of a vertical border
 - the separator gutter inherits the same row background as the surrounding bid/ask cells
 - positive and negative imbalance text can use different colors and fonts
@@ -126,6 +127,9 @@ const footprintOptions = {
   },
 };
 ```
+
+For shared concentration shading instead of delta-colored rows, set
+`ladder.bidAskFillMode` to `by-total-volume` and drive the fill with `shading.neutralScale`.
 
 ## Metric Style Palette
 

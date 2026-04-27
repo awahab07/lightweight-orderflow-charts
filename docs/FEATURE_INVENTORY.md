@@ -60,8 +60,8 @@ presets.
 
 - `Order Flow`
   Letter-delimited ladder with smooth-light styling and delta-colored rows.
-- `Ladder Fundamentals`
-  Minimal bid/ask ladder with delta summary for first-step reading.
+- `Order Flow Delta`
+  Minimal bid/ask ladder with delta summary and shared volume concentration shading.
 - `Delta-First Read`
   Footprint plus aligned delta summary to compare aggression with location.
 - `Absorption`
