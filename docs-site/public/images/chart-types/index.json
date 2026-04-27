@@ -1,0 +1,37 @@
+[
+  {
+    "title": "Basic Footprint Chart",
+    "filename": "basic-footprint-chart.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=order-flow&theme=smooth-light"
+  },
+  {
+    "title": "Delta Stats",
+    "filename": "delta-stats.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=order-flow-delta&theme=ivory-terminal"
+  },
+  {
+    "title": "Volume Nodes",
+    "filename": "volume-nodes.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=session-map&theme=depth-heat"
+  },
+  {
+    "title": "Session Profile",
+    "filename": "session-profile.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=absorption&theme=depth-heat"
+  },
+  {
+    "title": "Price Point of Control",
+    "filename": "price-point-of-control.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=volume-profile-shape&theme=obsidian-minimal"
+  },
+  {
+    "title": "Heatmap Candles",
+    "filename": "heatmap-candles.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=candle-heatmap&theme=paper-classic"
+  },
+  {
+    "title": "Delta Pivots",
+    "filename": "delta-pivots.png",
+    "href": "http://127.0.0.1:4300/latest/demo/#/explore?preset=volume-delta-pivot&theme=obsidian-minimal"
+  }
+]

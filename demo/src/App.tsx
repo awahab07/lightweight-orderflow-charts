@@ -3,14 +3,19 @@ import { useEffect, useState } from 'react';
 import { ConnectPage } from './components/ConnectPage';
 import { ExploreDemoPage } from './components/LearnDemoPage';
 import { PlaygroundPage } from './components/PlaygroundPage';
+import { ThemingDemoPage } from './components/ThemingDemoPage';
 
-type DemoRoute = 'explore' | 'playground' | 'connect';
+type DemoRoute = 'explore' | 'playground' | 'theming' | 'connect';
 const CONNECT_ROUTE_ENABLED = import.meta.env.VITE_DEMO_ENABLE_CONNECT !== 'false';
 
 function parseRoute(hash: string): DemoRoute {
   const normalized = hash.replace(/^#\/?/, '').split('?')[0].trim().toLowerCase();
   if (normalized === 'playground') {
     return 'playground';
+  }
+
+  if (normalized === 'theming') {
+    return 'theming';
   }
 
   if (normalized === 'connect' && CONNECT_ROUTE_ENABLED) {
@@ -88,11 +93,22 @@ export function App() {
             >
               Playground
             </a>
+            <a
+              href="#/theming"
+              style={{
+                color: route === 'theming' ? '#f8fafc' : '#93c5fd',
+                textDecoration: 'none',
+              }}
+            >
+              Theming
+            </a>
           </nav>
         </header>
 
         {route === 'playground' ? (
           <PlaygroundPage />
+        ) : route === 'theming' ? (
+          <ThemingDemoPage />
         ) : route === 'connect' ? (
           <ConnectPage />
         ) : (

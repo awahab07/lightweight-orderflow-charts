@@ -1,4 +1,4 @@
-import { StrictMode, type CSSProperties, type ReactNode } from 'react';
+import { StrictMode, useState, type CSSProperties, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const pageStyle: CSSProperties = {
@@ -42,6 +42,14 @@ const cardStyle: CSSProperties = {
   border: '1px solid rgba(148, 163, 184, 0.12)',
 };
 
+const clickableCardStyle: CSSProperties = {
+  ...cardStyle,
+  height: '100%',
+  textDecoration: 'none',
+  color: 'inherit',
+  transition: 'transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease',
+};
+
 const sectionStyle: CSSProperties = {
   display: 'grid',
   gap: 14,
@@ -68,6 +76,139 @@ const linkStyle: CSSProperties = {
   textDecoration: 'none',
 };
 
+const quickStartLayoutStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 1fr)',
+  gap: 18,
+};
+
+const tabRowStyle: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+};
+
+const iframeCardStyle: CSSProperties = {
+  display: 'grid',
+  gap: 12,
+  padding: 16,
+  borderRadius: 18,
+  background: '#020617',
+  border: '1px solid rgba(148, 163, 184, 0.16)',
+};
+
+const galleryGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+  gap: 16,
+};
+
+const chartImageStyle: CSSProperties = {
+  width: '100%',
+  aspectRatio: '4 / 3',
+  objectFit: 'cover',
+  borderRadius: 14,
+  border: '1px solid rgba(148, 163, 184, 0.12)',
+  background: '#020617',
+};
+
+const QUICK_START_EXAMPLES = [
+  {
+    id: 'footprint',
+    label: 'Footprint',
+    href: '../demo/#/explore?preset=order-flow&theme=smooth-light',
+    code: `import {
+  ORDER_FLOW_THEME_PRESETS,
+  ORDER_FLOW_STYLE_PRESETS,
+  createFootprintSeries,
+} from 'lightweight-orderflow-charts';
+
+const series = chart.addCustomSeries(
+  createFootprintSeries({
+    ...ORDER_FLOW_STYLE_PRESETS.shadedReference.footprint,
+    ...ORDER_FLOW_THEME_PRESETS.smoothLight.footprint,
+  }),
+);
+
+series.setData(orderFlowBars);`,
+  },
+  {
+    id: 'delta',
+    label: 'Delta',
+    href: '../demo/#/explore?preset=ladder-fundamentals&theme=midnight-terminal',
+    code: `import {
+  ORDER_FLOW_THEME_PRESETS,
+  ORDER_FLOW_STYLE_PRESETS,
+  createDeltaSummarySeries,
+} from 'lightweight-orderflow-charts';
+
+const summary = chart.addCustomSeries(
+  createDeltaSummarySeries({
+    ...ORDER_FLOW_STYLE_PRESETS.classicReference.deltaSummary,
+    ...ORDER_FLOW_THEME_PRESETS.midnightTerminal.deltaSummary,
+  }),
+  1,
+);
+
+summary.setData(orderFlowBars);`,
+  },
+  {
+    id: 'volume-profile',
+    label: 'Volume Profile',
+    href: '../demo/#/explore?preset=session-map&theme=cobalt-workstation',
+    code: `import {
+  ORDER_FLOW_THEME_PRESETS,
+  ORDER_FLOW_STYLE_PRESETS,
+} from 'lightweight-orderflow-charts';
+import { VolumeProfile } from 'lightweight-orderflow-charts/react';
+
+const profileOptions = {
+  ...ORDER_FLOW_STYLE_PRESETS.shadedReference.volumeProfile,
+  ...ORDER_FLOW_THEME_PRESETS.cobaltWorkstation.volumeProfile,
+};
+
+<VolumeProfile series={footprintSeries} data={orderFlowBars} options={profileOptions} />;`,
+  },
+] as const;
+
+const CHART_TYPE_GALLERY = [
+  {
+    title: 'Basic Footprint Chart',
+    href: '../demo/#/explore?preset=order-flow&theme=smooth-light',
+    image: './images/chart-types/basic-footprint-chart.png',
+  },
+  {
+    title: 'Delta Stats',
+    href: '../demo/#/explore?preset=order-flow-delta&theme=ivory-terminal',
+    image: './images/chart-types/delta-stats.png',
+  },
+  {
+    title: 'Volume Nodes',
+    href: '../demo/#/explore?preset=session-map&theme=depth-heat',
+    image: './images/chart-types/volume-nodes.png',
+  },
+  {
+    title: 'Session Profile',
+    href: '../demo/#/explore?preset=absorption&theme=depth-heat',
+    image: './images/chart-types/session-profile.png',
+  },
+  {
+    title: 'Price Point of Control',
+    href: '../demo/#/explore?preset=volume-profile-shape&theme=obsidian-minimal',
+    image: './images/chart-types/price-point-of-control.png',
+  },
+  {
+    title: 'Heatmap Candles',
+    href: '../demo/#/explore?preset=candle-heatmap&theme=paper-classic',
+    image: './images/chart-types/heatmap-candles.png',
+  },
+  {
+    title: 'Delta Pivots',
+    href: '../demo/#/explore?preset=volume-delta-pivot&theme=obsidian-minimal',
+    image: './images/chart-types/delta-pivots.png',
+  },
+] as const;
+
 function SurfaceCard({
   title,
   body,
@@ -80,13 +221,11 @@ function SurfaceCard({
   cta: string;
 }) {
   return (
-    <article style={cardStyle}>
+    <a href={href} style={clickableCardStyle}>
       <div style={{ fontSize: 18, fontWeight: 700, color: '#f8fafc' }}>{title}</div>
       <div style={{ color: '#cbd5e1', lineHeight: 1.6 }}>{body}</div>
-      <a href={href} style={linkStyle}>
-        {cta}
-      </a>
-    </article>
+      <span style={linkStyle}>{cta}</span>
+    </a>
   );
 }
 
@@ -101,6 +240,12 @@ function InfoList({ items }: { items: ReactNode[] }) {
 }
 
 function App() {
+  const [activeExampleId, setActiveExampleId] =
+    useState<(typeof QUICK_START_EXAMPLES)[number]['id']>('footprint');
+  const activeExample =
+    QUICK_START_EXAMPLES.find((example) => example.id === activeExampleId) ??
+    QUICK_START_EXAMPLES[0];
+
   return (
     <main style={pageStyle}>
       <div style={shellStyle}>
@@ -134,11 +279,17 @@ function App() {
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            <a href="../storybook/" style={linkStyle}>
-              Open Storybook
-            </a>
             <a href="../demo/" style={linkStyle}>
               Open Demo
+            </a>
+            <a href="../demo/#/playground" style={linkStyle}>
+              Open Playground
+            </a>
+            <a href="../demo/#/theming" style={linkStyle}>
+              Open Theming
+            </a>
+            <a href="../storybook/" style={linkStyle}>
+              Open Storybook
             </a>
             <a href="../data/" style={linkStyle}>
               Browse Demo Data
@@ -148,16 +299,28 @@ function App() {
 
         <section style={cardGridStyle}>
           <SurfaceCard
-            title="Storybook"
-            body="Interactive stories for full chart compositions, isolated study components, and theme tuning."
-            href="../storybook/"
-            cta="Go to stories"
-          />
-          <SurfaceCard
             title="Demo"
             body="A richer exploration surface with Explore and Playground routes for fixture-backed chart validation."
             href="../demo/"
             cta="Open demo"
+          />
+          <SurfaceCard
+            title="Playground"
+            body="Preset-driven fixture controls for changing display, studies, and chart composition in one place."
+            href="../demo/#/playground"
+            cta="Open playground"
+          />
+          <SurfaceCard
+            title="Theming"
+            body="A fixed chart composition with a right-sidebar theme editor for the visible surface, studies, and candles."
+            href="../demo/#/theming"
+            cta="Open theming"
+          />
+          <SurfaceCard
+            title="Storybook"
+            body="Interactive stories for full chart compositions, isolated study components, and theme tuning."
+            href="../storybook/"
+            cta="Go to stories"
           />
           <SurfaceCard
             title="Fixture Data"
@@ -194,22 +357,86 @@ npm install react react-dom`}</code>
 
         <section style={sectionStyle}>
           <h2 style={{ margin: 0, color: '#f8fafc' }}>Quick Start</h2>
-          <pre style={codeStyle}>
-            <code>{`import {
-  ORDER_FLOW_THEME_PRESETS,
-  ORDER_FLOW_STYLE_PRESETS,
-  createFootprintSeries,
-} from 'lightweight-orderflow-charts';
+          <div style={{ color: '#cbd5e1', lineHeight: 1.7 }}>
+            The live preview on the right embeds the served demo so the example stays synchronized
+            with the public surface and preset URLs.
+          </div>
+          <div style={quickStartLayoutStyle}>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div style={tabRowStyle}>
+                {QUICK_START_EXAMPLES.map((example) => {
+                  const isActive = example.id === activeExample.id;
+                  return (
+                    <button
+                      key={example.id}
+                      type="button"
+                      onClick={() => setActiveExampleId(example.id)}
+                      style={{
+                        borderRadius: 999,
+                        padding: '8px 14px',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: isActive
+                          ? '1px solid rgba(147, 197, 253, 0.42)'
+                          : '1px solid rgba(148, 163, 184, 0.18)',
+                        background: isActive ? 'rgba(37, 99, 235, 0.18)' : 'rgba(15, 23, 42, 0.72)',
+                        color: isActive ? '#dbeafe' : '#cbd5e1',
+                      }}
+                    >
+                      {example.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <pre style={codeStyle}>
+                <code>{activeExample.code}</code>
+              </pre>
+            </div>
 
-const series = chart.addCustomSeries(
-  createFootprintSeries({
-    ...ORDER_FLOW_STYLE_PRESETS.shadedReference.footprint,
-    ...ORDER_FLOW_THEME_PRESETS.chartDarkPro.footprint,
-  }),
-);
+            <div style={iframeCardStyle}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ color: '#f8fafc', fontSize: 16, fontWeight: 700 }}>
+                  {activeExample.label} preview
+                </div>
+                <a href={activeExample.href} style={linkStyle}>
+                  Open in demo
+                </a>
+              </div>
+              <iframe
+                title={`${activeExample.label} demo preview`}
+                src={activeExample.href}
+                style={{
+                  width: '100%',
+                  minHeight: 520,
+                  border: '1px solid rgba(148, 163, 184, 0.16)',
+                  borderRadius: 14,
+                  background: '#020617',
+                }}
+              />
+            </div>
+          </div>
+        </section>
 
-series.setData(orderFlowBars);`}</code>
-          </pre>
+        <section style={sectionStyle}>
+          <h2 style={{ margin: 0, color: '#f8fafc' }}>Chart Types</h2>
+          <div style={galleryGridStyle}>
+            {CHART_TYPE_GALLERY.map((chartType) => (
+              <a key={chartType.title} href={chartType.href} style={clickableCardStyle}>
+                <img src={chartType.image} alt={chartType.title} style={chartImageStyle} />
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#f8fafc' }}>
+                  {chartType.title}
+                </div>
+              </a>
+            ))}
+          </div>
         </section>
 
         <section style={sectionStyle}>

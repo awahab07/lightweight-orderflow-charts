@@ -47,6 +47,7 @@
     "demo:preview": "vite preview --config demo/vite.config.ts",
     "docs": "vite --config docs-site/vite.config.ts",
     "docs:build": "vite build --config docs-site/vite.config.ts",
+    "docs:capture-chart-images": "node scripts/capture-docs-chart-images.mjs",
     "docs:preview": "vite preview --config docs-site/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
