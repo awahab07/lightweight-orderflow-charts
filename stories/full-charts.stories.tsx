@@ -14,12 +14,20 @@ import {
   resolveStoryThemePreset,
   type StoryThemePresetId,
 } from './lib/themePresets';
+import {
+  STORY_DEFAULT_MINTICK_INDEX,
+  STORY_INTERVAL_OPTIONS,
+  STORY_MAX_MINTICK_INDEX,
+  formatStoryMintick,
+  resolveStoryMintick,
+} from './lib/storyControls';
 
 type FootprintStylePresetId = 'classicReference' | 'shadedReference';
 
 interface BaseStoryArgs {
   themePresetId: StoryThemePresetId;
   interval: StoryInterval;
+  mintickIndex: number;
 }
 
 interface FootprintStoryArgs extends BaseStoryArgs {
@@ -67,6 +75,7 @@ const meta = {
   args: {
     themePresetId: 'chart-dark-pro',
     interval: '5m',
+    mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
   },
   argTypes: {
     themePresetId: {
@@ -75,7 +84,16 @@ const meta = {
     },
     interval: {
       control: 'inline-radio',
-      options: ['1m', '5m'],
+      options: STORY_INTERVAL_OPTIONS,
+    },
+    mintickIndex: {
+      name: 'mintick',
+      control: {
+        type: 'range',
+        min: 0,
+        max: STORY_MAX_MINTICK_INDEX,
+        step: 1,
+      },
     },
   },
 } satisfies Meta<BaseStoryArgs>;
@@ -101,7 +119,8 @@ export const FootprintLadder: FootprintStory = {
   },
   render: (storyArgs) => {
     const args = storyArgs as FootprintStoryArgs;
-    const fixture = getStoryFixture('footprint-tsla', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('footprint-tsla', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset =
       args.stylePresetId === 'classicReference'
@@ -111,7 +130,7 @@ export const FootprintLadder: FootprintStory = {
     return (
       <StoryChartCanvas
         title="Footprint Ladder"
-        subtitle={`${describeStoryFixture(fixture)} • React custom series + delta summary`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • React custom series + delta summary`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -137,16 +156,18 @@ export const VolumeFootprintProfile: BaseStory = {
   args: {
     themePresetId: 'depth-heat',
     interval: '5m',
+    mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
   },
   render: (args) => {
-    const fixture = getStoryFixture('volume-footprint-nvda', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('volume-footprint-nvda', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset = ORDER_FLOW_STYLE_PRESETS.volumeFootprintReference;
 
     return (
       <StoryChartCanvas
         title="Volume Footprint Profile"
-        subtitle={`${describeStoryFixture(fixture)} • Volume-at-price without aggressor split`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Volume-at-price without aggressor split`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -172,6 +193,7 @@ export const SessionContext: FootprintStory = {
   args: {
     themePresetId: 'chart-dark-pro',
     interval: '5m',
+    mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
     stylePresetId: 'shadedReference',
   } as FootprintStoryArgs,
   argTypes: {
@@ -182,7 +204,8 @@ export const SessionContext: FootprintStory = {
   },
   render: (storyArgs) => {
     const args = storyArgs as FootprintStoryArgs;
-    const fixture = getStoryFixture('session-tsla', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('session-tsla', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset =
       args.stylePresetId === 'classicReference'
@@ -192,7 +215,7 @@ export const SessionContext: FootprintStory = {
     return (
       <StoryChartCanvas
         title="Session Context"
-        subtitle={`${describeStoryFixture(fixture)} • Session profiles and VWAP on the main pane`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Session profiles and VWAP on the main pane`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -221,6 +244,7 @@ export const CandleHeatmap: HeatmapStory = {
   args: {
     themePresetId: 'depth-heat',
     interval: '5m',
+    mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
     shader: 'alpha',
     noOfShades: 10,
     shadeWicks: false,
@@ -239,7 +263,8 @@ export const CandleHeatmap: HeatmapStory = {
   },
   render: (storyArgs) => {
     const args = storyArgs as HeatmapStoryArgs;
-    const fixture = getStoryFixture('footprint-tsla', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('footprint-tsla', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const heatmapOptions = mergeCandleHeatmapOptions({
       ...themePreset.candleHeatmap,
@@ -251,7 +276,7 @@ export const CandleHeatmap: HeatmapStory = {
     return (
       <StoryChartCanvas
         title="Candle Heatmap"
-        subtitle={`${describeStoryFixture(fixture)} • Metric-driven candlestick coloring`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Metric-driven candlestick coloring`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -272,12 +297,14 @@ export const VolumeDeltaPivot: BaseStory = {
   args: {
     themePresetId: 'chart-dark-pro',
     interval: '5m',
+    mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
   },
   render: (args) => {
-    const chartFixture = getStoryFixture('delta-nvda', args.interval);
-    const lowerFixture = getStoryFixture('delta-nvda', '1m');
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const chartFixture = getStoryFixture('delta-nvda', args.interval, mintick);
+    const lowerFixture = getStoryFixture('delta-nvda', '1m', mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
-    const intervalSeconds = args.interval === '1m' ? 60 : 300;
+    const intervalSeconds = args.interval === '1m' ? 60 : args.interval === '5m' ? 300 : 900;
     const pivotData = buildVolumeDeltaPivotSeriesData(
       toVolumeDeltaSourceBars(chartFixture.orderFlowBars),
       toVolumeDeltaSourceBars(lowerFixture.orderFlowBars),
@@ -287,7 +314,7 @@ export const VolumeDeltaPivot: BaseStory = {
     return (
       <StoryChartCanvas
         title="Volume Delta Pivot"
-        subtitle={`${describeStoryFixture(chartFixture)} • Zero-anchored intrabar pressure candles`}
+        subtitle={`${describeStoryFixture(chartFixture)} • Mintick ${formatStoryMintick(mintick)} • Zero-anchored intrabar pressure candles`}
         orderFlowBars={chartFixture.orderFlowBars}
         marketBars={chartFixture.marketBars}
         theme={themePreset.surface}

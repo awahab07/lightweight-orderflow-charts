@@ -6,6 +6,9 @@ import type {
 import {
   aggregateMarketBarsByInterval,
   aggregateOrderFlowBarsByInterval,
+  clusterOhlcBarsByMintick,
+  clusterOrderFlowBarsByMintick,
+  normalizeMintick,
 } from 'lightweight-orderflow-charts';
 
 import instruments from '../../data/market/instruments.json';
@@ -22,7 +25,7 @@ import {
   resolveDemoCandleHeatmapScore,
 } from '../../demo/src/lib/candleHeatmapMetric';
 
-export type StoryInterval = '1m' | '5m';
+export type StoryInterval = '1m' | '5m' | '15m';
 export type StoryFixtureId =
   | 'footprint-tsla'
   | 'session-tsla'
@@ -48,6 +51,7 @@ export interface StoryFixture {
   sessionDate: string;
   instrument: InstrumentContext;
   interval: StoryInterval;
+  mintick: number;
   marketBars: AggregatedMarketBar[];
   orderFlowBars: OrderFlowBar[];
   getHeatmapValue: (bar: OrderFlowBar) => number | null;
@@ -154,19 +158,46 @@ function loadHeatmapScores(fixtureId: StoryFixtureId): Map<string, number> {
   return nextScores;
 }
 
+function intervalToSeconds(interval: StoryInterval): number {
+  switch (interval) {
+    case '1m':
+      return 60;
+    case '5m':
+      return 300;
+    case '15m':
+      return 900;
+  }
+}
+
 export function getStoryFixture(
   fixtureId: StoryFixtureId,
   interval: StoryInterval = '5m',
+  mintick?: number | null,
 ): StoryFixture {
   const source = FIXTURE_SOURCES[fixtureId];
   const instrument = buildInstrument(source.symbol);
   const orderFlowBars1m = loadOrderFlowBars1m(fixtureId);
-  const marketBars =
-    interval === '1m' ? source.bars1m.slice() : aggregateMarketBarsByInterval(source.bars1m, 300);
-  const orderFlowBars =
+  const intervalSeconds = intervalToSeconds(interval);
+  const effectiveMintick =
+    normalizeMintick(mintick ?? instrument.tickSize, instrument.tickSize) ?? instrument.tickSize;
+  const marketBarsBase =
+    interval === '1m'
+      ? source.bars1m.slice()
+      : aggregateMarketBarsByInterval(source.bars1m, intervalSeconds);
+  const orderFlowBarsBase =
     interval === '1m'
       ? orderFlowBars1m.slice()
-      : aggregateOrderFlowBarsByInterval(orderFlowBars1m, 300);
+      : aggregateOrderFlowBarsByInterval(orderFlowBars1m, intervalSeconds);
+  const marketBars = clusterOhlcBarsByMintick(
+    marketBarsBase,
+    effectiveMintick,
+    instrument.tickSize,
+  );
+  const orderFlowBars = clusterOrderFlowBarsByMintick(
+    orderFlowBarsBase,
+    effectiveMintick,
+    instrument.tickSize,
+  );
   const heatmapScores = loadHeatmapScores(fixtureId);
 
   return {
@@ -175,6 +206,7 @@ export function getStoryFixture(
     sessionDate: source.sessionDate,
     instrument,
     interval,
+    mintick: effectiveMintick,
     marketBars,
     orderFlowBars,
     getHeatmapValue: (bar) => resolveDemoCandleHeatmapScore(bar, heatmapScores) ?? null,

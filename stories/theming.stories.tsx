@@ -3,8 +3,15 @@ import { useArgs, useEffect, useMemo, useRef } from 'storybook/preview-api';
 import { ORDER_FLOW_STYLE_PRESETS, type OrderFlowSurfaceTheme } from 'lightweight-orderflow-charts';
 import type { CandlestickSeriesPartialOptions } from 'lightweight-charts';
 
-import { describeStoryFixture, getStoryFixture } from './lib/fixtures';
+import { describeStoryFixture, getStoryFixture, type StoryInterval } from './lib/fixtures';
 import { StoryChartCanvas } from './lib/StoryChartCanvas';
+import {
+  STORY_DEFAULT_MINTICK_INDEX,
+  STORY_INTERVAL_OPTIONS,
+  STORY_MAX_MINTICK_INDEX,
+  formatStoryMintick,
+  resolveStoryMintick,
+} from './lib/storyControls';
 import {
   STORY_THEME_PRESET_IDS,
   resolveStoryThemePreset,
@@ -15,6 +22,8 @@ type ThemePresetControlId = StoryThemePresetId | 'custom';
 
 interface ThemingStoryArgs {
   themePresetId: ThemePresetControlId;
+  interval: StoryInterval;
+  mintickIndex: number;
   backgroundColor: string;
   textColor: string;
   gridColor: string;
@@ -29,7 +38,26 @@ interface ThemingStoryArgs {
   borderDownColor: string;
 }
 
-const THEME_ARG_KEYS: Array<keyof Omit<ThemingStoryArgs, 'themePresetId'>> = [
+type ThemingPresetArgs = Pick<
+  ThemingStoryArgs,
+  | 'themePresetId'
+  | 'backgroundColor'
+  | 'textColor'
+  | 'gridColor'
+  | 'borderColor'
+  | 'crosshairColor'
+  | 'upColor'
+  | 'downColor'
+  | 'wickUpColor'
+  | 'wickDownColor'
+  | 'borderVisible'
+  | 'borderUpColor'
+  | 'borderDownColor'
+>;
+
+const THEME_ARG_KEYS: Array<
+  keyof Omit<ThemingStoryArgs, 'themePresetId' | 'interval' | 'mintickIndex'>
+> = [
   'backgroundColor',
   'textColor',
   'gridColor',
@@ -44,7 +72,7 @@ const THEME_ARG_KEYS: Array<keyof Omit<ThemingStoryArgs, 'themePresetId'>> = [
   'borderDownColor',
 ];
 
-function buildThemeArgsFromPreset(themePresetId: StoryThemePresetId): ThemingStoryArgs {
+function buildThemeArgsFromPreset(themePresetId: StoryThemePresetId): ThemingPresetArgs {
   const preset = resolveStoryThemePreset(themePresetId);
   const candleSeries = preset.candleSeries ?? {};
 
@@ -70,7 +98,7 @@ function buildThemeArgsFromPreset(themePresetId: StoryThemePresetId): ThemingSto
   };
 }
 
-function themeArgsMatchPreset(args: ThemingStoryArgs, presetArgs: ThemingStoryArgs): boolean {
+function themeArgsMatchPreset(args: ThemingStoryArgs, presetArgs: ThemingPresetArgs): boolean {
   return THEME_ARG_KEYS.every((key) => args[key] === presetArgs[key]);
 }
 
@@ -80,7 +108,11 @@ function renderThemingStory() {
     args.themePresetId === 'custom' ? 'chart-dark-pro' : args.themePresetId,
   );
   const previousThemePresetIdRef = useRef<ThemePresetControlId>(args.themePresetId);
-  const fixture = useMemo(() => getStoryFixture('footprint-tsla', '5m'), []);
+  const mintick = resolveStoryMintick(args.mintickIndex);
+  const fixture = useMemo(
+    () => getStoryFixture('footprint-tsla', args.interval, mintick),
+    [args.interval, mintick],
+  );
 
   useEffect(() => {
     if (args.themePresetId !== 'custom') {
@@ -130,7 +162,7 @@ function renderThemingStory() {
   return (
     <StoryChartCanvas
       title="Theme Surface and Candles"
-      subtitle={`${describeStoryFixture(fixture)} • Preset-aware surface and candle color controls`}
+      subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Preset-aware surface and candle color controls`}
       orderFlowBars={fixture.orderFlowBars}
       marketBars={fixture.marketBars}
       theme={themeSurface}
@@ -150,7 +182,11 @@ function renderThemingStory() {
   );
 }
 
-const defaultArgs = buildThemeArgsFromPreset('depth-heat');
+const defaultArgs: ThemingStoryArgs = {
+  interval: '5m',
+  mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
+  ...buildThemeArgsFromPreset('depth-heat'),
+};
 
 const meta = {
   title: 'Theming and Styling',
@@ -163,6 +199,19 @@ const meta = {
     themePresetId: {
       control: 'select',
       options: [...STORY_THEME_PRESET_IDS, 'custom'],
+    },
+    interval: {
+      control: 'inline-radio',
+      options: STORY_INTERVAL_OPTIONS,
+    },
+    mintickIndex: {
+      name: 'mintick',
+      control: {
+        type: 'range',
+        min: 0,
+        max: STORY_MAX_MINTICK_INDEX,
+        step: 1,
+      },
     },
     borderVisible: {
       control: 'boolean',

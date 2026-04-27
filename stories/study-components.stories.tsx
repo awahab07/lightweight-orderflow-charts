@@ -8,12 +8,20 @@ import {
   resolveStoryThemePreset,
   type StoryThemePresetId,
 } from './lib/themePresets';
+import {
+  STORY_DEFAULT_MINTICK_INDEX,
+  STORY_INTERVAL_OPTIONS,
+  STORY_MAX_MINTICK_INDEX,
+  formatStoryMintick,
+  resolveStoryMintick,
+} from './lib/storyControls';
 
 type FootprintStylePresetId = 'classicReference' | 'shadedReference';
 
 interface StudyStoryArgs {
   themePresetId: StoryThemePresetId;
   interval: StoryInterval;
+  mintickIndex: number;
   stylePresetId: FootprintStylePresetId;
 }
 
@@ -26,6 +34,7 @@ const meta = {
   args: {
     themePresetId: 'chart-dark-pro',
     interval: '5m',
+    mintickIndex: STORY_DEFAULT_MINTICK_INDEX,
     stylePresetId: 'shadedReference',
   },
   argTypes: {
@@ -35,7 +44,16 @@ const meta = {
     },
     interval: {
       control: 'inline-radio',
-      options: ['1m', '5m'],
+      options: STORY_INTERVAL_OPTIONS,
+    },
+    mintickIndex: {
+      name: 'mintick',
+      control: {
+        type: 'range',
+        min: 0,
+        max: STORY_MAX_MINTICK_INDEX,
+        step: 1,
+      },
     },
     stylePresetId: {
       control: 'inline-radio',
@@ -57,14 +75,15 @@ function resolveStylePreset(stylePresetId: FootprintStylePresetId) {
 export const DeltaSummary: Story = {
   name: 'Delta Summary',
   render: (args) => {
-    const fixture = getStoryFixture('delta-nvda', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('delta-nvda', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset = resolveStylePreset(args.stylePresetId);
 
     return (
       <StoryChartCanvas
         title="Delta Summary"
-        subtitle={`${describeStoryFixture(fixture)} • Standalone delta summary pane`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Standalone delta summary pane`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -88,14 +107,15 @@ export const DeltaSummary: Story = {
 export const VolumeProfilePrimitive: Story = {
   name: 'Volume Profile Primitive',
   render: (args) => {
-    const fixture = getStoryFixture('footprint-tsla', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('footprint-tsla', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset = resolveStylePreset(args.stylePresetId);
 
     return (
       <StoryChartCanvas
         title="Volume Profile Primitive"
-        subtitle={`${describeStoryFixture(fixture)} • Visible-range profile attached to a footprint series`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Visible-range profile attached to a footprint series`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -119,14 +139,15 @@ export const VolumeProfilePrimitive: Story = {
 export const SessionProfiles: Story = {
   name: 'Session Profiles',
   render: (args) => {
-    const fixture = getStoryFixture('session-tsla', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('session-tsla', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset = resolveStylePreset(args.stylePresetId);
 
     return (
       <StoryChartCanvas
         title="Session Profiles"
-        subtitle={`${describeStoryFixture(fixture)} • Session-by-session distribution overlays`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Session-by-session distribution overlays`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
@@ -147,14 +168,15 @@ export const SessionProfiles: Story = {
 export const VwapOverlay: Story = {
   name: 'VWAP Overlay',
   render: (args) => {
-    const fixture = getStoryFixture('session-tsla', args.interval);
+    const mintick = resolveStoryMintick(args.mintickIndex);
+    const fixture = getStoryFixture('session-tsla', args.interval, mintick);
     const themePreset = resolveStoryThemePreset(args.themePresetId);
     const stylePreset = resolveStylePreset(args.stylePresetId);
 
     return (
       <StoryChartCanvas
         title="VWAP Overlay"
-        subtitle={`${describeStoryFixture(fixture)} • Session-reset VWAP rendered over price action`}
+        subtitle={`${describeStoryFixture(fixture)} • Mintick ${formatStoryMintick(mintick)} • Session-reset VWAP rendered over price action`}
         orderFlowBars={fixture.orderFlowBars}
         marketBars={fixture.marketBars}
         theme={themePreset.surface}
