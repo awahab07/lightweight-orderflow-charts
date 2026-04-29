@@ -34,6 +34,21 @@ This `docs/` tree is intentionally plain Markdown so it can be:
 - `RELEASING.md`
   GitHub Pages, semver tagging, npm provenance, and first-publish guidance
 
+## Interactive Surfaces
+
+The repository also ships public interactive surfaces for visual validation and package discovery:
+
+- Demo
+  [awahab07.github.io/lightweight-orderflow-charts/latest/demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
+- Playground
+  [awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground)
+- Theming
+  [awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming)
+- Storybook
+  [awahab07.github.io/lightweight-orderflow-charts/latest/storybook](https://awahab07.github.io/lightweight-orderflow-charts/latest/storybook/)
+- Demo data
+  [awahab07.github.io/lightweight-orderflow-charts/latest/data](https://awahab07.github.io/lightweight-orderflow-charts/latest/data/)
+
 ## Publishing Notes
 
 If you later adopt a docs generator, keep this directory as the source of truth and layer the tool's

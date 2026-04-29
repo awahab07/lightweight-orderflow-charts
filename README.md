@@ -7,6 +7,8 @@ This package is designed for host apps that already own chart creation, market-d
 layout orchestration, but need a clean, broker-neutral rendering layer for footprint charts,
 profiles, VWAP, and aligned order-flow subcharts.
 
+See it in action: [Open the main demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
+
 ## Highlights
 
 - Footprint and volume-footprint custom series built on the same renderer pipeline
@@ -30,9 +32,11 @@ profiles, VWAP, and aligned order-flow subcharts.
 
 ## Public Links
 
+- Demo: [awahab07.github.io/lightweight-orderflow-charts/latest/demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
+- Playground: [awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground)
+- Theming: [awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming)
 - Docs: [awahab07.github.io/lightweight-orderflow-charts/latest/docs](https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/)
 - Storybook: [awahab07.github.io/lightweight-orderflow-charts/latest/storybook](https://awahab07.github.io/lightweight-orderflow-charts/latest/storybook/)
-- Demo: [awahab07.github.io/lightweight-orderflow-charts/latest/demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
 - Demo data: [awahab07.github.io/lightweight-orderflow-charts/latest/data](https://awahab07.github.io/lightweight-orderflow-charts/latest/data/)
 
 The served fixture data is locally crafted for visualization and validation. It is not a live feed
@@ -76,6 +80,8 @@ Common local commands:
   Runs the full repository verification flow used by CI
 - `npm run docs`
   Starts the public docs landing app from `docs-site/`
+- `npm run storybook`
+  Starts the package-focused Storybook for interactive component and surface documentation
 - `npm run build-storybook`
   Builds the package-focused Storybook static output
 - `npm run site:build`
@@ -481,15 +487,20 @@ function OrderFlowPane({ bars, chart }: { bars: OrderFlowBar[]; chart: IChartApi
 
 ## Demo
 
-The repo contains three demo entry points:
+The repo contains four demo entry points:
 
 - Explore at `#/explore`
-  Educational kitchen sink with five controls: `Preset`, `Theme`, `Date`, `Symbol`, and `Interval`
+  Preset-driven exploration surface with URL-synced controls for `Preset`, `Theme`, `Date`,
+  `Symbol`, `Interval`, `Mintick`, and optional synthetic streaming
+- Playground at `#/playground`
+  Advanced fixture lab for trying lower-level renderer combinations, heatmap tuning, and layout
+  toggles
+- Theming at `#/theming`
+  Fixed Order Flow Delta plus profile composition for editing chart-surface, candle, footprint,
+  volume-profile, and delta-summary theme tokens against live data
 - Connect at `#/connect`
   Local-development-only direct vendor flow with cache-first loading, streaming progress, and
   connector status
-- Playground at `#/playground`
-  Advanced view for trying lower-level fixtures and renderer combinations
 
 Explore is built around conceptual presets such as:
 
@@ -505,8 +516,8 @@ Explore is built around conceptual presets such as:
 The theme selector applies one of the published `ORDER_FLOW_THEME_PRESETS`, so the same concept can
 be re-skinned without changing the underlying study composition.
 
-The published GitHub Pages demo intentionally omits the `Connect` route because it depends on the
-local bridge process and vendor credentials.
+The published GitHub Pages demo exposes Explore, Playground, and Theming. It intentionally omits
+the `Connect` route because that flow depends on the local bridge process and vendor credentials.
 
 ## Source Layout
 
@@ -561,7 +572,7 @@ When adding a new study or enhancing an existing one:
 6. Add a focused test under `tests/unit` or `tests/integration`
 7. Add an Explore preset only when it meaningfully teaches the feature
 
-## Development
+## Full Verification
 
 ```bash
 npm run typecheck

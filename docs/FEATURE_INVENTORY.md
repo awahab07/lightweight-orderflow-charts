@@ -56,6 +56,17 @@ presets.
 - `Uniform Price Grid`
   Preserves a constant ladder step so price rows do not visually compress or stretch unevenly.
 
+## Demo Surfaces
+
+- `Explore`
+  Preset-driven education surface for comparing concepts, themes, intervals, mintick, and saved view state.
+- `Playground`
+  Fixture-oriented lab for toggling studies, chart modes, and layout controls with low-level access.
+- `Theming`
+  Fixed chart composition for editing surface, candle, footprint, profile, and delta-summary theme tokens live.
+- `Connect`
+  Local-only connector workflow for cache-first vendor loading and bridge-backed status visibility.
+
 ## Demo Presets
 
 - `Order Flow`

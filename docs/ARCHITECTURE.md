@@ -92,12 +92,14 @@ The React layer should remain deliberately small:
 
 Owns product education and validation surfaces:
 
+- `demo/src/components`
+  Explore, Playground, Theming, and Connect surfaces plus shared demo composition wrappers
 - `demo/src/content`
-  Explore presets and educational mappings
+  Explore presets, default themes, and other teaching-oriented route content
 - `demo/src/fixtures`
   Playground-oriented fixture data and historical styling references
 - `demo/src/lib`
-  Demo-only data loading and composition helpers
+  Demo-only data loading, URL sync, and composition helpers shared across the routes
 
 The demo may showcase the public API, but should not become the place where public defaults are
 defined first.
