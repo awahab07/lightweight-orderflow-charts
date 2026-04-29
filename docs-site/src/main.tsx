@@ -79,6 +79,84 @@ const linkStyle: CSSProperties = {
   textDecoration: 'none',
 };
 
+const heroLinksStyle: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 12,
+};
+
+const heroLinkStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 10,
+  minHeight: 42,
+  padding: '8px 14px',
+  borderRadius: 999,
+  border: '1px solid rgba(148, 163, 184, 0.16)',
+  background: 'rgba(2, 6, 23, 0.34)',
+  color: '#e2e8f0',
+  textDecoration: 'none',
+  fontSize: 14,
+  fontWeight: 600,
+  boxSizing: 'border-box',
+};
+
+const heroLinkIconWrapStyle: CSSProperties = {
+  width: 24,
+  height: 24,
+  display: 'inline-grid',
+  placeItems: 'center',
+  borderRadius: 999,
+  border: '1px solid rgba(148, 163, 184, 0.18)',
+  background: 'rgba(15, 23, 42, 0.72)',
+  flex: '0 0 auto',
+};
+
+const surfaceCardStyle: CSSProperties = {
+  display: 'grid',
+  gap: 16,
+  minWidth: 0,
+  minHeight: 320,
+  padding: 22,
+  borderRadius: 22,
+  boxSizing: 'border-box',
+  background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(15, 23, 42, 0.92) 100%)',
+  border: '1px solid rgba(148, 163, 184, 0.14)',
+  textDecoration: 'none',
+  color: 'inherit',
+  transition: 'transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease',
+};
+
+const surfaceCardGraphicStyle: CSSProperties = {
+  position: 'relative',
+  display: 'grid',
+  placeItems: 'center',
+  minHeight: 164,
+  padding: 24,
+  borderRadius: 20,
+  overflow: 'hidden',
+  border: '1px solid rgba(148, 163, 184, 0.14)',
+};
+
+const surfaceCardGraphicBadgeStyle: CSSProperties = {
+  position: 'relative',
+  zIndex: 1,
+  width: 88,
+  height: 88,
+  display: 'grid',
+  placeItems: 'center',
+  borderRadius: 28,
+  background: 'rgba(2, 6, 23, 0.24)',
+  border: '1px solid rgba(255, 255, 255, 0.18)',
+  boxShadow: '0 18px 36px rgba(2, 6, 23, 0.22)',
+};
+
+const surfaceCardDescriptionStyle: CSSProperties = {
+  color: '#cbd5e1',
+  lineHeight: 1.65,
+  fontSize: 16,
+};
+
 const quickStartLayoutStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
@@ -116,6 +194,17 @@ const chartImageStyle: CSSProperties = {
   border: '1px solid rgba(148, 163, 184, 0.12)',
   background: '#020617',
 };
+
+type SurfaceId = 'demo' | 'playground' | 'theming' | 'storybook' | 'data';
+
+interface SurfaceDestination {
+  id: SurfaceId;
+  title: string;
+  href: string;
+  body: string;
+  accent: string;
+  accentSoft: string;
+}
 
 const QUICK_START_EXAMPLES = [
   {
@@ -182,6 +271,49 @@ const profileOptions = {
   },
 ] as const;
 
+const SURFACE_DESTINATIONS: SurfaceDestination[] = [
+  {
+    id: 'demo',
+    title: 'Demo',
+    href: '../demo/',
+    body: 'A richer exploration surface with Explore and Playground routes for fixture-backed chart validation.',
+    accent: '#7dd3fc',
+    accentSoft: 'rgba(14, 165, 233, 0.22)',
+  },
+  {
+    id: 'playground',
+    title: 'Playground',
+    href: '../demo/#/playground',
+    body: 'Preset-driven fixture controls for changing display, studies, and chart composition in one place.',
+    accent: '#c4b5fd',
+    accentSoft: 'rgba(139, 92, 246, 0.22)',
+  },
+  {
+    id: 'theming',
+    title: 'Theming',
+    href: '../demo/#/theming',
+    body: 'A fixed chart composition with a right-sidebar theme editor for the visible surface, studies, and candles.',
+    accent: '#f9a8d4',
+    accentSoft: 'rgba(236, 72, 153, 0.22)',
+  },
+  {
+    id: 'storybook',
+    title: 'Storybook',
+    href: '../storybook/',
+    body: 'Interactive stories for full chart compositions, isolated study components, and theme tuning.',
+    accent: '#fcd34d',
+    accentSoft: 'rgba(245, 158, 11, 0.22)',
+  },
+  {
+    id: 'data',
+    title: 'Data',
+    href: '../data/',
+    body: 'Publicly served aggregated market fixtures that docs, stories, and the demo can reference.',
+    accent: '#86efac',
+    accentSoft: 'rgba(34, 197, 94, 0.22)',
+  },
+];
+
 const CHART_TYPE_GALLERY = [
   {
     title: 'Basic Footprint Chart',
@@ -220,22 +352,138 @@ const CHART_TYPE_GALLERY = [
   },
 ] as const;
 
-function SurfaceCard({
-  title,
-  body,
-  href,
-  cta,
-}: {
-  title: string;
-  body: string;
-  href: string;
-  cta: string;
-}) {
+function SurfaceIcon({ id, size = 20 }: { id: SurfaceId; size?: number }) {
+  const commonProps = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+
+  switch (id) {
+    case 'demo':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 19V6" />
+          <path d="M12 19V10" />
+          <path d="M20 19V4" />
+          <rect x="2.5" y="10" width="3" height="5" rx="1" fill="currentColor" stroke="none" />
+          <rect x="10.5" y="7" width="3" height="7" rx="1" fill="currentColor" stroke="none" />
+          <rect x="18.5" y="8" width="3" height="6" rx="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'playground':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
+          <circle cx="9" cy="7" r="2.5" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="12" r="2.5" fill="currentColor" stroke="none" />
+          <circle cx="11" cy="17" r="2.5" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'theming':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 4c4.42 0 8 3.13 8 7 0 2.13-1.74 3.5-3.56 3.5h-1.08a1.35 1.35 0 0 0-1.36 1.36A2.62 2.62 0 0 1 11.38 18C7.3 18 4 15.1 4 11.5S7.58 4 12 4Z" />
+          <circle cx="8.4" cy="10.2" r="1" fill="currentColor" stroke="none" />
+          <circle cx="11.7" cy="8.2" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15.1" cy="10.1" r="1" fill="currentColor" stroke="none" />
+          <circle cx="9.9" cy="13.4" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'storybook':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 6.5a2.5 2.5 0 0 1 2.5-2.5H18v15H7.5A2.5 2.5 0 0 0 5 21.5Z" />
+          <path d="M7.5 4v15" />
+          <path d="M18 19H7.5A2.5 2.5 0 0 0 5 21.5" />
+          <path d="M11 8h4" />
+          <path d="M11 12h4" />
+        </svg>
+      );
+    case 'data':
+      return (
+        <svg {...commonProps}>
+          <ellipse cx="12" cy="6" rx="6.5" ry="2.5" />
+          <path d="M5.5 6v5c0 1.38 2.91 2.5 6.5 2.5s6.5-1.12 6.5-2.5V6" />
+          <path d="M5.5 11v5c0 1.38 2.91 2.5 6.5 2.5s6.5-1.12 6.5-2.5v-5" />
+        </svg>
+      );
+  }
+}
+
+function SurfaceQuickLink({ surface }: { surface: SurfaceDestination }) {
   return (
-    <a href={href} style={clickableCardStyle}>
-      <div style={{ fontSize: 18, fontWeight: 700, color: '#f8fafc' }}>{title}</div>
-      <div style={{ color: '#cbd5e1', lineHeight: 1.6 }}>{body}</div>
-      <span style={linkStyle}>{cta}</span>
+    <a href={surface.href} style={heroLinkStyle}>
+      <span
+        style={{
+          ...heroLinkIconWrapStyle,
+          color: surface.accent,
+          background: surface.accentSoft,
+        }}
+      >
+        <SurfaceIcon id={surface.id} size={15} />
+      </span>
+      <span>{surface.title}</span>
+    </a>
+  );
+}
+
+function SurfaceCard({ surface }: { surface: SurfaceDestination }) {
+  return (
+    <a href={surface.href} style={surfaceCardStyle}>
+      <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.05, color: '#f8fafc' }}>
+        {surface.title}
+      </div>
+      <div
+        style={{
+          ...surfaceCardGraphicStyle,
+          background: `linear-gradient(145deg, ${surface.accentSoft} 0%, rgba(15, 23, 42, 0.4) 100%)`,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 45%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            width: 64,
+            height: 64,
+            borderRadius: 20,
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            background: 'rgba(255, 255, 255, 0.06)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            left: 18,
+            bottom: 18,
+            width: 96,
+            height: 28,
+            borderRadius: 999,
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            background: 'rgba(255, 255, 255, 0.08)',
+          }}
+        />
+        <div style={{ ...surfaceCardGraphicBadgeStyle, color: surface.accent }}>
+          <SurfaceIcon id={surface.id} size={44} />
+        </div>
+      </div>
+      <div style={surfaceCardDescriptionStyle}>{surface.body}</div>
     </a>
   );
 }
@@ -289,56 +537,17 @@ function App() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            <a href="../demo/" style={linkStyle}>
-              Open Demo
-            </a>
-            <a href="../demo/#/playground" style={linkStyle}>
-              Open Playground
-            </a>
-            <a href="../demo/#/theming" style={linkStyle}>
-              Open Theming
-            </a>
-            <a href="../storybook/" style={linkStyle}>
-              Open Storybook
-            </a>
-            <a href="../data/" style={linkStyle}>
-              Browse Demo Data
-            </a>
+          <div style={heroLinksStyle}>
+            {SURFACE_DESTINATIONS.map((surface) => (
+              <SurfaceQuickLink key={surface.id} surface={surface} />
+            ))}
           </div>
         </section>
 
         <section style={cardGridStyle}>
-          <SurfaceCard
-            title="Demo"
-            body="A richer exploration surface with Explore and Playground routes for fixture-backed chart validation."
-            href="../demo/"
-            cta="Open demo"
-          />
-          <SurfaceCard
-            title="Playground"
-            body="Preset-driven fixture controls for changing display, studies, and chart composition in one place."
-            href="../demo/#/playground"
-            cta="Open playground"
-          />
-          <SurfaceCard
-            title="Theming"
-            body="A fixed chart composition with a right-sidebar theme editor for the visible surface, studies, and candles."
-            href="../demo/#/theming"
-            cta="Open theming"
-          />
-          <SurfaceCard
-            title="Storybook"
-            body="Interactive stories for full chart compositions, isolated study components, and theme tuning."
-            href="../storybook/"
-            cta="Go to stories"
-          />
-          <SurfaceCard
-            title="Fixture Data"
-            body="Publicly served aggregated market fixtures that docs, stories, and the demo can reference."
-            href="../data/"
-            cta="Inspect data"
-          />
+          {SURFACE_DESTINATIONS.filter((surface) => surface.id !== 'data').map((surface) => (
+            <SurfaceCard key={surface.id} surface={surface} />
+          ))}
         </section>
 
         <section style={sectionStyle}>
