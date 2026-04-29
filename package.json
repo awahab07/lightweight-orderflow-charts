@@ -45,8 +45,9 @@
     "demo": "vite --config demo/vite.config.ts",
     "demo:build": "vite build --config demo/vite.config.ts",
     "demo:preview": "vite preview --config demo/vite.config.ts",
-    "docs": "vite --config docs-site/vite.config.ts",
-    "docs:build": "vite build --config docs-site/vite.config.ts",
+    "docs": "npm run docs:generate-api-reference && vite --config docs-site/vite.config.ts",
+    "docs:generate-api-reference": "node scripts/generate-api-reference.mjs && prettier --write docs/API_REFERENCE.md docs-site/src/generated/apiReference.generated.ts",
+    "docs:build": "npm run docs:generate-api-reference && vite build --config docs-site/vite.config.ts",
     "docs:capture-chart-images": "node scripts/capture-docs-chart-images.mjs",
     "docs:preview": "vite preview --config docs-site/vite.config.ts",
     "typecheck": "tsc --noEmit",
@@ -89,6 +90,9 @@
   },
   "devDependencies": {
     "@stoqey/ib": "^1.5.3",
+    "@storybook/addon-a11y": "^10.3.5",
+    "@storybook/addon-docs": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
@@ -102,14 +106,14 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "rxjs": "^7.8.2",
+    "storybook": "^10.3.5",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
-    "vitest": "^4.1.2",
-    "storybook": "^10.3.5",
-    "@storybook/react-vite": "^10.3.5",
-    "@storybook/addon-a11y": "^10.3.5",
-    "@storybook/addon-docs": "^10.3.5"
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "marked": "^18.0.2"
   }
 }

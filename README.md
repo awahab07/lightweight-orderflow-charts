@@ -95,6 +95,10 @@ See `CONTRIBUTING.md` for the short contributor workflow.
 
 ## Documentation Map
 
+- `docs/GETTING_STARTED.md`
+  Step-by-step path to the first rendered footprint chart
+- `docs/API_REFERENCE.md`
+  Auto-generated public export index for the core and React entry points
 - `docs/index.md`
   Publishable docs entry point for GitHub Pages or a static docs generator
 - `docs/DATA_REQUIREMENTS.md`

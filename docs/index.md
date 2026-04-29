@@ -9,30 +9,49 @@ This `docs/` tree is intentionally plain Markdown so it can be:
 
 ## Start Here
 
-- `DATA_REQUIREMENTS.md`
-  Input contracts, study expectations, and feed-preparation guidance
+- `GETTING_STARTED.md`
+  Step-by-step path to a first rendered footprint chart
+- `API_REFERENCE.md`
+  Auto-generated public export index for the core and React entry points
+- `FEATURE_INVENTORY.md`
+  Review list of the currently shipped public features, demo surfaces, and presets
+
+## Guides
+
 - `CANDLE_HEATMAP.md`
   Public helper for metric-driven candlestick coloring
+- `AUTO_FIT.md`
+  Price-scale auto-fit helper for TradingView-style `Auto (fits data to screen)` behavior
+- `CHART_STATE.md`
+  Viewport capture and restore helpers for deep linking and persistence
+
+## Data & Integration
+
+- `DATA_REQUIREMENTS.md`
+  Input contracts, study expectations, and feed-preparation guidance
 - `TICK_DATA.md`
   Tick storage contract, source-mode guidance, and patch-driven replay patterns
 - `MINTICK.md`
   Price bucketing, clustering rules, and when to use `mintick`
+
+## Styling & Presentation
+
 - `FORMATTING.md`
   Price and compact value formatting options for the footprint text surface
-- `CHART_STATE.md`
-  Viewport capture and restore helpers for deep linking and persistence
-- `AUTO_FIT.md`
-  Price-scale auto-fit helper for TradingView-style `Auto (fits data to screen)` behavior
-- `FEATURE_INVENTORY.md`
-  Review list of the currently shipped public features and demo presets
+
+## Advanced
+
 - `ARCHITECTURE.md`
   Source-tree roles, public surfaces, and extension guidance
 - `THEORY.md`
   Concept notes derived from the research material maintained outside the publishable repo
-- `ATTRIBUTION.md`
-  TradingView attribution requirements inherited from `lightweight-charts`
 - `RELEASING.md`
   GitHub Pages, semver tagging, npm provenance, and first-publish guidance
+
+## Miscellaneous
+
+- `ATTRIBUTION.md`
+  TradingView attribution requirements inherited from `lightweight-charts`
 
 ## Interactive Surfaces
 
