@@ -340,7 +340,11 @@ function createThemeDraft(themePreset: OrderFlowThemePresetPack): ThemeDraft {
   }) as ThemeDraft;
 }
 
-export function ThemingDemoPage() {
+interface ThemingDemoPageProps {
+  showToolbar?: boolean;
+}
+
+export function ThemingDemoPage({ showToolbar = true }: ThemingDemoPageProps) {
   const instrument = useMemo(() => loadInstrument(DEFAULT_SYMBOL), []);
   const supportedMinticks = useMemo(
     () => buildSupportedMinticks(instrument.tickSize).filter((value) => value <= 1),
@@ -450,6 +454,47 @@ export function ThemingDemoPage() {
   const footerText = `${DEFAULT_SYMBOL} | ${DEFAULT_SESSION_DATE} | ${DEFAULT_INTERVAL} | Mintick: ${formatMintick(
     mintick,
   )} | Theme seed: ${THEME_PRESET.label}`;
+  const chartHeight = showToolbar ? THEME_PAGE_CHART_HEIGHT : 520;
+  const chartContent =
+    dataStatus === 'ready' && orderFlowBars.length ? (
+      <OrderFlowChart
+        bars={orderFlowBars}
+        chartHeight={chartHeight}
+        footerText={showToolbar ? footerText : undefined}
+        theme={themeDraft.surface}
+        seriesMode="footprint"
+        showVisibleProfile
+        showSessionProfiles={false}
+        showVwap={false}
+        showReferenceCandles={false}
+        showVolumePane={false}
+        showDeltaSummary
+        footprintOptions={footprintOptions}
+        volumeProfileOptions={volumeProfileOptions}
+        deltaSummaryOptions={deltaSummaryOptions}
+        candleSeriesOptions={themeDraft.candleSeries}
+        initialViewState={ORDER_FLOW_DELTA_PRESET.defaultViewState}
+        dataSourceKey={`theming:${DEFAULT_SYMBOL}:${DEFAULT_SESSION_DATE}:${DEFAULT_INTERVAL}:${mintick}`}
+      />
+    ) : (
+      <section
+        style={{
+          padding: 24,
+          borderRadius: 16,
+          background: 'rgba(15, 23, 42, 0.75)',
+          border: '1px solid rgba(148, 163, 184, 0.12)',
+          color: '#cbd5e1',
+        }}
+      >
+        {dataStatus === 'loading'
+          ? 'Loading canonical aggregated data for the theming surface.'
+          : `Unable to load the theming surface data: ${dataError ?? 'Unknown error'}`}
+      </section>
+    );
+
+  if (!showToolbar) {
+    return <section style={{ minWidth: 0 }}>{chartContent}</section>;
+  }
 
   return (
     <section style={{ display: 'grid', gap: 16 }}>
@@ -474,43 +519,7 @@ export function ThemingDemoPage() {
           alignItems: 'start',
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          {dataStatus === 'ready' && orderFlowBars.length ? (
-            <OrderFlowChart
-              bars={orderFlowBars}
-              chartHeight={THEME_PAGE_CHART_HEIGHT}
-              footerText={footerText}
-              theme={themeDraft.surface}
-              seriesMode="footprint"
-              showVisibleProfile
-              showSessionProfiles={false}
-              showVwap={false}
-              showReferenceCandles={false}
-              showVolumePane={false}
-              showDeltaSummary
-              footprintOptions={footprintOptions}
-              volumeProfileOptions={volumeProfileOptions}
-              deltaSummaryOptions={deltaSummaryOptions}
-              candleSeriesOptions={themeDraft.candleSeries}
-              initialViewState={ORDER_FLOW_DELTA_PRESET.defaultViewState}
-              dataSourceKey={`theming:${DEFAULT_SYMBOL}:${DEFAULT_SESSION_DATE}:${DEFAULT_INTERVAL}:${mintick}`}
-            />
-          ) : (
-            <section
-              style={{
-                padding: 24,
-                borderRadius: 16,
-                background: 'rgba(15, 23, 42, 0.75)',
-                border: '1px solid rgba(148, 163, 184, 0.12)',
-                color: '#cbd5e1',
-              }}
-            >
-              {dataStatus === 'loading'
-                ? 'Loading canonical aggregated data for the theming surface.'
-                : `Unable to load the theming surface data: ${dataError ?? 'Unknown error'}`}
-            </section>
-          )}
-        </div>
+        <div style={{ minWidth: 0 }}>{chartContent}</div>
 
         <aside style={SIDEBAR_SURFACE_STYLE}>
           <SidebarSection title="Display">

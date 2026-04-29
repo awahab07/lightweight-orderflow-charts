@@ -80,7 +80,11 @@ function formatMintick(value: number): string {
   return value.toFixed(Math.max(2, inferPricePrecision(value)));
 }
 
-export function ExploreDemoPage() {
+interface ExploreDemoPageProps {
+  showToolbar?: boolean;
+}
+
+export function ExploreDemoPage({ showToolbar = true }: ExploreDemoPageProps) {
   const initialUrlState = useMemo(
     () => (typeof window === 'undefined' ? null : readExploreDemoUrlState(window.location.hash)),
     [],
@@ -465,102 +469,105 @@ export function ExploreDemoPage() {
   )} | Theme: ${themePreset.label} | Source: ${
     streamEnabled ? 'canonical synthetic stream' : 'canonical aggregated data'
   } | Stream: ${streamEnabled ? 'on' : 'off'}`;
+  const chartHeight = showToolbar ? 900 : 520;
 
   return (
     <>
-      <ConceptToolbar
-        presetId={presetId}
-        presetOptions={CONCEPT_PRESETS.map((entry) => ({
-          value: entry.id,
-          label: entry.label,
-        }))}
-        onPresetChange={applyPresetDefaults}
-        themeId={themeId}
-        themeOptions={THEME_PRESETS.map((entry) => ({
-          value: entry.id,
-          label: entry.label,
-        }))}
-        onThemeChange={setThemeId}
-        sessionDate={sessionDate}
-        dateOptions={availableDates.map((entry) => ({
-          value: entry,
-          label: entry,
-        }))}
-        onDateChange={(value) => {
-          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-          setSessionDate(value);
-          setRestoredViewState(nextViewState);
-          setViewState(nextViewState);
-        }}
-        symbol={symbol}
-        symbolOptions={AVAILABLE_SYMBOLS.map((entry) => ({
-          value: entry,
-          label: entry,
-        }))}
-        onSymbolChange={(value) => {
-          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-          setSymbol(value as SymbolCode);
-          setRestoredViewState(nextViewState);
-          setViewState(nextViewState);
-        }}
-        interval={interval}
-        intervalOptions={AVAILABLE_INTERVALS.map((entry) => ({
-          value: entry,
-          label: entry,
-        }))}
-        onIntervalChange={(value) => {
-          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-          setInterval(value as BarInterval);
-          setRestoredViewState(nextViewState);
-          setViewState(nextViewState);
-        }}
-        mintick={effectiveMintick}
-        mintickOptions={mintickOptions.map((entry) => ({
-          value: entry,
-          label: formatMintick(entry),
-        }))}
-        onMintickChange={(value) => {
-          const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
-          setMintick(value);
-          setRestoredViewState(nextViewState);
-          setViewState(nextViewState);
-        }}
-        rightActions={
-          <button
-            onClick={() => {
-              if (loadedBars.length > 0) {
-                setStreamEnabled((current) => !current);
-              }
-            }}
-            disabled={!loadedBars.length}
-            style={{
-              background: !loadedBars.length
-                ? 'rgba(71, 85, 105, 0.18)'
-                : streamEnabled
-                  ? 'rgba(34, 197, 94, 0.2)'
-                  : 'rgba(148, 163, 184, 0.16)',
-              color: !loadedBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
-              border: !loadedBars.length
-                ? '1px solid rgba(71, 85, 105, 0.28)'
-                : streamEnabled
-                  ? '1px solid rgba(34, 197, 94, 0.28)'
-                  : '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: 8,
-              padding: '8px 12px',
-              cursor: loadedBars.length ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {loadedBars.length ? 'Stream' : 'Stream (data unavailable)'}
-          </button>
-        }
-      />
+      {showToolbar ? (
+        <ConceptToolbar
+          presetId={presetId}
+          presetOptions={CONCEPT_PRESETS.map((entry) => ({
+            value: entry.id,
+            label: entry.label,
+          }))}
+          onPresetChange={applyPresetDefaults}
+          themeId={themeId}
+          themeOptions={THEME_PRESETS.map((entry) => ({
+            value: entry.id,
+            label: entry.label,
+          }))}
+          onThemeChange={setThemeId}
+          sessionDate={sessionDate}
+          dateOptions={availableDates.map((entry) => ({
+            value: entry,
+            label: entry,
+          }))}
+          onDateChange={(value) => {
+            const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+            setSessionDate(value);
+            setRestoredViewState(nextViewState);
+            setViewState(nextViewState);
+          }}
+          symbol={symbol}
+          symbolOptions={AVAILABLE_SYMBOLS.map((entry) => ({
+            value: entry,
+            label: entry,
+          }))}
+          onSymbolChange={(value) => {
+            const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+            setSymbol(value as SymbolCode);
+            setRestoredViewState(nextViewState);
+            setViewState(nextViewState);
+          }}
+          interval={interval}
+          intervalOptions={AVAILABLE_INTERVALS.map((entry) => ({
+            value: entry,
+            label: entry,
+          }))}
+          onIntervalChange={(value) => {
+            const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+            setInterval(value as BarInterval);
+            setRestoredViewState(nextViewState);
+            setViewState(nextViewState);
+          }}
+          mintick={effectiveMintick}
+          mintickOptions={mintickOptions.map((entry) => ({
+            value: entry,
+            label: formatMintick(entry),
+          }))}
+          onMintickChange={(value) => {
+            const nextViewState = prepareDataSourceViewState(viewState ?? restoredViewState);
+            setMintick(value);
+            setRestoredViewState(nextViewState);
+            setViewState(nextViewState);
+          }}
+          rightActions={
+            <button
+              onClick={() => {
+                if (loadedBars.length > 0) {
+                  setStreamEnabled((current) => !current);
+                }
+              }}
+              disabled={!loadedBars.length}
+              style={{
+                background: !loadedBars.length
+                  ? 'rgba(71, 85, 105, 0.18)'
+                  : streamEnabled
+                    ? 'rgba(34, 197, 94, 0.2)'
+                    : 'rgba(148, 163, 184, 0.16)',
+                color: !loadedBars.length ? '#94a3b8' : streamEnabled ? '#bbf7d0' : '#e2e8f0',
+                border: !loadedBars.length
+                  ? '1px solid rgba(71, 85, 105, 0.28)'
+                  : streamEnabled
+                    ? '1px solid rgba(34, 197, 94, 0.28)'
+                    : '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: 8,
+                padding: '8px 12px',
+                cursor: loadedBars.length ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {loadedBars.length ? 'Stream' : 'Stream (data unavailable)'}
+            </button>
+          }
+        />
+      ) : null}
 
       {bars.length ? (
         <OrderFlowChart
           key={`explore-preset-${presetId}-${themeId}`}
           bars={bars}
-          chartHeight={900}
-          footerText={footerText}
+          chartHeight={chartHeight}
+          footerText={showToolbar ? footerText : undefined}
           theme={themePreset.surface}
           seriesMode={preset.seriesMode}
           showVisibleProfile={preset.showVisibleProfile}

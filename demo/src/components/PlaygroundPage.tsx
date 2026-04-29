@@ -2,10 +2,14 @@ import { useEffect } from 'react';
 
 import { FixtureDemoPage } from './FixtureDemoPage';
 
-export function PlaygroundPage() {
+interface PlaygroundPageProps {
+  showToolbar?: boolean;
+}
+
+export function PlaygroundPage({ showToolbar = true }: PlaygroundPageProps) {
   useEffect(() => {
     document.title = 'Lightweight Order Flow Charts | Playground';
   }, []);
 
-  return <FixtureDemoPage />;
+  return <FixtureDemoPage showToolbar={showToolbar} />;
 }

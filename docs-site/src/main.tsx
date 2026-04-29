@@ -29,8 +29,9 @@ const heroStyle: CSSProperties = {
 
 const cardGridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
   gap: 16,
+  alignItems: 'stretch',
 };
 
 const cardStyle: CSSProperties = {
@@ -44,7 +45,9 @@ const cardStyle: CSSProperties = {
 
 const clickableCardStyle: CSSProperties = {
   ...cardStyle,
-  height: '100%',
+  minWidth: 0,
+  minHeight: 180,
+  boxSizing: 'border-box',
   textDecoration: 'none',
   color: 'inherit',
   transition: 'transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease',
@@ -78,19 +81,21 @@ const linkStyle: CSSProperties = {
 
 const quickStartLayoutStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 1fr)',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
   gap: 18,
+  alignItems: 'start',
 };
 
 const tabRowStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(110px, 100%), 1fr))',
   gap: 10,
 };
 
 const iframeCardStyle: CSSProperties = {
   display: 'grid',
   gap: 12,
+  minWidth: 0,
   padding: 16,
   borderRadius: 18,
   background: '#020617',
@@ -99,7 +104,7 @@ const iframeCardStyle: CSSProperties = {
 
 const galleryGridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
   gap: 16,
 };
 
@@ -117,6 +122,8 @@ const QUICK_START_EXAMPLES = [
     id: 'footprint',
     label: 'Footprint',
     href: '../demo/#/explore?preset=order-flow&theme=smooth-light',
+    embedHref:
+      '../demo/#/explore?preset=order-flow&theme=smooth-light&showHeader=false&showLinks=false&showToolbar=false',
     code: `import {
   ORDER_FLOW_THEME_PRESETS,
   ORDER_FLOW_STYLE_PRESETS,
@@ -136,6 +143,8 @@ series.setData(orderFlowBars);`,
     id: 'delta',
     label: 'Delta',
     href: '../demo/#/explore?preset=ladder-fundamentals&theme=midnight-terminal',
+    embedHref:
+      '../demo/#/explore?preset=ladder-fundamentals&theme=midnight-terminal&showHeader=false&showLinks=false&showToolbar=false',
     code: `import {
   ORDER_FLOW_THEME_PRESETS,
   ORDER_FLOW_STYLE_PRESETS,
@@ -156,6 +165,8 @@ summary.setData(orderFlowBars);`,
     id: 'volume-profile',
     label: 'Volume Profile',
     href: '../demo/#/explore?preset=session-map&theme=cobalt-workstation',
+    embedHref:
+      '../demo/#/explore?preset=session-map&theme=cobalt-workstation&showHeader=false&showLinks=false&showToolbar=false',
     code: `import {
   ORDER_FLOW_THEME_PRESETS,
   ORDER_FLOW_STYLE_PRESETS,
@@ -358,8 +369,8 @@ npm install react react-dom`}</code>
         <section style={sectionStyle}>
           <h2 style={{ margin: 0, color: '#f8fafc' }}>Quick Start</h2>
           <div style={{ color: '#cbd5e1', lineHeight: 1.7 }}>
-            The live preview on the right embeds the served demo so the example stays synchronized
-            with the public surface and preset URLs.
+            The live preview embeds the served demo so the example stays synchronized with the
+            public surface and preset URLs.
           </div>
           <div style={quickStartLayoutStyle}>
             <div style={{ display: 'grid', gap: 12 }}>
@@ -372,7 +383,13 @@ npm install react react-dom`}</code>
                       type="button"
                       onClick={() => setActiveExampleId(example.id)}
                       style={{
-                        borderRadius: 999,
+                        width: '100%',
+                        minWidth: 0,
+                        minHeight: 48,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 14,
                         padding: '8px 14px',
                         cursor: 'pointer',
                         fontSize: 13,
@@ -411,11 +428,13 @@ npm install react react-dom`}</code>
                 </a>
               </div>
               <iframe
+                key={activeExample.id}
                 title={`${activeExample.label} demo preview`}
-                src={activeExample.href}
+                src={activeExample.embedHref}
                 style={{
+                  display: 'block',
                   width: '100%',
-                  minHeight: 520,
+                  minHeight: 540,
                   border: '1px solid rgba(148, 163, 184, 0.16)',
                   borderRadius: 14,
                   background: '#020617',

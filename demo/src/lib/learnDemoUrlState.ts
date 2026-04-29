@@ -78,34 +78,48 @@ export function writeExploreDemoUrlState(state: ExploreDemoUrlState): void {
     return;
   }
 
-  const params = new URLSearchParams();
+  const params = readHashSearchParams(window.location.hash);
 
   if (state.presetId) {
     params.set('preset', state.presetId);
+  } else {
+    params.delete('preset');
   }
 
   if (state.themeId) {
     params.set('theme', state.themeId);
+  } else {
+    params.delete('theme');
   }
 
   if (state.symbol) {
     params.set('symbol', state.symbol);
+  } else {
+    params.delete('symbol');
   }
 
   if (state.sessionDate) {
     params.set('date', state.sessionDate);
+  } else {
+    params.delete('date');
   }
 
   if (state.interval) {
     params.set('interval', state.interval);
+  } else {
+    params.delete('interval');
   }
 
   if (Number.isFinite(state.mintick) && state.mintick && state.mintick > 0) {
     params.set('mintick', String(state.mintick));
+  } else {
+    params.delete('mintick');
   }
 
   if (state.chartView) {
     params.set('view', encodeBase64Url(JSON.stringify(state.chartView)));
+  } else {
+    params.delete('view');
   }
 
   const nextHash = params.toString() ? `#/explore?${params.toString()}` : '#/explore';

@@ -311,7 +311,11 @@ function parseOptionalDecimalInput(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function FixtureDemoPage() {
+interface FixtureDemoPageProps {
+  showToolbar?: boolean;
+}
+
+export function FixtureDemoPage({ showToolbar = true }: FixtureDemoPageProps) {
   const [presetId, setPresetId] = useState<FixturePresetId>('fp-candle-001');
   const preset = FIXTURE_PRESETS[presetId];
   const [symbol, setSymbol] = useState<SymbolCode>('TSLA');
@@ -642,7 +646,7 @@ export function FixtureDemoPage() {
   const volumeProfileOptions = preset.volumeProfileOptions;
   const sessionVolumeProfileOptions = preset.sessionVolumeProfileOptions;
   const deltaSummaryOptions = preset.deltaSummaryOptions;
-  const chartHeight = PLAYGROUND_CHART_HEIGHT;
+  const chartHeight = showToolbar ? PLAYGROUND_CHART_HEIGHT : 520;
   const sidebarStyle = useMemo<CSSProperties>(
     () => ({
       ...SIDEBAR_SURFACE_STYLE,
@@ -651,6 +655,57 @@ export function FixtureDemoPage() {
     }),
     [chartHeight],
   );
+
+  const chartContent = clusteredBars.length ? (
+    <OrderFlowChart
+      key={`${preset.id}:${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
+      bars={clusteredBars}
+      seriesMode={seriesMode}
+      showVisibleProfile={showVisibleProfile}
+      showSessionProfiles={showSessionProfiles}
+      showVwap={showVwap}
+      showReferenceCandles={showReferenceCandles}
+      showOrderFlowPane={showOrderFlowControls}
+      showVolumePane={showVolumePane}
+      showDeltaSummary={showDeltaSummary}
+      deltaSummaryPaneHeightRatio={preset.deltaSummaryPaneHeightRatio}
+      chartHeight={chartHeight}
+      footerText={showToolbar ? footerText : undefined}
+      theme={theme}
+      footprintOptions={footprintOptions}
+      volumeFootprintOptions={volumeFootprintOptions}
+      volumeProfileOptions={volumeProfileOptions}
+      sessionVolumeProfileOptions={sessionVolumeProfileOptions}
+      deltaSummaryOptions={deltaSummaryOptions}
+      candleSeriesOptions={preset.candleSeriesOptions}
+      candleHeatmapOptions={candleHeatmapOptions}
+      candleHeatmapAccessor={candleHeatmapAccessor}
+      volumeSeriesOptions={preset.volumeSeriesOptions}
+      initialViewState={preset.initialViewState}
+      autoFitRequestKey={autoFitRequestKey}
+      dataSourceKey={`${preset.id}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
+    />
+  ) : (
+    <section
+      style={{
+        padding: 24,
+        borderRadius: 16,
+        background: 'rgba(15, 23, 42, 0.75)',
+        border: '1px solid rgba(148, 163, 184, 0.12)',
+        color: '#cbd5e1',
+      }}
+    >
+      {dataStatus === 'loading'
+        ? 'Loading canonical aggregated data for this selection.'
+        : dataError
+          ? `Unable to load canonical aggregated data: ${dataError}`
+          : 'No stored market data is available for this selection yet.'}
+    </section>
+  );
+
+  if (!showToolbar) {
+    return chartContent;
+  }
 
   return (
     <div
@@ -955,54 +1010,7 @@ export function FixtureDemoPage() {
         </SidebarSection>
       </section>
 
-      <main style={{ gridColumn: '1 / 2', gridRow: '1 / 2', minWidth: 0 }}>
-        {clusteredBars.length ? (
-          <OrderFlowChart
-            key={`${preset.id}:${seriesMode}:${seriesMode === 'candle-heatmap' ? heatmapRenderKey : 'default'}`}
-            bars={clusteredBars}
-            seriesMode={seriesMode}
-            showVisibleProfile={showVisibleProfile}
-            showSessionProfiles={showSessionProfiles}
-            showVwap={showVwap}
-            showReferenceCandles={showReferenceCandles}
-            showOrderFlowPane={showOrderFlowControls}
-            showVolumePane={showVolumePane}
-            showDeltaSummary={showDeltaSummary}
-            deltaSummaryPaneHeightRatio={preset.deltaSummaryPaneHeightRatio}
-            chartHeight={chartHeight}
-            footerText={footerText}
-            theme={theme}
-            footprintOptions={footprintOptions}
-            volumeFootprintOptions={volumeFootprintOptions}
-            volumeProfileOptions={volumeProfileOptions}
-            sessionVolumeProfileOptions={sessionVolumeProfileOptions}
-            deltaSummaryOptions={deltaSummaryOptions}
-            candleSeriesOptions={preset.candleSeriesOptions}
-            candleHeatmapOptions={candleHeatmapOptions}
-            candleHeatmapAccessor={candleHeatmapAccessor}
-            volumeSeriesOptions={preset.volumeSeriesOptions}
-            initialViewState={preset.initialViewState}
-            autoFitRequestKey={autoFitRequestKey}
-            dataSourceKey={`${preset.id}:${symbol}:${sessionDate}:${interval}:${effectiveMintick}:${streamEnabled ? 'stream' : 'static'}`}
-          />
-        ) : (
-          <section
-            style={{
-              padding: 24,
-              borderRadius: 16,
-              background: 'rgba(15, 23, 42, 0.75)',
-              border: '1px solid rgba(148, 163, 184, 0.12)',
-              color: '#cbd5e1',
-            }}
-          >
-            {dataStatus === 'loading'
-              ? 'Loading canonical aggregated data for this selection.'
-              : dataError
-                ? `Unable to load canonical aggregated data: ${dataError}`
-                : 'No stored market data is available for this selection yet.'}
-          </section>
-        )}
-      </main>
+      <main style={{ gridColumn: '1 / 2', gridRow: '1 / 2', minWidth: 0 }}>{chartContent}</main>
     </div>
   );
 }
