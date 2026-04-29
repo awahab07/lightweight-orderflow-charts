@@ -261,12 +261,16 @@ function isColorLike(value: string): boolean {
   return /^#([\da-f]{3,8})$/i.test(value) || /^rgba?\(/i.test(value) || /^hsla?\(/i.test(value);
 }
 
-function collectDraftLeafControls(value: unknown, path: string[] = []): DraftLeafControl[] {
+function collectDraftLeafControls(
+  value: unknown,
+  path: string[] = [],
+  labelPath: string[] = [],
+): DraftLeafControl[] {
   if (isLeafValue(value)) {
     return [
       {
         path,
-        label: path.map(humanizePathSegment).join(' / '),
+        label: labelPath.map(humanizePathSegment).join(' / '),
         value,
       },
     ];
@@ -274,7 +278,7 @@ function collectDraftLeafControls(value: unknown, path: string[] = []): DraftLea
 
   if (Array.isArray(value)) {
     return value.flatMap((entry, index) =>
-      collectDraftLeafControls(entry, [...path, String(index)]),
+      collectDraftLeafControls(entry, [...path, String(index)], [...labelPath, String(index)]),
     );
   }
 
@@ -283,7 +287,7 @@ function collectDraftLeafControls(value: unknown, path: string[] = []): DraftLea
   }
 
   return Object.entries(value).flatMap(([key, entry]) =>
-    collectDraftLeafControls(entry, [...path, key]),
+    collectDraftLeafControls(entry, [...path, key], [...labelPath, key]),
   );
 }
 
@@ -426,26 +430,30 @@ export function ThemingDemoPage({ showToolbar = true }: ThemingDemoPageProps) {
   );
   const themeSections = useMemo(
     () => [
-      { key: 'surface', title: 'Surface', controls: collectDraftLeafControls(themeDraft.surface) },
+      {
+        key: 'surface',
+        title: 'Surface',
+        controls: collectDraftLeafControls(themeDraft.surface, ['surface']),
+      },
       {
         key: 'candleSeries',
         title: 'Candles',
-        controls: collectDraftLeafControls(themeDraft.candleSeries),
+        controls: collectDraftLeafControls(themeDraft.candleSeries, ['candleSeries']),
       },
       {
         key: 'footprint',
         title: 'Footprint',
-        controls: collectDraftLeafControls(themeDraft.footprint),
+        controls: collectDraftLeafControls(themeDraft.footprint, ['footprint']),
       },
       {
         key: 'volumeProfile',
         title: 'Volume Profile',
-        controls: collectDraftLeafControls(themeDraft.volumeProfile),
+        controls: collectDraftLeafControls(themeDraft.volumeProfile, ['volumeProfile']),
       },
       {
         key: 'deltaSummary',
         title: 'Delta Summary',
-        controls: collectDraftLeafControls(themeDraft.deltaSummary),
+        controls: collectDraftLeafControls(themeDraft.deltaSummary, ['deltaSummary']),
       },
     ],
     [themeDraft],
