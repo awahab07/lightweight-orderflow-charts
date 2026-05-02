@@ -21,7 +21,7 @@ This `docs/` tree is intentionally plain Markdown so it can be:
 - `CANDLE_HEATMAP.md`
   Public helper for metric-driven candlestick coloring
 - `AUTO_FIT.md`
-  Price-scale auto-fit helper for TradingView-style `Auto (fits data to screen)` behavior
+  Price-scale auto-fit helper for [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)-style `Auto (fits data to screen)` behavior
 - `CHART_STATE.md`
   Viewport capture and restore helpers for deep linking and persistence
 
@@ -44,14 +44,14 @@ This `docs/` tree is intentionally plain Markdown so it can be:
 - `ARCHITECTURE.md`
   Source-tree roles, public surfaces, and extension guidance
 - `THEORY.md`
-  Concept notes derived from the research material maintained outside the publishable repo
+  Concept notes distilled from recurring order-flow research articles and expert practice
 - `RELEASING.md`
   GitHub Pages, semver tagging, npm provenance, and first-publish guidance
 
 ## Miscellaneous
 
 - `ATTRIBUTION.md`
-  TradingView attribution requirements inherited from `lightweight-charts`
+  TradingView attribution requirements inherited from [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)
 
 ## Interactive Surfaces
 

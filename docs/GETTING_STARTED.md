@@ -1,13 +1,15 @@
 # Getting Started
 
-This guide is for a developer who already knows the basics of `lightweight-charts`, but is new to
-`lightweight-orderflow-charts` and wants to reach a first working footprint chart as quickly as
+This guide is for a developer who already knows the basics of
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts), but is new
+to `lightweight-orderflow-charts` and wants to reach a first working footprint chart as quickly as
 possible.
 
 ## What This Library Does
 
-`lightweight-orderflow-charts` does **not** replace `lightweight-charts`. You still create and own
-the host chart yourself.
+`lightweight-orderflow-charts` does **not** replace
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts). You still
+create and own the host chart yourself.
 
 This package adds:
 

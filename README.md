@@ -1,13 +1,28 @@
+<p align="center">
+  <img
+    src="./docs/images/branding/logo.png"
+    alt="Lightweight Order Flow Charts logo"
+    width="220"
+  />
+</p>
+
 # Lightweight Order Flow Charts
 
 Reusable order-flow charts, studies, and React bindings for applications built on
-`lightweight-charts`.
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts).
 
 This package is designed for host apps that already own chart creation, market-data ingestion, and
 layout orchestration, but need a clean, broker-neutral rendering layer for footprint charts,
 profiles, VWAP, and aligned order-flow subcharts.
 
 See it in action: [Open the main demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
+
+![Lightweight Order Flow Charts intro screenshot](./docs/images/branding/intro-screenshot.png)
+
+## Resources
+
+\| [Demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/) \| [Playground](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground) \| [Theming](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming) \| [Docs](https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/) \| [Storybook](https://awahab07.github.io/lightweight-orderflow-charts/latest/storybook/) \|
+[Demo data](https://awahab07.github.io/lightweight-orderflow-charts/latest/data/) \|
 
 ## Highlights
 
@@ -30,29 +45,18 @@ See it in action: [Open the main demo](https://awahab07.github.io/lightweight-or
 - Core API: `lightweight-orderflow-charts`
 - React API: `lightweight-orderflow-charts/react`
 
-## Public Links
-
-- Demo: [awahab07.github.io/lightweight-orderflow-charts/latest/demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
-- Playground: [awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/playground)
-- Theming: [awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/#/theming)
-- Docs: [awahab07.github.io/lightweight-orderflow-charts/latest/docs](https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/)
-- Storybook: [awahab07.github.io/lightweight-orderflow-charts/latest/storybook](https://awahab07.github.io/lightweight-orderflow-charts/latest/storybook/)
-- Demo data: [awahab07.github.io/lightweight-orderflow-charts/latest/data](https://awahab07.github.io/lightweight-orderflow-charts/latest/data/)
-
-The served fixture data is locally crafted for visualization and validation. It is not a live feed
-and may not represent complete market conditions.
-
 ## Installation
 
 ```bash
 npm install lightweight-orderflow-charts lightweight-charts react react-dom
 ```
 
-`lightweight-charts` is required. `react` and `react-dom` are optional peers for the React
-bindings.
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts) is required.
+`react` and `react-dom` are optional peers for the React bindings.
 
-Review `docs/ATTRIBUTION.md` before shipping a user-facing application. `lightweight-charts`
-requires TradingView attribution for deployed charts.
+Review `docs/ATTRIBUTION.md` before shipping a user-facing application.
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts) requires
+TradingView attribution for deployed charts.
 
 ## Development
 
@@ -112,18 +116,17 @@ See `CONTRIBUTING.md` for the short contributor workflow.
 - `docs/FORMATTING.md`
   Price, compact value, and metric-style palette controls for footprint text
 - `docs/AUTO_FIT.md`
-  Price-scale auto-fit helper for TradingView-style `Auto (fits data to screen)` behavior
+  Price-scale auto-fit helper for [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)-style `Auto (fits data to screen)` behavior
 - `docs/FEATURE_INVENTORY.md`
   Concise label-and-description inventory of the public charting features and presets
 - `docs/THEORY.md`
-  Rendering guidance derived from the order-flow research material maintained in the outer SDD
-  workspace
+  Rendering guidance distilled from recurring order-flow research articles and expert practice
 - `docs/ARCHITECTURE.md`
   Source-tree responsibilities, extension points, and contributor guidance
 - `docs/CHART_STATE.md`
   Reusable viewport snapshot and restore helpers for URL sync or other persistence layers
 - `docs/ATTRIBUTION.md`
-  TradingView attribution and notice guidance inherited from `lightweight-charts`
+  TradingView attribution and notice guidance inherited from [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)
 - `docs/RELEASING.md`
   GitHub Pages, npm provenance, semver tagging, and first-publish guidance
 
@@ -589,3 +592,7 @@ npm run demo:connect-bridge
 npm run demo:build
 npm run site:build
 ```
+
+## Notes
+
+- The demo data in examples or the served fixture data is locally crafted for visualization and validation. It is not a live feed and may not represent complete market conditions.

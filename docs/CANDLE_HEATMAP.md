@@ -13,7 +13,8 @@ This is useful when each candle already has a normalized score such as:
 ## Public API
 
 Use `buildCandleHeatmapSeriesData()` to transform any OHLC-like bars plus a metric accessor into
-`lightweight-charts` candlestick data with per-bar colors.
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts) candlestick
+data with per-bar colors.
 
 ```ts
 import { buildCandleHeatmapSeriesData } from 'lightweight-orderflow-charts';

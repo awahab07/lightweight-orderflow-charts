@@ -50,7 +50,8 @@ presets.
 - `Chart View Snapshot And Restore`
   Captures logical time range and pane price ranges for URL sync or other persistence.
 - `Price-Scale Auto Fit`
-  Toggles TradingView-style vertical autoscaling with configurable top and bottom insets.
+  Toggles [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)-style
+  vertical autoscaling with configurable top and bottom insets.
 - `Mintick Clustering`
   Re-buckets order-flow and OHLC data to a visualization tick size such as `0.10` or `0.005`.
 - `Uniform Price Grid`

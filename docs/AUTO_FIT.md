@@ -1,7 +1,8 @@
 # Auto Fit Price Scale
 
-The package exposes a lightweight helper for toggling TradingView-style price auto-fit on a specific
-pane and price scale.
+The package exposes a lightweight helper for toggling
+[`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts)-style price
+auto-fit on a specific pane and price scale.
 
 ## Export
 

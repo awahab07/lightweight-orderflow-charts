@@ -1,20 +1,21 @@
 # Theory Notes
 
-This package is opinionated about a few order-flow visuals, and those opinions come from the
-research PDFs maintained in the outer SDD workspace that accompanies this publishable package.
+This package is opinionated about a few order-flow visuals, and those opinions come from recurring
+research articles and expert commentary about order-flow interpretation.
 
-The distributed library includes only the distilled guidance below, not the source PDFs.
+The distributed library includes only the distilled guidance below, not the source articles
+themselves.
 
 The notes below are not a trading system. They are a rendering guide for choosing what deserves
 visual emphasis and what should remain secondary.
 
-## What the PDFs emphasize
+## What the research articles emphasize
 
 ### Stacked imbalances are structure
 
-Both Michael Valtos and Trader Dale treat stacked imbalances as consecutive aggressive cells that
-often behave like support or resistance. That is why this library renders them inside the ladder
-instead of as arbitrary A/B rectangle annotations.
+Experts often treat stacked imbalances as consecutive aggressive cells that behave like support or
+resistance. That is why this library renders them inside the ladder instead of as arbitrary A/B
+rectangle annotations.
 
 Recommended visualization:
 
@@ -34,9 +35,8 @@ Relevant options:
 
 ### Absorption is high volume with limited price progress
 
-The absorption section in `Trading OrderFlow eBook.pdf` describes heavy two-sided trade occurring
-without much price movement. The important visual message is not just "big volume", but "big
-volume with small net displacement".
+Absorption is often described as heavy two-sided trade occurring without much price movement. The
+important visual message is not just "big volume", but "big volume with small net displacement".
 
 Recommended visualization:
 
@@ -55,8 +55,8 @@ Relevant options:
 
 ### Cumulative delta belongs in its own aligned pane
 
-Trader Dale repeatedly uses delta and cumulative delta around support and resistance, especially
-for divergence reads. The best rendering implication is alignment, not decoration.
+Experts repeatedly use delta and cumulative delta around support and resistance, especially for
+divergence reads. The best rendering implication is alignment, not decoration.
 
 Recommended visualization:
 
@@ -91,9 +91,9 @@ Relevant options and APIs:
 
 ### Volume profile shape matters as much as raw size
 
-The Volume Profile PDF stresses D / P / b / thin profile interpretation and the importance of POC,
-high/low edges, and volume clusters. That means profile rendering needs both flexible placement
-and clean POC emphasis.
+Volume Profile articles often stress D / P / b / thin profile interpretation and the importance of
+POC, high or low edges, and volume clusters. That means profile rendering needs both flexible
+placement and clean POC emphasis.
 
 Recommended visualization:
 

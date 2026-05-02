@@ -14,10 +14,15 @@ import {
   API_REFERENCE_GROUPS,
   API_REFERENCE_TOTAL_COUNT,
 } from './generated/apiReference.generated';
+import homeLogoUrl from '../../docs/images/branding/logo.png';
 
 marked.setOptions({
   gfm: true,
 });
+
+const UPSTREAM_LIGHTWEIGHT_CHARTS_URL = 'https://github.com/tradingview/lightweight-charts';
+const FOOTPRINT_PREVIEW_VIEW =
+  'eyJ2ZXJzaW9uIjoxLCJ0aW1lUmFuZ2UiOnsiZnJvbSI6OC4yMDE4OTU2NzA0MzUwMTUsInRvIjoxNi4zOTAxMjczNTI1MzMwODV9LCJwYW5lcyI6W3sicGFuZUluZGV4IjowLCJwcmljZVNjYWxlSWQiOiJyaWdodCIsInByaWNlUmFuZ2UiOnsiZnJvbSI6NDAxLjA5ODEzMzQ3MDUzNDY2LCJ0byI6NDAyLjI4NDM5OTgzODUxNTZ9fV19';
 
 type AppRoute =
   | { page: 'home' }
@@ -59,12 +64,6 @@ const shellStyle: CSSProperties = {
   margin: '0 auto',
   display: 'grid',
   gap: 24,
-};
-
-const topNavStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 10,
 };
 
 const heroStyle: CSSProperties = {
@@ -186,6 +185,7 @@ const surfaceCardDescriptionStyle: CSSProperties = {
   color: '#cbd5e1',
   lineHeight: 1.65,
   fontSize: 16,
+  overflowWrap: 'anywhere',
 };
 
 const resourceCardStyle: CSSProperties = {
@@ -200,16 +200,6 @@ const resourceCardStyle: CSSProperties = {
   border: '1px solid rgba(148, 163, 184, 0.14)',
   textDecoration: 'none',
   color: 'inherit',
-};
-
-const resourceIconStyle: CSSProperties = {
-  width: 52,
-  height: 52,
-  display: 'grid',
-  placeItems: 'center',
-  borderRadius: 18,
-  border: '1px solid rgba(255, 255, 255, 0.16)',
-  boxShadow: '0 16px 34px rgba(2, 6, 23, 0.22)',
 };
 
 const quickStartLayoutStyle: CSSProperties = {
@@ -434,9 +424,8 @@ const QUICK_START_EXAMPLES = [
   {
     id: 'footprint',
     label: 'Footprint',
-    href: '../demo/#/explore?preset=order-flow&theme=smooth-light',
-    embedHref:
-      '../demo/#/explore?preset=order-flow&theme=smooth-light&showHeader=false&showLinks=false&showToolbar=false',
+    href: `../demo/#/explore?preset=order-flow&theme=smooth-light&symbol=TSLA&date=2026-03-10&interval=5m&mintick=0.1&view=${FOOTPRINT_PREVIEW_VIEW}`,
+    embedHref: `../demo/#/explore?preset=order-flow&theme=smooth-light&showHeader=false&showLinks=false&showToolbar=false&symbol=TSLA&date=2026-03-10&interval=5m&mintick=0.1&view=${FOOTPRINT_PREVIEW_VIEW}`,
     code: `import {
   ORDER_FLOW_THEME_PRESETS,
   ORDER_FLOW_STYLE_PRESETS,
@@ -538,7 +527,7 @@ const SURFACE_DESTINATIONS: DestinationDefinition[] = [
   },
 ] as const;
 
-const DOC_RESOURCE_DESTINATIONS: DestinationDefinition[] = [
+const HOME_GUIDE_DESTINATIONS: DestinationDefinition[] = [
   {
     id: 'getting-started',
     title: 'Getting Started',
@@ -549,21 +538,18 @@ const DOC_RESOURCE_DESTINATIONS: DestinationDefinition[] = [
   },
   {
     id: 'documentation',
-    title: 'Documentation Map',
+    title: 'Documentation',
     href: '#/documentation',
-    body: 'Browse the repo markdown guides grouped like a typical docs sidebar, with each guide available as a docs page.',
+    body: 'Browse the repo markdown guides in a grouped sidebar-style documentation surface.',
     accent: '#67e8f9',
     accentSoft: 'rgba(34, 211, 238, 0.2)',
   },
-  {
-    id: 'api-reference',
-    title: 'API Reference',
-    href: '#/api-reference',
-    body: 'Search the generated public export index for the core and React entry points.',
-    accent: '#c084fc',
-    accentSoft: 'rgba(168, 85, 247, 0.22)',
-  },
 ] as const;
+
+const HOME_CARD_DESTINATIONS: DestinationDefinition[] = [
+  ...SURFACE_DESTINATIONS.filter((destination) => destination.id !== 'data'),
+  ...HOME_GUIDE_DESTINATIONS,
+];
 
 const CHART_TYPE_GALLERY = [
   {
@@ -767,36 +753,6 @@ function SurfaceIcon({ id, size = 20 }: { id: VisualSurfaceId; size?: number }) 
   }
 }
 
-function TopNavLink({
-  href,
-  label,
-  active = false,
-}: {
-  href: string;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <a
-      href={href}
-      style={{
-        padding: '8px 12px',
-        borderRadius: 999,
-        textDecoration: 'none',
-        border: active
-          ? '1px solid rgba(147, 197, 253, 0.42)'
-          : '1px solid rgba(148, 163, 184, 0.16)',
-        background: active ? 'rgba(37, 99, 235, 0.18)' : 'rgba(15, 23, 42, 0.6)',
-        color: active ? '#dbeafe' : '#cbd5e1',
-        fontSize: 14,
-        fontWeight: 600,
-      }}
-    >
-      {label}
-    </a>
-  );
-}
-
 function QuickLink({ destination }: { destination: DestinationDefinition }) {
   return (
     <a href={destination.href} style={heroLinkStyle}>
@@ -817,7 +773,17 @@ function QuickLink({ destination }: { destination: DestinationDefinition }) {
 function ExternalSurfaceCard({ destination }: { destination: DestinationDefinition }) {
   return (
     <a href={destination.href} style={surfaceCardStyle}>
-      <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.05, color: '#f8fafc' }}>
+      <div
+        style={{
+          fontSize: 'clamp(24px, 5vw, 30px)',
+          fontWeight: 800,
+          lineHeight: 1.05,
+          color: '#f8fafc',
+          minWidth: 0,
+          maxWidth: '100%',
+          overflowWrap: 'anywhere',
+        }}
+      >
         {destination.title}
       </div>
       <div
@@ -867,26 +833,6 @@ function ExternalSurfaceCard({ destination }: { destination: DestinationDefiniti
   );
 }
 
-function ResourceCard({ destination }: { destination: DestinationDefinition }) {
-  return (
-    <a href={destination.href} style={resourceCardStyle}>
-      <div
-        style={{
-          ...resourceIconStyle,
-          color: destination.accent,
-          background: destination.accentSoft,
-        }}
-      >
-        <SurfaceIcon id={destination.id} size={26} />
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.1, color: '#f8fafc' }}>
-        {destination.title}
-      </div>
-      <div style={{ color: '#cbd5e1', lineHeight: 1.65 }}>{destination.body}</div>
-    </a>
-  );
-}
-
 function MarkdownArticle({ markdown }: { markdown: string }) {
   const html = useMemo(() => marked.parse(markdown) as string, [markdown]);
 
@@ -927,7 +873,7 @@ function DocsSidebar({ route }: { route: AppRoute }) {
             color: route.page === 'documentation' ? '#dbeafe' : '#cbd5e1',
           }}
         >
-          Documentation Map
+          Documentation
         </a>
       </div>
 
@@ -987,27 +933,6 @@ function DocsShell({
 }) {
   return (
     <div style={shellStyle}>
-      <div style={topNavStyle}>
-        <TopNavLink href="#/" label="Home" active={route.page === 'home'} />
-        <TopNavLink
-          href="#/getting-started"
-          label="Getting Started"
-          active={route.page === 'getting-started'}
-        />
-        <TopNavLink
-          href="#/documentation"
-          label="Documentation"
-          active={route.page === 'documentation' || route.page === 'doc'}
-        />
-        <TopNavLink
-          href="#/api-reference"
-          label="API Reference"
-          active={route.page === 'api-reference'}
-        />
-        <TopNavLink href="../demo/" label="Demo" />
-        <TopNavLink href="../storybook/" label="Storybook" />
-      </div>
-
       <section style={heroStyle}>
         <div
           style={{
@@ -1044,7 +969,7 @@ function DocumentationMapPage({ route }: { route: AppRoute }) {
   return (
     <DocsShell
       route={route}
-      title="Documentation Map"
+      title="Documentation"
       body="Browse the repo markdown guides grouped like a left-nav docs surface. Each entry corresponds to a page in the docs site and maps back to the source markdown file in `docs/`."
     >
       <section style={docsPanelStyle}>
@@ -1329,15 +1254,6 @@ function HomePage() {
 
   return (
     <div style={shellStyle}>
-      <div style={topNavStyle}>
-        <TopNavLink href="#/" label="Home" active />
-        <TopNavLink href="#/getting-started" label="Getting Started" />
-        <TopNavLink href="#/documentation" label="Documentation" />
-        <TopNavLink href="#/api-reference" label="API Reference" />
-        <TopNavLink href="../demo/" label="Demo" />
-        <TopNavLink href="../storybook/" label="Storybook" />
-      </div>
-
       <section style={heroStyle}>
         <div
           style={{
@@ -1357,14 +1273,41 @@ function HomePage() {
           Public Docs
         </div>
 
-        <div style={{ display: 'grid', gap: 10 }}>
-          <h1 style={{ margin: 0, fontSize: 38, lineHeight: 1.05, color: '#f8fafc' }}>
-            Lightweight Order Flow Charts
-          </h1>
-          <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.7, maxWidth: 780 }}>
-            A package-first collection of order-flow renderers, studies, aggregation helpers, and
-            React bindings built on top of TradingView&apos;s `lightweight-charts`.
-          </p>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 20,
+          }}
+        >
+          <div style={{ display: 'grid', gap: 10, flex: '1 1 520px', minWidth: 0, maxWidth: 780 }}>
+            <h1 style={{ margin: 0, fontSize: 38, lineHeight: 1.05, color: '#f8fafc' }}>
+              Lightweight Order Flow Charts
+            </h1>
+            <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.7 }}>
+              A package-first collection of order-flow renderers, studies, aggregation helpers, and
+              React bindings built on top of{' '}
+              <a href={UPSTREAM_LIGHTWEIGHT_CHARTS_URL} style={linkStyle}>
+                TradingView lightweight-charts
+              </a>
+              .
+            </p>
+          </div>
+
+          <img
+            src={homeLogoUrl}
+            alt="Lightweight Order Flow Charts logo"
+            style={{
+              width: 'min(100%, 200px)',
+              maxWidth: 200,
+              height: 'auto',
+              objectFit: 'contain',
+              flex: '0 0 auto',
+              justifySelf: 'end',
+            }}
+          />
         </div>
 
         <div style={heroLinksStyle}>
@@ -1375,25 +1318,9 @@ function HomePage() {
       </section>
 
       <section style={cardGridStyle}>
-        {SURFACE_DESTINATIONS.filter((destination) => destination.id !== 'data').map(
-          (destination) => (
-            <ExternalSurfaceCard key={destination.id} destination={destination} />
-          ),
-        )}
-      </section>
-
-      <section style={sectionStyle}>
-        <div style={{ display: 'grid', gap: 6 }}>
-          <h2 style={{ margin: 0, color: '#f8fafc' }}>Start Building</h2>
-          <div style={{ color: '#cbd5e1', lineHeight: 1.7 }}>
-            Move from first render to deeper integration with the docs pages below.
-          </div>
-        </div>
-        <div style={cardGridStyle}>
-          {DOC_RESOURCE_DESTINATIONS.map((destination) => (
-            <ResourceCard key={destination.id} destination={destination} />
-          ))}
-        </div>
+        {HOME_CARD_DESTINATIONS.map((destination) => (
+          <ExternalSurfaceCard key={destination.id} destination={destination} />
+        ))}
       </section>
 
       <section style={sectionStyle}>
@@ -1523,9 +1450,11 @@ npm install react react-dom`}</code>
               and development tooling usage.
             </>,
             <>
-              TradingView&apos;s `lightweight-charts` is Apache-2.0 licensed. Public integrations
-              still need to preserve the upstream attribution and link requirements noted in
-              `NOTICE` and `docs/ATTRIBUTION.md`.
+              <a href={UPSTREAM_LIGHTWEIGHT_CHARTS_URL} style={linkStyle}>
+                TradingView lightweight-charts
+              </a>{' '}
+              is Apache-2.0 licensed. Public integrations still need to preserve the upstream
+              attribution and link requirements noted in `NOTICE` and `docs/ATTRIBUTION.md`.
             </>,
           ]}
         />
@@ -1569,7 +1498,7 @@ export default function App() {
       route.page === 'home'
         ? 'Lightweight Order Flow Charts | Docs'
         : route.page === 'documentation'
-          ? 'Lightweight Order Flow Charts | Documentation Map'
+          ? 'Lightweight Order Flow Charts | Documentation'
           : route.page === 'getting-started'
             ? 'Lightweight Order Flow Charts | Getting Started'
             : route.page === 'api-reference'

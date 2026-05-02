@@ -54,7 +54,8 @@ If a result can be tested without a chart instance, it should usually live here 
 
 ### `src/renderers`
 
-Owns `lightweight-charts` integration details:
+Owns [`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts)
+integration details:
 
 - `footprint-series`
   Footprint and volume-footprint custom series

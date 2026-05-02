@@ -105,5 +105,6 @@ npm pack --dry-run
 
 - `demo`, `docs-site`, Storybook stories, raw fixture metadata, and local connector caches are not
   part of the npm package.
-- The root `NOTICE` file and `docs/ATTRIBUTION.md` must remain available because `lightweight-charts`
-  carries upstream attribution requirements.
+- The root `NOTICE` file and `docs/ATTRIBUTION.md` must remain available because
+  [`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts) carries
+  upstream attribution requirements.
