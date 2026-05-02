@@ -30,6 +30,7 @@ export interface OrderFlowSurfaceTheme {
   backgroundColor: string;
   textColor: string;
   gridColor: string;
+  gridVisible: boolean;
   borderColor: string;
   crosshairColor: string;
   panelBackground: string;
@@ -198,6 +199,7 @@ const midnightTerminalSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#050816',
   textColor: '#e2e8f0',
   gridColor: 'rgba(71, 85, 105, 0.18)',
+  gridVisible: true,
   borderColor: 'rgba(71, 85, 105, 0.32)',
   crosshairColor: 'rgba(248, 250, 252, 0.22)',
   panelBackground: 'rgba(5, 8, 22, 0.9)',
@@ -208,6 +210,7 @@ const chartDarkProSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#131722',
   textColor: '#d1d4dc',
   gridColor: 'rgba(42, 46, 57, 0.8)',
+  gridVisible: true,
   borderColor: 'rgba(42, 46, 57, 1)',
   crosshairColor: 'rgba(120, 123, 134, 0.55)',
   panelBackground: 'rgba(19, 23, 34, 0.96)',
@@ -218,6 +221,7 @@ const depthHeatSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#06111f',
   textColor: '#dbeafe',
   gridColor: 'rgba(56, 189, 248, 0.08)',
+  gridVisible: true,
   borderColor: 'rgba(56, 189, 248, 0.18)',
   crosshairColor: 'rgba(125, 211, 252, 0.22)',
   panelBackground: 'rgba(7, 24, 39, 0.82)',
@@ -228,6 +232,7 @@ const cobaltWorkstationSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#0b1220',
   textColor: '#e5e7eb',
   gridColor: 'rgba(96, 165, 250, 0.1)',
+  gridVisible: true,
   borderColor: 'rgba(96, 165, 250, 0.2)',
   crosshairColor: 'rgba(191, 219, 254, 0.22)',
   panelBackground: 'rgba(11, 18, 32, 0.82)',
@@ -238,6 +243,7 @@ const obsidianMinimalSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#020617',
   textColor: '#e2e8f0',
   gridColor: 'rgba(148, 163, 184, 0.08)',
+  gridVisible: true,
   borderColor: 'rgba(148, 163, 184, 0.16)',
   crosshairColor: 'rgba(226, 232, 240, 0.2)',
   panelBackground: 'rgba(2, 6, 23, 0.9)',
@@ -248,6 +254,7 @@ const paperClassicSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#ffffff',
   textColor: '#111827',
   gridColor: 'rgba(15, 23, 42, 0.08)',
+  gridVisible: true,
   borderColor: 'rgba(15, 23, 42, 0.2)',
   crosshairColor: 'rgba(15, 23, 42, 0.18)',
   panelBackground: '#ffffff',
@@ -258,6 +265,7 @@ const daylightCleanSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#fcfcfb',
   textColor: '#111827',
   gridColor: 'rgba(100, 116, 139, 0.18)',
+  gridVisible: true,
   borderColor: 'rgba(100, 116, 139, 0.22)',
   crosshairColor: 'rgba(15, 23, 42, 0.22)',
   panelBackground: '#ffffff',
@@ -268,6 +276,7 @@ const clinicalHighContrastSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#ffffff',
   textColor: '#000000',
   gridColor: 'rgba(0, 0, 0, 0.1)',
+  gridVisible: true,
   borderColor: 'rgba(0, 0, 0, 0.24)',
   crosshairColor: 'rgba(0, 0, 0, 0.22)',
   panelBackground: '#ffffff',
@@ -278,6 +287,7 @@ const ivoryTerminalSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#fffaf0',
   textColor: '#1f2937',
   gridColor: 'rgba(120, 113, 108, 0.12)',
+  gridVisible: true,
   borderColor: 'rgba(120, 113, 108, 0.22)',
   crosshairColor: 'rgba(68, 64, 60, 0.18)',
   panelBackground: '#fffdf8',
@@ -288,6 +298,7 @@ const frostUiSurface: OrderFlowSurfaceTheme = {
   backgroundColor: '#f1f5f9',
   textColor: '#0f172a',
   gridColor: 'rgba(148, 163, 184, 0.14)',
+  gridVisible: true,
   borderColor: 'rgba(148, 163, 184, 0.24)',
   crosshairColor: 'rgba(30, 41, 59, 0.18)',
   panelBackground: '#ffffff',

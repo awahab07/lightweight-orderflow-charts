@@ -193,8 +193,8 @@ export function StoryChartCanvas({
         attributionLogo: true,
       },
       grid: {
-        vertLines: { color: theme.gridColor, visible: true, style: 0 },
-        horzLines: { color: theme.gridColor, visible: true, style: 0 },
+        vertLines: { color: theme.gridColor, visible: theme.gridVisible, style: 0 },
+        horzLines: { color: theme.gridColor, visible: theme.gridVisible, style: 0 },
       },
       rightPriceScale: {
         borderColor: theme.borderColor,
@@ -249,6 +249,7 @@ export function StoryChartCanvas({
     theme.borderColor,
     theme.crosshairColor,
     theme.gridColor,
+    theme.gridVisible,
     theme.textColor,
   ]);
 
@@ -266,8 +267,8 @@ export function StoryChartCanvas({
         attributionLogo: true,
       },
       grid: {
-        vertLines: { color: theme.gridColor, visible: true, style: 0 },
-        horzLines: { color: theme.gridColor, visible: true, style: 0 },
+        vertLines: { color: theme.gridColor, visible: theme.gridVisible, style: 0 },
+        horzLines: { color: theme.gridColor, visible: theme.gridVisible, style: 0 },
       },
       rightPriceScale: {
         borderColor: theme.borderColor,
@@ -288,6 +289,7 @@ export function StoryChartCanvas({
     theme.borderColor,
     theme.crosshairColor,
     theme.gridColor,
+    theme.gridVisible,
     theme.textColor,
   ]);
 

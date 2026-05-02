@@ -17,6 +17,7 @@ describe('order flow theme presets', () => {
     for (const preset of Object.values(ORDER_FLOW_THEME_PRESETS)) {
       expect(preset.surface.backgroundColor).toBeTypeOf('string');
       expect(preset.surface.textColor).toBeTypeOf('string');
+      expect(preset.surface.gridVisible).toBe(true);
       expect(preset.footprint).toBeTruthy();
       expect(preset.volumeFootprint).toBeTruthy();
       expect(preset.volumeProfile).toBeTruthy();

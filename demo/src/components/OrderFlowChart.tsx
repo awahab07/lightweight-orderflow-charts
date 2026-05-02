@@ -53,6 +53,7 @@ export interface OrderFlowChartTheme {
   backgroundColor: string;
   textColor: string;
   gridColor: string;
+  gridVisible: boolean;
   borderColor: string;
   crosshairColor: string;
   panelBackground: string;
@@ -63,6 +64,7 @@ const DEFAULT_THEME: OrderFlowChartTheme = {
   backgroundColor: '#020617',
   textColor: '#e2e8f0',
   gridColor: 'rgba(148, 163, 184, 0.12)',
+  gridVisible: true,
   borderColor: 'rgba(148, 163, 184, 0.18)',
   crosshairColor: 'rgba(255, 255, 255, 0.24)',
   panelBackground: 'rgba(15, 23, 42, 0.75)',
@@ -595,8 +597,8 @@ export function OrderFlowChart({
         attributionLogo: true,
       },
       grid: {
-        vertLines: { color: DEFAULT_THEME.gridColor, visible: true, style: 0 },
-        horzLines: { color: DEFAULT_THEME.gridColor, visible: true, style: 0 },
+        vertLines: { color: DEFAULT_THEME.gridColor, visible: DEFAULT_THEME.gridVisible, style: 0 },
+        horzLines: { color: DEFAULT_THEME.gridColor, visible: DEFAULT_THEME.gridVisible, style: 0 },
       },
       rightPriceScale: {
         borderColor: DEFAULT_THEME.borderColor,
@@ -648,8 +650,16 @@ export function OrderFlowChart({
         attributionLogo: true,
       },
       grid: {
-        vertLines: { color: resolvedTheme.gridColor, visible: true, style: 0 },
-        horzLines: { color: resolvedTheme.gridColor, visible: true, style: 0 },
+        vertLines: {
+          color: resolvedTheme.gridColor,
+          visible: resolvedTheme.gridVisible,
+          style: 0,
+        },
+        horzLines: {
+          color: resolvedTheme.gridColor,
+          visible: resolvedTheme.gridVisible,
+          style: 0,
+        },
       },
       rightPriceScale: {
         borderColor: resolvedTheme.borderColor,

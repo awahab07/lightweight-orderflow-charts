@@ -27,6 +27,7 @@ interface ThemingStoryArgs {
   backgroundColor: string;
   textColor: string;
   gridColor: string;
+  gridVisible: boolean;
   borderColor: string;
   crosshairColor: string;
   upColor: string;
@@ -44,6 +45,7 @@ type ThemingPresetArgs = Pick<
   | 'backgroundColor'
   | 'textColor'
   | 'gridColor'
+  | 'gridVisible'
   | 'borderColor'
   | 'crosshairColor'
   | 'upColor'
@@ -61,6 +63,7 @@ const THEME_ARG_KEYS: Array<
   'backgroundColor',
   'textColor',
   'gridColor',
+  'gridVisible',
   'borderColor',
   'crosshairColor',
   'upColor',
@@ -81,6 +84,7 @@ function buildThemeArgsFromPreset(themePresetId: StoryThemePresetId): ThemingPre
     backgroundColor: preset.surface.backgroundColor,
     textColor: preset.surface.textColor,
     gridColor: preset.surface.gridColor,
+    gridVisible: preset.surface.gridVisible,
     borderColor: preset.surface.borderColor,
     crosshairColor: preset.surface.crosshairColor,
     upColor: candleSeries.upColor ?? '#22c55e',
@@ -143,6 +147,7 @@ function renderThemingStory() {
     backgroundColor: args.backgroundColor,
     textColor: args.textColor,
     gridColor: args.gridColor,
+    gridVisible: args.gridVisible,
     borderColor: args.borderColor,
     crosshairColor: args.crosshairColor,
     panelBackground: baseThemePreset.surface.panelBackground,
@@ -214,6 +219,9 @@ const meta = {
       },
     },
     borderVisible: {
+      control: 'boolean',
+    },
+    gridVisible: {
       control: 'boolean',
     },
   },

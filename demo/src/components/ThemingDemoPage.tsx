@@ -41,6 +41,11 @@ const THEME_PRESET = ORDER_FLOW_THEME_PRESETS.smoothLight;
 const ORDER_FLOW_DELTA_PRESET = getConceptPreset('order-flow-delta');
 const ABSORPTION_PRESET = getConceptPreset('absorption');
 const THEME_PAGE_CHART_HEIGHT = 900;
+const SURFACE_CONTROL_PATHS_AT_END = new Set(['surface.gridVisible']);
+const FOOTPRINT_CONTROL_PATHS_EXCLUDED = new Set([
+  'footprint.candle.position',
+  'footprint.ladder.priceStep',
+]);
 
 type DraftLeafValue = string | number | boolean;
 
@@ -317,18 +322,50 @@ function setNestedDraftValue(draft: ThemeDraft, path: string[], value: DraftLeaf
   return nextDraft;
 }
 
+function reorderDraftLeafControls(
+  controls: DraftLeafControl[],
+  pathsAtEnd: ReadonlySet<string>,
+): DraftLeafControl[] {
+  if (!pathsAtEnd.size) {
+    return controls;
+  }
+
+  return [
+    ...controls.filter((control) => !pathsAtEnd.has(control.path.join('.'))),
+    ...controls.filter((control) => pathsAtEnd.has(control.path.join('.'))),
+  ];
+}
+
+function excludeDraftLeafControls(
+  controls: DraftLeafControl[],
+  excludedPaths: ReadonlySet<string>,
+): DraftLeafControl[] {
+  if (!excludedPaths.size) {
+    return controls;
+  }
+
+  return controls.filter((control) => !excludedPaths.has(control.path.join('.')));
+}
+
 function formatMintick(mintick: number): string {
   return mintick.toFixed(2);
 }
 
 function createThemeDraft(themePreset: OrderFlowThemePresetPack): ThemeDraft {
+  const resolvedFootprint = mergeFootprintStudyOptions(
+    ORDER_FLOW_DELTA_PRESET.footprintOptions,
+    themePreset.footprint,
+  );
+
   return structuredClone({
     surface: themePreset.surface,
     candleSeries: themePreset.candleSeries ?? {},
     footprint: {
-      style: themePreset.footprint?.style,
-      shading: themePreset.footprint?.shading,
-      pointOfControl: themePreset.footprint?.pointOfControl,
+      candle: resolvedFootprint?.candle,
+      ladder: resolvedFootprint?.ladder,
+      style: resolvedFootprint?.style,
+      shading: resolvedFootprint?.shading,
+      pointOfControl: resolvedFootprint?.pointOfControl,
     },
     volumeProfile: {
       opacity: themePreset.volumeProfile?.opacity,
@@ -404,9 +441,11 @@ export function ThemingDemoPage({ showToolbar = true }: ThemingDemoPageProps) {
       mergeFootprintStudyOptions(ORDER_FLOW_DELTA_PRESET.footprintOptions, {
         ...themeDraft.footprint,
         candle: {
+          ...themeDraft.footprint.candle,
           position: candlePosition,
         },
         ladder: {
+          ...themeDraft.footprint.ladder,
           priceStep: mintick,
         },
       }),
@@ -433,17 +472,18 @@ export function ThemingDemoPage({ showToolbar = true }: ThemingDemoPageProps) {
       {
         key: 'surface',
         title: 'Surface',
-        controls: collectDraftLeafControls(themeDraft.surface, ['surface']),
-      },
-      {
-        key: 'candleSeries',
-        title: 'Candles',
-        controls: collectDraftLeafControls(themeDraft.candleSeries, ['candleSeries']),
+        controls: reorderDraftLeafControls(
+          collectDraftLeafControls(themeDraft.surface, ['surface']),
+          SURFACE_CONTROL_PATHS_AT_END,
+        ),
       },
       {
         key: 'footprint',
         title: 'Footprint',
-        controls: collectDraftLeafControls(themeDraft.footprint, ['footprint']),
+        controls: excludeDraftLeafControls(
+          collectDraftLeafControls(themeDraft.footprint, ['footprint']),
+          FOOTPRINT_CONTROL_PATHS_EXCLUDED,
+        ),
       },
       {
         key: 'volumeProfile',
@@ -454,6 +494,11 @@ export function ThemingDemoPage({ showToolbar = true }: ThemingDemoPageProps) {
         key: 'deltaSummary',
         title: 'Delta Summary',
         controls: collectDraftLeafControls(themeDraft.deltaSummary, ['deltaSummary']),
+      },
+      {
+        key: 'candleSeries',
+        title: 'Candles',
+        controls: collectDraftLeafControls(themeDraft.candleSeries, ['candleSeries']),
       },
     ],
     [themeDraft],
