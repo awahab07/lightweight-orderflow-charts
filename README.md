@@ -1,8 +1,8 @@
 <p align="center">
   <img
-    src="./docs/images/branding/logo.png"
+    src="./docs/images/branding/product-icon.png"
     alt="Lightweight Order Flow Charts logo"
-    width="220"
+    width=260
   />
 </p>
 

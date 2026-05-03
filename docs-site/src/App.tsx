@@ -14,7 +14,7 @@ import {
   API_REFERENCE_GROUPS,
   API_REFERENCE_TOTAL_COUNT,
 } from './generated/apiReference.generated';
-import homeLogoUrl from '../../docs/images/branding/logo.png';
+import homeLogoUrl from '../../docs/images/branding/product-icon.png';
 
 marked.setOptions({
   gfm: true,
@@ -1300,12 +1300,13 @@ function HomePage() {
             src={homeLogoUrl}
             alt="Lightweight Order Flow Charts logo"
             style={{
-              width: 'min(100%, 200px)',
-              maxWidth: 200,
+              width: 'min(100%, 260px)',
+              maxWidth: 260,
               height: 'auto',
               objectFit: 'contain',
               flex: '0 0 auto',
               justifySelf: 'end',
+              margin: '0 auto',
             }}
           />
         </div>
