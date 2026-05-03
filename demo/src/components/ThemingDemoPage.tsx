@@ -550,20 +550,7 @@ export function ThemingDemoPage({ showToolbar = true }: ThemingDemoPageProps) {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
-      <section
-        style={{
-          padding: 18,
-          borderRadius: 18,
-          background: 'rgba(15, 23, 42, 0.72)',
-          border: '1px solid rgba(148, 163, 184, 0.12)',
-          color: '#cbd5e1',
-        }}
-      >
-        Tune the visible chart surface, footprint, volume profile, and delta-summary theme values on
-        a fixed TSLA 5-minute composition.
-      </section>
-
+    <section>
       <div
         style={{
           display: 'grid',
