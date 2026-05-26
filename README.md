@@ -21,6 +21,12 @@
       alt="npm package"
     />
   </a>
+  <a href="https://www.npmjs.com/package/lightweight-orderflow-charts">
+    <img
+      src="https://img.shields.io/npm/v/lightweight-orderflow-charts.svg"
+      alt="npm version"
+    />
+  </a>
   <a href="https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/">
     <img
       src="https://img.shields.io/badge/docs-latest-2563eb?logo=readthedocs&logoColor=white"
@@ -37,6 +43,12 @@
     <img
       src="https://img.shields.io/badge/storybook-live-ff4785?logo=storybook&logoColor=white"
       alt="Storybook"
+    />
+  </a>
+  <a href="https://github.com/awahab07/lightweight-orderflow-charts/actions/workflows/pages.yml">
+    <img
+      src="https://github.com/awahab07/lightweight-orderflow-charts/actions/workflows/pages.yml/badge.svg"
+      alt="Pages"
     />
   </a>
   <a href="./LICENSE">
