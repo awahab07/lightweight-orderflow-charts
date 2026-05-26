@@ -10,7 +10,7 @@ It is intended to stay aligned with the shipped package surface. To add richer d
 - Exports with JSDoc descriptions: 4
 - Core entry point: `lightweight-orderflow-charts`
 - React entry point: `lightweight-orderflow-charts/react`
-- Generated at: `2026-05-03T01:38:30.056Z`
+- Generated at: `2026-05-26T19:24:55.285Z`
 
 ## Data Contracts
 
