@@ -28,7 +28,12 @@ You need four things:
 3. Normalized `OrderFlowBar[]` data
 4. A tick size, or a visualization `mintick`, that you can keep aligned with the footprint grid
 
-If you do not already have normalized order-flow bars, read `DATA_REQUIREMENTS.md` first.
+If you do not already have normalized order-flow bars, read
+[`DATA_REQUIREMENTS.md`](./DATA_REQUIREMENTS.md) first.
+
+Runnable companion sandbox:
+
+- [codesandbox.io/p/sandbox/lightweight-orderflow-charts-getting-started-6trsnf](https://codesandbox.io/p/sandbox/lightweight-orderflow-charts-getting-started-6trsnf)
 
 ## Step 1. Install The Dependencies
 
@@ -73,24 +78,58 @@ Each level needs:
 - `bidVolume`
 - `askVolume`
 
-Minimal example:
+This example uses three 5-minute bars that start at `09:30 EST` on `2026-03-10`, a `0.1`
+visualization `mintick`, and a shared point of control aligned at `402.2` across all three bars.
+
+Example dataset:
 
 ```ts
 import type { OrderFlowBar } from 'lightweight-orderflow-charts';
 
 const orderFlowBars: OrderFlowBar[] = [
   {
-    time: 1741626900,
-    open: 402.35,
-    high: 402.62,
-    low: 402.18,
-    close: 402.54,
-    totalVolume: 48210,
-    delta: 3610,
+    time: 1773153000,
+    open: 402.0,
+    high: 402.3,
+    low: 402.0,
+    close: 402.3,
+    totalVolume: 7410,
+    delta: 1490,
     levels: [
-      { price: 402.2, bidVolume: 1200, askVolume: 1640, totalVolume: 2840, delta: 440 },
-      { price: 402.21, bidVolume: 980, askVolume: 1320, totalVolume: 2300, delta: 340 },
-      { price: 402.22, bidVolume: 1440, askVolume: 1180, totalVolume: 2620, delta: -260 },
+      { price: 402.0, bidVolume: 700, askVolume: 980, totalVolume: 1680, delta: 280 },
+      { price: 402.1, bidVolume: 760, askVolume: 1040, totalVolume: 1800, delta: 280 },
+      { price: 402.2, bidVolume: 820, askVolume: 1500, totalVolume: 2320, delta: 680 },
+      { price: 402.3, bidVolume: 680, askVolume: 930, totalVolume: 1610, delta: 250 },
+    ],
+  },
+  {
+    time: 1773153300,
+    open: 402.2,
+    high: 402.5,
+    low: 402.2,
+    close: 402.5,
+    totalVolume: 8110,
+    delta: 1750,
+    levels: [
+      { price: 402.2, bidVolume: 900, askVolume: 1600, totalVolume: 2500, delta: 700 },
+      { price: 402.3, bidVolume: 860, askVolume: 1220, totalVolume: 2080, delta: 360 },
+      { price: 402.4, bidVolume: 780, askVolume: 1180, totalVolume: 1960, delta: 400 },
+      { price: 402.5, bidVolume: 640, askVolume: 930, totalVolume: 1570, delta: 290 },
+    ],
+  },
+  {
+    time: 1773153600,
+    open: 402.3,
+    high: 402.3,
+    low: 402.0,
+    close: 402.0,
+    totalVolume: 8970,
+    delta: -1950,
+    levels: [
+      { price: 402.0, bidVolume: 1180, askVolume: 760, totalVolume: 1940, delta: -420 },
+      { price: 402.1, bidVolume: 1260, askVolume: 880, totalVolume: 2140, delta: -380 },
+      { price: 402.2, bidVolume: 1700, askVolume: 980, totalVolume: 2680, delta: -720 },
+      { price: 402.3, bidVolume: 1320, askVolume: 890, totalVolume: 2210, delta: -430 },
     ],
   },
 ];
@@ -98,9 +137,9 @@ const orderFlowBars: OrderFlowBar[] = [
 
 For full guidance, continue with:
 
-- `DATA_REQUIREMENTS.md`
-- `TICK_DATA.md`
-- `MINTICK.md`
+- [`DATA_REQUIREMENTS.md`](./DATA_REQUIREMENTS.md)
+- [`TICK_DATA.md`](./TICK_DATA.md)
+- [`MINTICK.md`](./MINTICK.md)
 
 ## Step 4. Create The Host Chart
 
@@ -130,12 +169,12 @@ const chart = createChart(container, {
   grid: {
     vertLines: {
       color: ORDER_FLOW_THEME_PRESETS.smoothLight.surface.gridColor,
-      visible: true,
+      visible: ORDER_FLOW_THEME_PRESETS.smoothLight.surface.gridVisible,
       style: 0,
     },
     horzLines: {
       color: ORDER_FLOW_THEME_PRESETS.smoothLight.surface.gridColor,
-      visible: true,
+      visible: ORDER_FLOW_THEME_PRESETS.smoothLight.surface.gridVisible,
       style: 0,
     },
   },
@@ -153,7 +192,7 @@ import {
   createFootprintSeries,
 } from 'lightweight-orderflow-charts';
 
-const tickSize = 0.01;
+const mintick = 0.1;
 
 const footprint = chart.addCustomSeries(
   createFootprintSeries({
@@ -161,7 +200,7 @@ const footprint = chart.addCustomSeries(
     ...ORDER_FLOW_THEME_PRESETS.smoothLight.footprint,
     ladder: {
       ...ORDER_FLOW_STYLE_PRESETS.shadedReference.footprint.ladder,
-      priceStep: tickSize,
+      priceStep: mintick,
     },
   }),
   undefined,
@@ -227,11 +266,11 @@ application:
 
 ## Next Reading
 
-- `DATA_REQUIREMENTS.md`
+- [`DATA_REQUIREMENTS.md`](./DATA_REQUIREMENTS.md)
   Understand what each study needs from your host data pipeline
-- `API_REFERENCE.md`
+- [`API_REFERENCE.md`](./API_REFERENCE.md)
   Review the public exports available from the core and React entry points
-- `FORMATTING.md`
+- [`FORMATTING.md`](./FORMATTING.md)
   Tune price formatting, compact values, imbalance text, and ladder presentation
-- `CHART_STATE.md`
+- [`CHART_STATE.md`](./CHART_STATE.md)
   Persist viewport state in URLs or other storage

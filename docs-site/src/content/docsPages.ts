@@ -4,7 +4,9 @@ import attributionMarkdown from '../../../docs/ATTRIBUTION.md?raw';
 import autoFitMarkdown from '../../../docs/AUTO_FIT.md?raw';
 import candleHeatmapMarkdown from '../../../docs/CANDLE_HEATMAP.md?raw';
 import chartStateMarkdown from '../../../docs/CHART_STATE.md?raw';
+import connectorsMarkdown from '../../../docs/CONNECTORS.md?raw';
 import dataRequirementsMarkdown from '../../../docs/DATA_REQUIREMENTS.md?raw';
+import extensionGuideMarkdown from '../../../docs/EXTENSION_GUIDE.md?raw';
 import featureInventoryMarkdown from '../../../docs/FEATURE_INVENTORY.md?raw';
 import formattingMarkdown from '../../../docs/FORMATTING.md?raw';
 import gettingStartedMarkdown from '../../../docs/GETTING_STARTED.md?raw';
@@ -125,6 +127,15 @@ export const DOCS_PAGES: DocsPageDefinition[] = [
     markdown: chartStateMarkdown,
   },
   {
+    slug: 'extension-guide',
+    title: 'Extension Guide',
+    summary:
+      'Start by composing the public API into reusable host-side helpers before changing internals.',
+    groupId: 'guides',
+    sourcePath: 'docs/EXTENSION_GUIDE.md',
+    markdown: extensionGuideMarkdown,
+  },
+  {
     slug: 'formatting',
     title: 'Formatting',
     summary: 'Tune ladder text, compact numeric output, imbalance styling, and separators.',
@@ -171,6 +182,15 @@ export const DOCS_PAGES: DocsPageDefinition[] = [
     groupId: 'advanced',
     sourcePath: 'docs/RELEASING.md',
     markdown: releasingMarkdown,
+  },
+  {
+    slug: 'connectors',
+    title: 'Repo-Side Connectors',
+    summary:
+      'Understand the local bridge, vendor adapters, and why they stay outside the published dist.',
+    groupId: 'advanced',
+    sourcePath: 'docs/CONNECTORS.md',
+    markdown: connectorsMarkdown,
   },
   {
     slug: 'attribution',

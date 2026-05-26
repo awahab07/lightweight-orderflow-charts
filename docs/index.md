@@ -9,48 +9,52 @@ This `docs/` tree is intentionally plain Markdown so it can be:
 
 ## Start Here
 
-- `GETTING_STARTED.md`
+- [`GETTING_STARTED.md`](./GETTING_STARTED.md)
   Step-by-step path to a first rendered footprint chart
-- `API_REFERENCE.md`
+- [`API_REFERENCE.md`](./API_REFERENCE.md)
   Auto-generated public export index for the core and React entry points
-- `FEATURE_INVENTORY.md`
+- [`FEATURE_INVENTORY.md`](./FEATURE_INVENTORY.md)
   Review list of the currently shipped public features, demo surfaces, and presets
+- [`EXTENSION_GUIDE.md`](./EXTENSION_GUIDE.md)
+  Compose the public API into a reusable host-side extension helper
 
 ## Guides
 
-- `CANDLE_HEATMAP.md`
+- [`CANDLE_HEATMAP.md`](./CANDLE_HEATMAP.md)
   Public helper for metric-driven candlestick coloring
-- `AUTO_FIT.md`
+- [`AUTO_FIT.md`](./AUTO_FIT.md)
   Price-scale auto-fit helper for [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)-style `Auto (fits data to screen)` behavior
-- `CHART_STATE.md`
+- [`CHART_STATE.md`](./CHART_STATE.md)
   Viewport capture and restore helpers for deep linking and persistence
 
 ## Data & Integration
 
-- `DATA_REQUIREMENTS.md`
+- [`DATA_REQUIREMENTS.md`](./DATA_REQUIREMENTS.md)
   Input contracts, study expectations, and feed-preparation guidance
-- `TICK_DATA.md`
+- [`TICK_DATA.md`](./TICK_DATA.md)
   Tick storage contract, source-mode guidance, and patch-driven replay patterns
-- `MINTICK.md`
+- [`MINTICK.md`](./MINTICK.md)
   Price bucketing, clustering rules, and when to use `mintick`
 
 ## Styling & Presentation
 
-- `FORMATTING.md`
+- [`FORMATTING.md`](./FORMATTING.md)
   Price and compact value formatting options for the footprint text surface
 
 ## Advanced
 
-- `ARCHITECTURE.md`
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md)
   Source-tree roles, public surfaces, and extension guidance
-- `THEORY.md`
+- [`THEORY.md`](./THEORY.md)
   Concept notes distilled from recurring order-flow research articles and expert practice
-- `RELEASING.md`
+- [`RELEASING.md`](./RELEASING.md)
   GitHub Pages, semver tagging, npm provenance, and first-publish guidance
+- [`CONNECTORS.md`](./CONNECTORS.md)
+  Repo-side bridge, vendor adapters, and cache-first connector notes
 
 ## Miscellaneous
 
-- `ATTRIBUTION.md`
+- [`ATTRIBUTION.md`](./ATTRIBUTION.md)
   TradingView attribution requirements inherited from [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)
 
 ## Interactive Surfaces

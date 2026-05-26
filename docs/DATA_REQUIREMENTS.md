@@ -12,7 +12,8 @@ The preferred fixture and ingestion model is now `1m`-based:
   Minute candle summaries with required OHLCV and optional order-flow extras
 
 Higher intervals such as `5m` should be derived from stored `1m` data instead of stored as
-independent canonical files. See `TICK_DATA.md` for the minute-storage and cache layout.
+independent canonical files. See [`TICK_DATA.md`](./TICK_DATA.md) for the minute-storage and cache
+layout.
 
 ## Canonical Inputs
 

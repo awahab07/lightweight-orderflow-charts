@@ -54,7 +54,9 @@ This package is designed for host apps that already own chart creation, market-d
 layout orchestration, but need a clean, broker-neutral rendering layer for footprint charts,
 profiles, VWAP, and aligned order-flow subcharts.
 
-See it in action: [Open the main demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/)
+See it in action:
+[Open the main demo](https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/) |
+[Get started](https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/#/getting-started)
 
 ![Lightweight Order Flow Charts intro screenshot](./docs/images/branding/intro-screenshot.png)
 
@@ -142,6 +144,8 @@ See `CONTRIBUTING.md` for the short contributor workflow.
   Step-by-step path to the first rendered footprint chart
 - `docs/API_REFERENCE.md`
   Auto-generated public export index for the core and React entry points
+- `docs/EXTENSION_GUIDE.md`
+  Compose the public API into a reusable host-side extension helper
 - `docs/index.md`
   Publishable docs entry point for GitHub Pages or a static docs generator
 - `docs/DATA_REQUIREMENTS.md`
@@ -168,6 +172,8 @@ See `CONTRIBUTING.md` for the short contributor workflow.
   TradingView attribution and notice guidance inherited from [TradingView lightweight-charts](https://github.com/tradingview/lightweight-charts)
 - `docs/RELEASING.md`
   GitHub Pages, npm provenance, semver tagging, and first-publish guidance
+- `docs/CONNECTORS.md`
+  Repo-side bridge, vendor adapters, and cache-first connector notes
 
 ## Core Data Contract
 
@@ -604,9 +610,13 @@ published npm surface.
 - The bridge writes to `data/market` by default, but `CONNECTOR_MARKET_DATA_ROOT` can point it at an
   alternate location for safe experimentation.
 
-See `connectors/README.md` for the connector protocol, bridge workflow, and extension guidance.
+See [`docs/CONNECTORS.md`](./docs/CONNECTORS.md) for the connector protocol, bridge workflow, and
+extension guidance.
 
 ## Extension Guide
+
+See [`docs/EXTENSION_GUIDE.md`](./docs/EXTENSION_GUIDE.md) for a runnable host-side extension
+example and a matching CodeSandbox starter.
 
 When adding a new study or enhancing an existing one:
 
