@@ -29,6 +29,25 @@ jobs:
           node-version: lts/*
           cache: npm
 
+      - name: Verify Pages is enabled for workflow deployments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status_code="$(curl -sS -o pages-response.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")"
+
+          if [ "${status_code}" = "200" ]; then
+            exit 0
+          fi
+
+          echo "GitHub Pages is not enabled for ${GITHUB_REPOSITORY}." >&2
+          echo "Open Settings -> Pages and set Source to GitHub Actions, then re-run this workflow." >&2
+          cat pages-response.json >&2
+          exit 1
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

@@ -69,7 +69,8 @@ const groupDefinitions = [
   {
     id: 'utilities',
     title: 'Utilities',
-    description: 'General-purpose helpers for color, chart state, auto-fit, aggregation, and formatting.',
+    description:
+      'General-purpose helpers for color, chart state, auto-fit, aggregation, and formatting.',
     test: (sourcePath) => sourcePath.includes('utils/'),
   },
   {

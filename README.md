@@ -6,7 +6,46 @@
   />
 </p>
 
-# Lightweight Order Flow Charts
+<h1 align="center">Lightweight Order Flow Charts</h1>
+
+<p align="center">
+  <a href="https://github.com/awahab07/lightweight-orderflow-charts/actions/workflows/ci.yml">
+    <img
+      src="https://github.com/awahab07/lightweight-orderflow-charts/actions/workflows/ci.yml/badge.svg"
+      alt="CI status"
+    />
+  </a>
+  <a href="https://www.npmjs.com/package/lightweight-orderflow-charts">
+    <img
+      src="https://img.shields.io/badge/npm-lightweight--orderflow--charts-CB3837?logo=npm&logoColor=white"
+      alt="npm package"
+    />
+  </a>
+  <a href="https://awahab07.github.io/lightweight-orderflow-charts/latest/docs/">
+    <img
+      src="https://img.shields.io/badge/docs-latest-2563eb?logo=readthedocs&logoColor=white"
+      alt="Docs"
+    />
+  </a>
+  <a href="https://awahab07.github.io/lightweight-orderflow-charts/latest/demo/">
+    <img
+      src="https://img.shields.io/badge/demo-live-0ea5e9?logo=vercel&logoColor=white"
+      alt="Demo"
+    />
+  </a>
+  <a href="https://awahab07.github.io/lightweight-orderflow-charts/latest/storybook/">
+    <img
+      src="https://img.shields.io/badge/storybook-live-ff4785?logo=storybook&logoColor=white"
+      alt="Storybook"
+    />
+  </a>
+  <a href="./LICENSE">
+    <img
+      src="https://img.shields.io/badge/license-MIT-22c55e.svg"
+      alt="MIT license"
+    />
+  </a>
+</p>
 
 Reusable order-flow charts, studies, and React bindings for applications built on
 [`TradingView lightweight-charts`](https://github.com/tradingview/lightweight-charts).
