@@ -1,8 +1,9 @@
 import { marked } from 'marked';
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 import {
   DOCS_INDEX_MARKDOWN,
+  DOCS_PAGES,
   DOCS_PAGE_GROUPS,
   getDocsPage,
   getDocsPagesForGroup,
@@ -92,6 +93,18 @@ const sectionStyle: CSSProperties = {
   border: '1px solid rgba(148, 163, 184, 0.12)',
 };
 
+const globalCss = `
+  html, body, #root {
+    min-height: 100%;
+    margin: 0;
+    background: #020617;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+`;
+
 const codeStyle: CSSProperties = {
   margin: 0,
   padding: 18,
@@ -102,6 +115,28 @@ const codeStyle: CSSProperties = {
   overflowX: 'auto',
   fontSize: 13,
   lineHeight: 1.6,
+};
+
+const copyableCodeBlockStyle: CSSProperties = {
+  display: 'grid',
+  gap: 8,
+};
+
+const copyableCodeToolbarStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+};
+
+const copyButtonStyle: CSSProperties = {
+  borderRadius: 999,
+  border: '1px solid rgba(147, 197, 253, 0.28)',
+  background: 'rgba(15, 23, 42, 0.88)',
+  color: '#dbeafe',
+  fontSize: 12,
+  fontWeight: 700,
+  lineHeight: 1,
+  padding: '8px 12px',
+  cursor: 'pointer',
 };
 
 const linkStyle: CSSProperties = {
@@ -360,6 +395,28 @@ const markdownCss = `
   .markdown-article pre code {
     padding: 0;
     background: transparent;
+  }
+
+  .markdown-code-frame {
+    display: grid;
+    gap: 8px;
+  }
+
+  .markdown-code-toolbar {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .markdown-copy-button {
+    border: 1px solid rgba(147, 197, 253, 0.28);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.88);
+    color: #dbeafe;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 8px 12px;
+    cursor: pointer;
   }
 
   .markdown-article blockquote {
@@ -637,6 +694,83 @@ function getDocsPageHref(slug: string): string {
   return `#/docs/${slug}`;
 }
 
+const DOCS_PAGE_SOURCE_PATH_TO_SLUG = new Map(
+  DOCS_PAGES.map((page) => [page.sourcePath.replaceAll('\\', '/'), page.slug] as const),
+);
+
+const DOCS_PAGE_SOURCE_BASENAME_COUNTS = DOCS_PAGES.reduce<Map<string, number>>((counts, page) => {
+  const basename = page.sourcePath.split('/').at(-1) ?? page.sourcePath;
+  counts.set(basename, (counts.get(basename) ?? 0) + 1);
+  return counts;
+}, new Map());
+
+const DOCS_PAGE_SOURCE_BASENAME_TO_SLUG = new Map(
+  DOCS_PAGES.flatMap((page) => {
+    const basename = page.sourcePath.split('/').at(-1) ?? page.sourcePath;
+    return DOCS_PAGE_SOURCE_BASENAME_COUNTS.get(basename) === 1
+      ? [[basename, page.slug] as const]
+      : [];
+  }),
+);
+
+function resolveDocsHrefFromMarkdownReference(reference: string): string | null {
+  const trimmed = reference.trim();
+  const hashIndex = trimmed.indexOf('#');
+  const fragment = hashIndex >= 0 ? trimmed.slice(hashIndex) : '';
+  const rawPath = (hashIndex >= 0 ? trimmed.slice(0, hashIndex) : trimmed)
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '');
+
+  if (!rawPath.toLowerCase().endsWith('.md')) {
+    return null;
+  }
+
+  const candidates = [rawPath];
+  if (!rawPath.startsWith('docs/') && !rawPath.startsWith('connectors/')) {
+    candidates.push(`docs/${rawPath}`);
+  }
+
+  for (const candidate of candidates) {
+    const slug = DOCS_PAGE_SOURCE_PATH_TO_SLUG.get(candidate);
+    if (slug) {
+      return `${getDocsPageHref(slug)}${fragment}`;
+    }
+  }
+
+  const basename = rawPath.split('/').at(-1);
+  if (!basename) {
+    return null;
+  }
+
+  const slug = DOCS_PAGE_SOURCE_BASENAME_TO_SLUG.get(basename);
+  return slug ? `${getDocsPageHref(slug)}${fragment}` : null;
+}
+
+function rewriteDocsMarkdownSegment(segment: string): string {
+  const withMarkdownLinks = segment.replace(
+    /\[([^\]]+)\]\(([^)\s]+\.md(?:#[^)]+)?)\)/g,
+    (fullMatch, label, reference) => {
+      const href = resolveDocsHrefFromMarkdownReference(reference);
+      return href ? `[${label}](${href})` : fullMatch;
+    },
+  );
+
+  return withMarkdownLinks.replace(
+    /`((?:docs\/|connectors\/)?[A-Za-z0-9_./-]+\.md(?:#[A-Za-z0-9_-]+)?)`/g,
+    (fullMatch, reference) => {
+      const href = resolveDocsHrefFromMarkdownReference(reference);
+      return href ? `[\`${reference}\`](${href})` : fullMatch;
+    },
+  );
+}
+
+function rewriteDocsMarkdown(markdown: string): string {
+  return markdown
+    .split(/(```[\s\S]*?```)/g)
+    .map((part) => (part.startsWith('```') ? part : rewriteDocsMarkdownSegment(part)))
+    .join('');
+}
+
 function isDocsPageActive(route: AppRoute, slug: string): boolean {
   if (slug === 'getting-started') {
     return route.page === 'getting-started';
@@ -833,10 +967,129 @@ function ExternalSurfaceCard({ destination }: { destination: DestinationDefiniti
   );
 }
 
-function MarkdownArticle({ markdown }: { markdown: string }) {
-  const html = useMemo(() => marked.parse(markdown) as string, [markdown]);
+function CopyableCodeBlock({ code }: { code: string }) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
 
-  return <article className="markdown-article" dangerouslySetInnerHTML={{ __html: html }} />;
+  useEffect(() => {
+    if (copyState === 'idle') {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setCopyState('idle'), 1600);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [copyState]);
+
+  return (
+    <div style={copyableCodeBlockStyle}>
+      <div style={copyableCodeToolbarStyle}>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(code);
+              setCopyState('copied');
+            } catch {
+              setCopyState('error');
+            }
+          }}
+          style={copyButtonStyle}
+        >
+          {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy'}
+        </button>
+      </div>
+      <pre style={codeStyle}>
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+function MarkdownArticle({ markdown }: { markdown: string }) {
+  const articleRef = useRef<HTMLElement | null>(null);
+  const preparedMarkdown = useMemo(() => rewriteDocsMarkdown(markdown), [markdown]);
+  const html = useMemo(() => marked.parse(preparedMarkdown) as string, [preparedMarkdown]);
+
+  useEffect(() => {
+    const article = articleRef.current;
+    if (!article) {
+      return;
+    }
+
+    const cleanupCallbacks: Array<() => void> = [];
+
+    for (const pre of article.querySelectorAll('pre')) {
+      if (pre.parentElement?.classList.contains('markdown-code-frame')) {
+        continue;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'markdown-code-frame';
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'markdown-code-toolbar';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'markdown-copy-button';
+      button.textContent = 'Copy';
+
+      const code = pre.textContent ?? '';
+      let resetTimer: number | null = null;
+
+      const resetButtonLabel = () => {
+        button.textContent = 'Copy';
+      };
+
+      const handleCopyClick = async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          button.textContent = 'Copied';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+
+        if (resetTimer !== null) {
+          window.clearTimeout(resetTimer);
+        }
+
+        resetTimer = window.setTimeout(resetButtonLabel, 1600);
+      };
+
+      button.addEventListener('click', handleCopyClick);
+
+      const parentNode = pre.parentNode;
+      if (!parentNode) {
+        button.removeEventListener('click', handleCopyClick);
+        continue;
+      }
+
+      parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(toolbar);
+      toolbar.appendChild(button);
+      wrapper.appendChild(pre);
+
+      cleanupCallbacks.push(() => {
+        button.removeEventListener('click', handleCopyClick);
+        if (resetTimer !== null) {
+          window.clearTimeout(resetTimer);
+        }
+      });
+    }
+
+    return () => {
+      cleanupCallbacks.forEach((cleanup) => cleanup());
+    };
+  }, [html]);
+
+  return (
+    <article
+      ref={articleRef}
+      className="markdown-article"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 function DocsSidebar({ route }: { route: AppRoute }) {
@@ -1222,9 +1475,7 @@ function ApiReferencePage({ route }: { route: AppRoute }) {
                   >
                     {entry.sourcePath}
                   </code>
-                  <pre style={codeStyle}>
-                    <code>{entry.preview}</code>
-                  </pre>
+                  <CopyableCodeBlock code={entry.preview} />
                   <div style={{ color: '#cbd5e1', lineHeight: 1.7 }}>
                     {entry.description ??
                       'No inline JSDoc description yet. Add JSDoc to the exported declaration to enrich this entry automatically.'}
@@ -1326,12 +1577,12 @@ function HomePage() {
 
       <section style={sectionStyle}>
         <h2 style={{ margin: 0, color: '#f8fafc' }}>Install</h2>
-        <pre style={codeStyle}>
-          <code>{`npm install lightweight-orderflow-charts lightweight-charts
+        <CopyableCodeBlock
+          code={`npm install lightweight-orderflow-charts lightweight-charts
 
 # Optional React bindings
-npm install react react-dom`}</code>
-        </pre>
+npm install react react-dom`}
+        />
       </section>
 
       <section style={sectionStyle}>
@@ -1389,9 +1640,7 @@ npm install react react-dom`}</code>
                 );
               })}
             </div>
-            <pre style={codeStyle}>
-              <code>{activeExample.code}</code>
-            </pre>
+            <CopyableCodeBlock code={activeExample.code} />
           </div>
 
           <div style={iframeCardStyle}>
@@ -1511,7 +1760,7 @@ export default function App() {
 
   return (
     <main style={pageStyle}>
-      <style>{markdownCss}</style>
+      <style>{`${globalCss}\n${markdownCss}`}</style>
       {route.page === 'home' ? (
         <HomePage />
       ) : route.page === 'documentation' ? (
